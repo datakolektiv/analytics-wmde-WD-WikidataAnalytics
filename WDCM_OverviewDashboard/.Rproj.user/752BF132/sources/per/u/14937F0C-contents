@@ -1,0 +1,27 @@
+column(width = 6,
+       tabBox(id = 'tabset_projectCategoryCross', 
+              selected = 'Interactive', 
+              width = 12,
+              height = NULL, 
+              side = "left",
+              tabPanel("Interactive",
+                       fluidRow(
+                         column(width = 12,
+                                shinycssloaders::withSpinner(plotly::plotlyOutput('projectCategoryCross_interactive',
+                                                                                  width = "100%",
+                                                                                  height = "600px"))
+                         )
+                       )
+              ),
+              tabPanel("Static",
+                       fluidRow(
+                         column(width = 12,
+                                shinycssloaders::withSpinner(plotOutput('projectCategoryCross',
+                                                                        width = "100%",
+                                                                        height = "600px"))
+                         )
+                       )
+              )
+       ),
+       br()
+)

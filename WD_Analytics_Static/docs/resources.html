@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>Resources</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #ffffff;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html"><img id="logo" style="width: 52px;" src="800px-Wikidata-logo-black-en_fav.png" /></a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    WDCM
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_OverviewDashboard">WDCM Overview Dashboard</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_UsageDashboard">WDCM Usage Dashboard</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_SemanticsDashboard">WDCM Semantics Dashboard</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_BiasesDashboard">WDCM Biases Dashboard</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_GeoDashboard">WDCM Geo Dashboard</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_SitelinksDashboard">WDCM (S)itelinks Dashboard</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_TitlesDashboard">WDCM (T)itles Dashboard</a>
+    </li>
+  </ul>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Analytics
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_pageviewsPerNamespace">WD Pageviews per Namespace</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_percentUsageDashboard">WD Usage and Coverage</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_HumanEdits">WD Human vs Bot Edits per Class</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_GameReferenceHunt">WD Game: Reference Treasure Hunt</a>
+    </li>
+  </ul>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Structural Systems
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_LanguagesLandscape">Wikidata Languages Landscape</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_ExternalIdentifiersDashboard">Wikidata External Identifiers Landscape</a>
+    </li>
+  </ul>
+</li>
+<li>
+  <a href="reports.html">Reports</a>
+</li>
+<li>
+  <a href="datasets.html">Datasets</a>
+</li>
+<li>
+  <a href="resources.html">Resources</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">Resources</h1>
+
+</div>
+
+
+<p><img src="resources.png" /></p>
+<p>In this section we provide and discuss some important definitions used in Wikidata Analytics and provide pointers to documentation and further readings.</p>
+<ul>
+<li><a href="#statistic">The WDCM Reuse Statistics</a></li>
+<li><a href="#sources">Data Sources for Wikidata Analytics</a></li>
+<li><a href="#models">Algorithms and Models for Wikidata Analytics</a></li>
+<li><a href="#learn">Learn together</a></li>
+</ul>
+<hr />
+<div id="statistic" class="section level2">
+<h2><strong>The Wikidata WDCM Reuse Statistic</strong></h2>
+<p>The knowlegde and information in Wikidata is widely reused across the WMF’s <em>projects</em>: Wikipedia, Wikivoyage, Wiktionary, etc. The reuse statistics tell us about the extent of that reuse in each particular project, e.g. <a href="https://en.wikipedia.org/wiki/Main_Page" target="_blank">en.wikipedia.org</a>, <a href="https://it.wikivoyage.org/wiki/Pagina_principale" target="_blank">it.wikivoyage.org</a>, <a href="https://ru.wiktionary.org/wiki/%D0%97%D0%B0%D0%B3%D0%BB%D0%B0%D0%B2%D0%BD%D0%B0%D1%8F_%D1%81%D1%82%D1%80%D0%B0%D0%BD%D0%B8%D1%86%D0%B0" target="_blank">ru.wiktionary.org</a>, etc. The fundamental Wikidata reuse statistic that is used in Wikidata Analytics is defined in the <a href="https://wikitech.wikimedia.org/wiki/Wikidata_Concepts_Monitor#Wikidata_usage">Wikidata Concepts Monitor (WDCM)</a> project and for that reason termed <strong>WDCM Reuse Statistic</strong>.</p>
+<p><strong>Definition</strong>. The WDCM Reuse Statistic defines the Wikidata reuse of <em>a particular Wikidata item, on a particular page of a particular WMF project</em> as a <strong>sole “mention” of that item, on that page, in that project</strong>. That means exactly the following: if any particular Wikidata item is reused, in any form, on a particular page in a particular project, we count only one <strong>mention</strong> of that item, on that page, in that project. What follows is that the <strong>total reuse statistic</strong> for an item in a project is the count of pages in that project that make any use of that item.</p>
+<p>This might sound as an oversimplification, especially given that Wikidata items can be reused in various ways across any page in the WMF universe. However, there are strong technical reasons to define Wikidata item reuse in this way. This definition is motivated as follows:</p>
+<ul>
+<li>The only currently available way to measure the Wikidata reuse is via the <a href="https://www.mediawiki.org/wiki/Wikibase/Schema/wbc_entity_usage" target="_blank"><code>wbc_entity_usage schema</code></a>. All client projects - any WMF projects that have the client-side Wikidata usage tracking enabled through Wikibase - maintain one single <code>wbc_entity_usage table</code>. This table records any Wikidata entity reuse in a given project, and any occurrence of reuse is categorized as a certain type of reuse - technically known as <em>aspect</em>:</li>
+</ul>
+<p>Aspect of the entity used. Well known values:</p>
+<ul>
+<li><strong>S</strong> (“sitelinks”): the entity’s sitelinks are used.</li>
+<li><strong>L</strong> (“label”): the entity’s label in language xx changed.</li>
+<li><strong>L.xx</strong> (“label in XX”): the label aspect can have a modifier specifying the language used.</li>
+<li><strong>T</strong> (“title”): the title of the local page corresponding to the entity is used.</li>
+<li><strong>O</strong> (“other”): other aspects, not sitelinks, labels, or titles. Typically statements.</li>
+<li><strong>X</strong> (“all”): other aspects (such as statement data), or all aspects, are or may be used.</li>
+<li><strong>D.xx</strong> (“description”): the entity’s description in language xx is used.</li>
+<li><strong>C.Px</strong> (“statements”) - certain statements (identified by their property id) from the entity are used.</li>
+</ul>
+<p><a href="https://www.mediawiki.org/wiki/Wikibase/Schema/wbc_entity_usage" target="_blank">(taken from the Wikibase <code>wbc_entity_usage</code> schema documentation)</a></p>
+<ul>
+<li><p>With its current definition, this field - <code>wbc_entity_usage.eu_aspect</code> - enables to select <em>in a non-redundant way</em> only the <code>S</code>, <code>O</code>, and <code>T</code> entity usage aspects; meaning: only <code>S</code>, <code>O</code>, and <code>T</code> occurrences of any given Wikidata entity on any given WMF project that maintains client-side Wikidata usage tracking signal one and only one entity usage in the respective aspect on that project (i.e. these aspects are non-overlapping in their registration of Wikidata usage). However, while <code>S</code>, <code>O</code>, and <code>T</code> do not overlap, they may overlap with the <code>X</code> usage aspect. Excluding the <code>X</code> aspect from the definition is again not possible, namely: ignoring it implies that the majority of relevant usage, e.g. usage in infoboxes, will not be tracked (accessing statement data via Lua is typically tracked as <code>X</code>).</p></li>
+<li><p>Additionally, we face the <code>L</code> aspects problem: tracking of the fallback mechanism. The <code>L</code> aspect signals that the entity’s label is reused somewhere in the page. The <code>L</code> aspects, usually modified by a specific language modifier (e.g. <code>L.de</code>, <code>L.en</code>, and similar) cannot be counted in a non-redundant way currently. This is a consequence of the way the <code>wbc_entity_table</code> is produced in respect to the possible triggering of the language fallback mechanism. To explain a language fallback mechanism in a glimpse: for example, let a language fallback chain for a particular language be: <code>L.de-ch</code> → <code>L.de</code> → <code>L.en</code>. That implies the following: if the usage of item label in Swiss German (<code>L.de-ch</code>) was attempted, and no label in Swiss German was found, an attempt to use the German (<code>L.de</code>) would be made, and an attempt at the English label (<code>L.en</code>) made in the end if the previous attempt fails. However, if a language fallback mechanism is triggered on a particular entity usage occasion, all <code>L</code> aspects in that fallback chain will be registered in the <code>wbc_entity_usage table</code> as if they were used simultaneously. From the viewpoint of Wikidata usage, it would be interesting to track (a) the attempted – i.e. the user intended – <code>L</code> aspect, or (at least) (b) the actually used <code>L</code> aspect for a given entity usage. However, the current design of the <code>wbc_entity_usage</code> table does not provide for an assessment of neither of these possibilities.</p></li>
+<li><p>Finally, there are other uncertainties related to the current design of the <code>wbc_entity_usage</code> table. For example, imagine an editor action that results in a presence of a particular item, with a sitelink, instantiating a label in a particular language at the same time. How many item usage counts do we have: one, two, or more (one <code>S</code> aspect count for the sitelink, and at least another for a specific <code>L</code> aspect count)?</p></li>
+<li><p>In conclusion, if Wikidata usage statistics are to encompass all different ways in which an item usage could be defined, by mapping onto all possible editor actions in instantiating a particular item on a particular page, the design of the <code>wbc_entity_usage</code> table would have to undergo a thorough revision, or a new Wikidata usage tracking mechanism would have to be developed from scratch. The <code>wbc_entity_usage</code> table was never designed to having in mind analytic purposes in the first place; however, it is the only source for Wikidata reuse statistics that we have.</p></li>
+</ul>
+<p>Hence, in order to avoid the usage of potentially over-lapping usage aspects to provide an approximation of Wikidata reuse statistics, we have opted to define item reuse merely as a mention on a page. A single item can thus be reused in many ways on the same page, but we count only one mention of that item and do not take various aspects in account at all. Thus the definition of the WDCM Reuse statistic does not provide for the most precise measurement of Wikidata reuse, but it provides for a certain measurement of what can be measured with certainty.</p>
+<p>Additional efforts to better categorize Wikidata reuse in WMF projects was put by the <a href="https://www.mediawiki.org/wiki/Wikimedia_Research/Research_and_Data" target="_blank">WMF Research Team</a>: <a href="https://phabricator.wikimedia.org/T249654" target="_blank">Categorize different types of Wikidata re-use within Wikimedia projects</a>. The complexity of the problem presents itself clearly in the discussions in this <a href="https://phabricator.wikimedia.org/T249654" target="_blank">Phab</a> ticket.</p>
+<hr />
+</div>
+<div id="sources" class="section level2">
+<h2><strong>Data Sources for Wikidata Analytics</strong></h2>
+<p>Here a list of data sources used to build the results presented by Wikidata Analytics:</p>
+<ul>
+<li><p><strong>The hdfs copy of Wikidata JSON dumps</strong> <a href="https://wikitech.wikimedia.org/wiki/Analytics/Data_Lake/Content/Wikidata_entity">wmf.wikidata_entity</a>: a Hive table, lives in the <a href="https://wikitech.wikimedia.org/wiki/Analytics/Data_Lake">WMF Data Lake</a>, encompasses a complete copy of the Wikidata JSON dump, updated periodically (see the <code>snapshot</code> field). We use Pyspark to process this table anytime we need to cut out a specific slice of Wikidata entities, relying on their ontological relationships, sometimes using <a href="https://wikitech.wikimedia.org/wiki/Wikidata_query_service" target="_blank">WDQS</a> to first obtain a <a href="https://www.wikidata.org/wiki/Property:P31" target="_blank"><code>P31</code></a><code>/</code><a href="https://www.wikidata.org/wiki/Property:P279" target="_blank"><code>P279*</code></a> class structure and then use it as a search index for this table.</p></li>
+<li><p><strong>The Wikidata Query Service</strong> <a href="https://wikitech.wikimedia.org/wiki/Wikidata_query_service">WDQS</a>: we typically use <a href="https://www.w3.org/TR/sparql11-query/" target="_blank">SPARQL</a> in conjunction with <a href="https://github.com/blazegraph/database/wiki/RDF_GAS_API">Blazegraph GAS programs</a> to fetch large result sets from WDQS; this procedure is now being phased out by relying more on the <a href="https://wikitech.wikimedia.org/wiki/Analytics/Data_Lake/Content/Wikidata_entity" target="_blank">wmf.wikidata_entity</a> Hive table. However, no Wikidata analyst can imagine their work without relying on WDQS at some point.</p></li>
+<li><p><strong>The Wikidata Mediawiki History</strong> <a href="https://wikitech.wikimedia.org/wiki/Analytics/Data_Lake/Edits/MediaWiki_history" target="_blank">wmf.mediawiki_history</a>: this is a Hive table, it lives in the Data Lake, and stores the denormalized edit history of WMF’s wikis. We use it anytime we need to analyze the statistics in relation to Wikidata users or the revisions they make.</p></li>
+<li><p><strong>Event logging of the SPARQL queries received at the WDQS end-point</strong> <code>event.wdqs_external_sparql_query</code> and <a href="https://wikitech.wikimedia.org/wiki/Analytics/Data_Lake/Traffic/Webrequest" target="_blank">wmf.webrequest</a> - We use data from these tables to <a href="https://phabricator.wikimedia.org/T248308">analyze the patterns of SPARQL queries received at the WDQS end-point</a> and help the understanding of how to optimize WDQS’s response times.</p></li>
+<li><p><strong>Wikidata Pageviews</strong> <a href="https://wikitech.wikimedia.org/wiki/Analytics/Data_Lake/Traffic/Pageview_hourly" target="_blank">Pageview hourly</a>: this table is used to obtain data on Wikidata pageviews, separately for several namespaces (items, properties, lexemes, entity schemata).</p></li>
+<li><p><strong>Wikibase Schema</strong> <a href="https://www.mediawiki.org/wiki/Wikibase/Schema" target="_blank">Wikibase/Schema</a>: a relational Wikibase schema which is used primarily to obtain the Wikidata WDCM reuse statistics.</p></li>
+</ul>
+<hr />
+</div>
+<div id="models" class="section level2">
+<h2><strong>Algorithms and Models for Wikidata Analytics</strong></h2>
+<p>We make use of various AI/ML workhorses to figure out the patterns of Wikidata reuse across the WMF universe and derive suitable datasets to illustrate its complexity in ergonomic ways. Here’s some of them:</p>
+<ul>
+<li><p><a href="https://en.wikipedia.org/wiki/Latent_Dirichlet_allocation" target="_blank">Latent Dirichlet Allocation</a>. A true classic of <a href="https://en.wikipedia.org/wiki/Topic_model" target="_blank">Semantic Topic Modeling</a>. In a nutshell, this generative statistical model assumes that a set of observations of terms in a set of documents (i.e. a corpus) is produced by a random process which first (a) draws a topic, or a semantic theme, that can characterize a document up to a certain extent, then (b) draws a term from that topic, and (c) enters the selected term in a particular document. Documents are thus characterized as probability distributions across the semantic topics, while topics themselves are viewed as probability distributions across terms. The model estimation is an inverse engineering problem of estimating the topical distributions that best characterized a given term-document matrix whose entries represent the frequency of occurrence of each particular term in any given document observed in the corpus. In Wikidata Analytics we make use of two approaches to LDA model estimation: (1) the first in is embodied in the R <a href="https://github.com/TaddyLab/maptpx" target="_blank">{maptpx}</a> package, represents a true Bayesian estimation approach based on the results from <a href="http://proceedings.mlr.press/v22/taddy12/taddy12.pdf" target="_blank">On Estimation and Selection for Topic Models</a> paper, and representing a very efficient, fast instance of <a href="https://en.wikipedia.org/wiki/Bayes_factor" target="_blank">Bayes factor</a> based model selection for LDA, while the second (2) is a <a href="https://arxiv.org/abs/1510.08628" target="_blank">WARP LDA</a> sampling algorithm implementation in the R <a href="http://text2vec.org/" target="_blank">{text2vec}</a> package. Replace “terms” by “items” and “documents” by “WMF projects” to get to an understanding of how do we look for patterns in Wikidata reuse in Wikidata Analytics. Chances are that in the future we might switch to graph-based methods to estimate semantic topic models, e.g. Stochastic Block Models based approaches like <a href="https://topsbm.github.io/" target="_blank">TopSBM</a>.</p></li>
+<li><p><a href="https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding" target="_blank">t-distributed Stochastic Neighbor Embedding (t-SNE)</a>. This or the other way the results that one gets upon analyzing complex phenomena as Wikidata reuse in the WMF universe of websites are represented in high-dimensional spaces. This fact introduces serious problems in relation to the interpretation of results, as well as difficulties in the approach to their ergonomic visualization. Thus we need a workhorse to solve <a href="https://en.wikipedia.org/wiki/Dimensionality_reduction" target="_blank">dimensionality reduction</a> problems: to represent a high-dimensional space in a space of lower dimensionality and still preserve as much original information as possible. We chose <a href="https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding" target="_blank">t-SNE</a> for such purposes and use the R wrapper around <a href="https://lvdmaaten.github.io/" target="_blank">L.J.P. van der Maaten’s</a> <a href="https://lvdmaaten.github.io/tsne/" target="_blank">t-SNE C++ implementation</a>: the <a href="https://cran.r-project.org/web/packages/Rtsne/index.html" target="_blank">Rtsne package</a>. t-SNE is distinguished for its ability to preserve the structure of local neighborhoods in non-linear dimensionality reduction, a feature that plays a pivotal role in our attempts to single out sets of highly similar WMF projects according to their Wikidata reuse - and sets of similarly reused Wikidata items as well.</p></li>
+<li><p><a href="https://mclust-org.github.io/mclust/" target="_blank">Gaussian Mixture Modelling for Model-Based Clustering, Classification, and Density Estimation, Mclust</a>. This is an R package for R package for model-based clustering, classification, and density estimation based on finite normal mixture modeling. Sometimes we want to approach the structure of Wikidata reuse across the WMF universe as a true classification problem, i.e. to be able to tell, in some way, what projects are characterized by which distinctive patterns of Wikidata reuse, or what Wikidata items cluster in respect to some distinctive patterns of reuse across the projects. [mclust] proves to be a fast, reliable method for finite normal mixture modeling in the context of clustering tasks, and includes automated model-selection procedures as well.</p></li>
+<li><p><a href="https://en.wikipedia.org/wiki/XGBoost" target="_blank">XGBoost</a>. Among the most famous ML algorithms in the arena nowadays, the <a href="https://en.wikipedia.org/wiki/Gradient_boosting" target="_blank">gradient boosting framework</a> <a href="https://xgboost.readthedocs.io/en/latest/" target="_blank">XGBoost</a> is used whenever we need a true Swiss army knife for regression or classification problems described from rich and diverse approaches to feature-engineering. A case study: take a look at our approach to the <a href="https://phabricator.wikimedia.org/T248308" target="_blank">WDQS response time optimization</a> problem.</p></li>
+</ul>
+<hr />
+</div>
+<div id="learn" class="section level2">
+<h2><strong>Learn together</strong></h2>
+<p>If you would like to get to know more about our work, contact us: <code>goran.milovanovic_ext@wikimedia.de</code>. If you would like to learn Data Science by using Wikidata, get in touch. If you would want us to learn or discover something new about Wikidata together, drop us an email or contact us at Phabricator. Knowledge is free, and we are more than happy to share.</p>
+</div>
+
+<script type="text/javascript" src="links.js"></script>
+
+<hr>
+<p>
+  <img src="33h_px-Wikidata-logo-black-en.svg.png">
+</p>
+<p style="font-size:13px;">
+  <a href="https://github.com/GoranMilovanovic" target="_blank">Goran S. Milovanović</a>, Data Scientist for Wikidata, <a href="https://www.wikimedia.de/" target="_blank">Wikimedia Deutschland</a>: <a href = "mailto: goran.milovanovic_ext@wikimedia.de">goran.milovanovic_ext@wikimedia.de</a>
+  <br>
+  This is free software: all content and code is <a href="https://www.gnu.org/licenses/old-licenses/gpl-2.0.md" target="_blank">GPL v2.0</a> licensed.
+</p>
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
+</script>
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,92 @@
+---
+title: "Resources"
+---
+
+![](resources.png)
+
+In this section we provide and discuss some important definitions used in Wikidata Analytics and provide pointers to documentation and further readings. 
+
+- [The WDCM Reuse Statistics](#statistic)
+- [Data Sources for Wikidata Analytics](#sources)
+- [Algorithms and Models for Wikidata Analytics](#models)
+- [Learn together](#learn)
+
+------
+
+## **The Wikidata WDCM Reuse Statistic**{#statistic} 
+The knowlegde and information in Wikidata is widely reused across the WMF's *projects*: Wikipedia, Wikivoyage, Wiktionary, etc. The reuse statistics tell us about the extent of that reuse in each particular project, e.g. [en.wikipedia.org](https://en.wikipedia.org/wiki/Main_Page){target="_blank"}, [it.wikivoyage.org](https://it.wikivoyage.org/wiki/Pagina_principale){target="_blank"}, [ru.wiktionary.org](https://ru.wiktionary.org/wiki/%D0%97%D0%B0%D0%B3%D0%BB%D0%B0%D0%B2%D0%BD%D0%B0%D1%8F_%D1%81%D1%82%D1%80%D0%B0%D0%BD%D0%B8%D1%86%D0%B0){target="_blank"}, etc. The fundamental Wikidata reuse statistic that is used in Wikidata Analytics is defined in the [Wikidata Concepts Monitor (WDCM)](https://wikitech.wikimedia.org/wiki/Wikidata_Concepts_Monitor#Wikidata_usage) project and for that reason termed **WDCM Reuse Statistic**. 
+
+**Definition**. The WDCM Reuse Statistic defines the Wikidata reuse of *a particular Wikidata item, on a particular page of a particular WMF project* as a **sole "mention" of that item, on that page, in that project**. That means exactly the following: if any particular Wikidata item is reused, in any form, on a particular page in a particular project, we count only one **mention** of that item, on that page, in that project. What follows is that the **total reuse statistic** for an item in a project is the count of pages in that project that make any use of that item.
+
+This might sound as an oversimplification, especially given that Wikidata items can be reused in various ways across any page in the WMF universe. However, there are strong technical reasons to define Wikidata item reuse in this way. This definition is motivated as follows:
+
+- The only currently available way to measure the Wikidata reuse is via the  [`wbc_entity_usage schema`](https://www.mediawiki.org/wiki/Wikibase/Schema/wbc_entity_usage){target="_blank"}. All client projects - any WMF projects that have the client-side Wikidata usage tracking enabled through Wikibase - maintain one single  `wbc_entity_usage table`. This table records any Wikidata entity reuse in a given project, and any occurrence of reuse is categorized as a certain type of reuse - technically known as *aspect*:  
+
+Aspect of the entity used. Well known values:
+
+- **S** ("sitelinks"): the entity's sitelinks are used.
+- **L** ("label"): the entity's label in language xx changed.
+- **L.xx** ("label in XX"): the label aspect can have a modifier specifying the language used.
+- **T** ("title"): the title of the local page corresponding to the entity is used.
+- **O** ("other"): other aspects, not sitelinks, labels, or titles. Typically statements.
+- **X** ("all"): other aspects (such as statement data), or all aspects, are or may be used.
+- **D.xx** ("description"): the entity's description in language xx is used.
+- **C.Px** ("statements") - certain statements (identified by their property id) from the entity are used.
+
+[(taken from the Wikibase `wbc_entity_usage` schema documentation)](https://www.mediawiki.org/wiki/Wikibase/Schema/wbc_entity_usage){target="_blank"}
+
+- With its current definition, this field - `wbc_entity_usage.eu_aspect` - enables to select *in a non-redundant way* only the `S`, `O`, and `T` entity usage aspects; meaning: only `S`, `O`, and `T` occurrences of any given Wikidata entity on any given WMF project that maintains client-side Wikidata usage tracking signal one and only one entity usage in the respective aspect on that project (i.e. these aspects are non-overlapping in their registration of Wikidata usage). However, while `S`, `O`, and `T` do not overlap, they may overlap with the `X` usage aspect. Excluding the `X` aspect from the definition is again not possible, namely: ignoring it implies that the majority of relevant usage, e.g. usage in infoboxes, will not be tracked (accessing statement data via Lua is typically tracked as `X`).
+
+- Additionally, we face the `L` aspects problem: tracking of the fallback mechanism. The `L` aspect signals that the entity's label is reused somewhere in the page. The `L` aspects, usually modified by a specific language modifier (e.g. `L.de`, `L.en`, and similar) cannot be counted in a non-redundant way currently. This is a consequence of the way the `wbc_entity_table` is produced in respect to the possible triggering of the language fallback mechanism. To explain a language fallback mechanism in a glimpse: for example, let a language fallback chain for a particular language be: `L.de-ch` → `L.de` → `L.en`. That implies the following: if the usage of item label in Swiss German (`L.de-ch`) was attempted, and no label in Swiss German was found, an attempt to use the German (`L.de`) would be made, and an attempt at the English label (`L.en`) made in the end if the previous attempt fails. However, if a language fallback mechanism is triggered on a particular entity usage occasion, all `L` aspects in that fallback chain will be registered in the `wbc_entity_usage table` as if they were used simultaneously. From the viewpoint of Wikidata usage, it would be interesting to track (a) the attempted – i.e. the user intended – `L` aspect, or (at least) (b) the actually used `L` aspect for a given entity usage. However, the current design of the `wbc_entity_usage` table does not provide for an assessment of neither of these possibilities. 
+
+- Finally, there are other uncertainties related to the current design of the `wbc_entity_usage` table. For example, imagine an editor action that results in a presence of a particular item, with a sitelink, instantiating a label in a particular language at the same time. How many item usage counts do we have: one, two, or more (one `S` aspect count for the sitelink, and at least another for a specific `L` aspect count)?
+
+- In conclusion, if Wikidata usage statistics are to encompass all different ways in which an item usage could be defined, by mapping onto all possible editor actions in instantiating a particular item on a particular page, the design of the `wbc_entity_usage` table would have to undergo a thorough revision, or a new Wikidata usage tracking mechanism would have to be developed from scratch. The `wbc_entity_usage` table was never designed to having in mind analytic purposes in the first place; however, it is the only source for Wikidata reuse statistics that we have.
+
+Hence, in order to avoid the usage of potentially over-lapping usage aspects to provide an approximation of Wikidata reuse statistics, we have opted to define item reuse merely as a mention on a page. A single item can thus be reused in many ways on the same page, but we count only one mention of that item and do not take various aspects in account at all. Thus the definition of the WDCM Reuse statistic does not provide for the most precise measurement of Wikidata reuse, but it provides for a certain measurement of what can be measured with certainty. 
+
+Additional efforts to better categorize Wikidata reuse in WMF projects was put by the [WMF Research Team](https://www.mediawiki.org/wiki/Wikimedia_Research/Research_and_Data){target="_blank"}: [Categorize different types of Wikidata re-use within Wikimedia projects](https://phabricator.wikimedia.org/T249654){target="_blank"}. The complexity of the problem presents itself clearly in the discussions in this [Phab](https://phabricator.wikimedia.org/T249654){target="_blank"} ticket.
+
+------
+
+## **Data Sources for Wikidata Analytics**{#sources} 
+Here a list of data sources used to build the results presented by Wikidata Analytics:
+
+- **The hdfs copy of Wikidata JSON dumps** [wmf.wikidata_entity](https://wikitech.wikimedia.org/wiki/Analytics/Data_Lake/Content/Wikidata_entity): a Hive table, lives in the [WMF Data Lake](https://wikitech.wikimedia.org/wiki/Analytics/Data_Lake), encompasses a complete copy of the Wikidata JSON dump, updated periodically (see the `snapshot` field). We use Pyspark to process this table anytime we need to cut out a specific slice of Wikidata entities, relying on their ontological relationships, sometimes using [WDQS](https://wikitech.wikimedia.org/wiki/Wikidata_query_service){target="_blank"} to first obtain a [`P31`](https://www.wikidata.org/wiki/Property:P31){target="_blank"}`/`[`P279*`](https://www.wikidata.org/wiki/Property:P279){target="_blank"} class structure and then use it as a search index for this table.
+
+- **The Wikidata Query Service** [WDQS](https://wikitech.wikimedia.org/wiki/Wikidata_query_service): we typically use [SPARQL](https://www.w3.org/TR/sparql11-query/){target="_blank"} in conjunction with [Blazegraph GAS programs](https://github.com/blazegraph/database/wiki/RDF_GAS_API) to fetch large result sets from WDQS; this procedure is now being phased out by relying more on the [wmf.wikidata_entity](https://wikitech.wikimedia.org/wiki/Analytics/Data_Lake/Content/Wikidata_entity){target="_blank"} Hive table. However, no Wikidata analyst can imagine their work without relying on WDQS at some point.  
+
+- **The Wikidata Mediawiki History** [wmf.mediawiki_history](https://wikitech.wikimedia.org/wiki/Analytics/Data_Lake/Edits/MediaWiki_history){target="_blank"}: this is a Hive table, it lives in the Data Lake, and stores the denormalized edit history of WMF's wikis. We use it anytime we need to analyze the statistics in relation to Wikidata users or the revisions they make. 
+
+- **Event logging of the SPARQL queries received at the WDQS end-point** `event.wdqs_external_sparql_query` and [wmf.webrequest](https://wikitech.wikimedia.org/wiki/Analytics/Data_Lake/Traffic/Webrequest){target="_blank"} - We use data from these tables to [analyze the patterns of SPARQL queries received at the WDQS end-point](https://phabricator.wikimedia.org/T248308) and help the understanding of how to optimize WDQS's response times.
+
+- **Wikidata Pageviews** [Pageview hourly](https://wikitech.wikimedia.org/wiki/Analytics/Data_Lake/Traffic/Pageview_hourly){target="_blank"}: this table is used to obtain data on Wikidata pageviews, separately for several namespaces (items, properties, lexemes, entity schemata).
+
+- **Wikibase Schema** [Wikibase/Schema](https://www.mediawiki.org/wiki/Wikibase/Schema){target="_blank"}: a relational Wikibase schema which is used primarily to obtain the Wikidata WDCM reuse statistics.
+
+------
+
+## **Algorithms and Models for Wikidata Analytics**{#models} 
+
+We make use of various AI/ML workhorses to figure out the patterns of Wikidata reuse across the WMF universe and derive suitable datasets to illustrate its complexity in ergonomic ways. Here's some of them:
+
+- [Latent Dirichlet Allocation](https://en.wikipedia.org/wiki/Latent_Dirichlet_allocation){target="_blank"}. A true classic of [Semantic Topic Modeling](https://en.wikipedia.org/wiki/Topic_model){target="_blank"}. In a nutshell, this generative statistical model assumes that a set of observations of terms in a set of documents (i.e. a corpus) is produced by a random process which first (a) draws a topic, or a semantic theme, that can characterize a document up to a certain extent, then (b) draws a term from that topic, and (c) enters the selected term in a particular document. Documents are thus characterized as probability distributions across the semantic topics, while topics themselves are viewed as probability distributions across terms. The model estimation is an inverse engineering problem of estimating the topical distributions that best characterized a given term-document matrix whose entries represent the frequency of occurrence of each particular term in any given document observed in the corpus. In Wikidata Analytics we make use of two approaches to LDA model estimation: (1) the first in is embodied in the R [{maptpx}](https://github.com/TaddyLab/maptpx){target="_blank"} package, represents a true Bayesian estimation approach based on the results from [On Estimation and Selection for Topic Models](http://proceedings.mlr.press/v22/taddy12/taddy12.pdf){target="_blank"} paper, and representing a very efficient, fast instance of [Bayes factor](https://en.wikipedia.org/wiki/Bayes_factor){target="_blank"} based model selection for LDA, while the second (2) is a [WARP LDA](https://arxiv.org/abs/1510.08628){target="_blank"} sampling algorithm implementation in the R [{text2vec}](http://text2vec.org/){target="_blank"} package. Replace "terms" by "items" and "documents" by "WMF projects" to get to an understanding of how do we look for patterns in Wikidata reuse in Wikidata Analytics. Chances are that in the future we might switch to graph-based methods to estimate semantic topic models, e.g. Stochastic Block Models based approaches like [TopSBM](https://topsbm.github.io/){target="_blank"}.
+
+- [t-distributed Stochastic Neighbor Embedding (t-SNE)](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding){target="_blank"}. This or the other way the results that one gets upon analyzing complex phenomena as Wikidata reuse in the WMF universe of websites are represented in high-dimensional spaces. This fact introduces serious problems in relation to the interpretation of results, as well as difficulties in the approach to their ergonomic visualization. Thus we need a workhorse to solve [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction){target="_blank"} problems: to represent a high-dimensional space in a space of lower dimensionality and still preserve as much original information as possible. We chose [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding){target="_blank"} for such purposes and use the R wrapper around [L.J.P. van der Maaten's](https://lvdmaaten.github.io/){target="_blank"} [t-SNE C++ implementation](https://lvdmaaten.github.io/tsne/){target="_blank"}: the [Rtsne package](https://cran.r-project.org/web/packages/Rtsne/index.html){target="_blank"}. t-SNE is distinguished for its ability to preserve the structure of local neighborhoods in non-linear dimensionality reduction, a feature that plays a pivotal role in our attempts to single out sets of highly similar WMF projects according to their Wikidata reuse - and sets of similarly reused Wikidata items as well.
+
+- [Gaussian Mixture Modelling for Model-Based Clustering, Classification, and Density Estimation, Mclust](https://mclust-org.github.io/mclust/){target="_blank"}. This is an R package for R package for model-based clustering, classification, and density estimation based on finite normal mixture modeling. Sometimes we want to approach the structure of Wikidata reuse across the WMF universe as a true classification problem, i.e. to be able to tell, in some way, what projects are characterized by which distinctive patterns of Wikidata reuse, or what Wikidata items cluster in respect to some distinctive patterns of reuse across the projects. [mclust] proves to be a fast, reliable method for finite normal mixture modeling in the context of clustering tasks, and includes automated model-selection procedures as well. 
+
+- [XGBoost](https://en.wikipedia.org/wiki/XGBoost){target="_blank"}. Among the most famous ML algorithms in the arena nowadays, the [gradient boosting framework](https://en.wikipedia.org/wiki/Gradient_boosting){target="_blank"} [XGBoost](https://xgboost.readthedocs.io/en/latest/){target="_blank"} is used whenever we need a true Swiss army knife for regression or classification problems described from rich and diverse approaches to feature-engineering. A case study: take a look at our approach to the [WDQS response time optimization](https://phabricator.wikimedia.org/T248308){target="_blank"} problem.
+
+------
+## **Learn together**{#learn} 
+
+If you would like to get to know more about our work, contact us: `goran.milovanovic_ext@wikimedia.de`. If you would like to learn Data Science by using Wikidata, get in touch. If you would want us to learn or discover something new about Wikidata together, drop us an email or contact us at Phabricator. Knowledge is free, and we are more than happy to share. 
+
+
+
+
+
+
+
+

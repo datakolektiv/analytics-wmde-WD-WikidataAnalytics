@@ -1,0 +1,24 @@
+{
+    "id": "608D502E",
+    "path": "~/WMDE/WD_Analytics_FrontEnd/WD_referenceHunt/Dockerfile",
+    "project_path": "Dockerfile",
+    "type": "text",
+    "hash": "1061336820",
+    "contents": "",
+    "dirty": false,
+    "created": 1603066610505.0,
+    "source_on_save": false,
+    "relative_order": 4,
+    "properties": {
+        "cursorPosition": "15,17",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1603067122,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1603067122472,
+    "read_only": false,
+    "read_only_alternatives": []
+}

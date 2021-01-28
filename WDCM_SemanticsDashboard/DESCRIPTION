@@ -1,0 +1,27 @@
+Package: WDCMSemanticsDashboard
+Title: Wikidata Concepts Monitor Semantics Dashboard
+Version: 0.0.0.9000
+Authors@R: person('Goran', 'Milovanović', email = 'goran.milovanovic_ext@wikimedia.de', role = c('cre', 'aut'))
+Description: Detailed insights into the WDCM Taxonomy (a selection of semantic categories from Wikidata used in WDCM), its distributional semantics, and the way it is used across the client projects.
+License: GPL (>= 2)
+Imports: 
+    config (>= 0.3),
+    golem (>= 0.3.0),
+    shiny (>= 1.5.0),
+    processx,
+    attempt,
+    DT,
+    glue,
+    htmltools,
+    thinkr
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.1
+Suggests: 
+    testthat,
+    spelling,
+    knitr,
+    rmarkdown
+Config/testthat/edition: 2
+Language: en-US
+VignetteBuilder: knitr

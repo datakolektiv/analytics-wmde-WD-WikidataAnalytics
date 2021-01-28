@@ -1,0 +1,17 @@
+
+<p style="font-size:80%;" align="left">
+  <b>Welcome to the Human vs Bot Edits per Class in Wikidata dashboard. </b>
+  This dashboard presents an overview of Human vs Bot editing in Wikidata.
+  The source of the data are the Wikidata JSON dump copy in the 
+  <a href="https://wikitech.wikimedia.org/wiki/Analytics/Data_Lake" target="_blank">WMF Data Lake</a> 
+  (see: <a href="https://wikitech.wikimedia.org/wiki/Analytics/Data_Lake/Edits/Wikidata_entity" target="_blank">wmf.wikidata_entity table</a>), and the Wikidata MediaWiki revision history 
+  (see: <a href="https://wikitech.wikimedia.org/wiki/Analytics/Data_Lake/Edits/MediaWiki_history" target="_blank">wmf.mediawiki_history table</a>). All reported statistics refer to Wikidata classes.<br>
+  We first study the revision history of Wikidata and count the number of edits per item, per class. 
+  Then we derive the percent of items that were ever touched by a human editor per class, the ratio of 
+  human to bot edits per class, the median number of unique human editors per class, and other statistics 
+  as well. All of them are reported in the <b>table below the charts</b> on this page. The legends below each chart are 
+  there to help their interpreation.<br>
+  <b>Note.</b> The counts of item edits across the classes are not cumulative in a sense of counting across all the members of the class' subclasses (i.e. "item in class" here means <a href="https://www.wikidata.org/wiki/Property:P31" target="_blank">P31 (Instance Of)</a> exclusively)<br>
+  The reference Phabricator ticket for this dashboard is 
+  <a href="https://phabricator.wikimedia.org/T187393" target="_blank">https://phabricator.wikimedia.org/T187393</a>.
+</p>

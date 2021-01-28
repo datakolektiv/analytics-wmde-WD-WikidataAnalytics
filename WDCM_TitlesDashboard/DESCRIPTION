@@ -1,0 +1,24 @@
+Package: WDCMTitlesDashboard
+Title: Wikidata Concepts Monitor Titles Dashboard
+Version: 0.0.0.9000
+Authors@R: person('Goran', 'Milovanović', email = 'goran.milovanovic_ext@wikimedia.de', role = c('cre', 'aut'))
+Description: Statistics on (T)itles Wikidata usage aspect + topic models for top Wikipedia projects.
+License: GPL (>= 2)
+Imports: 
+    config (>= 0.3),
+    golem (>= 0.3.0),
+    shiny (>= 1.5.0),
+    processx,
+    attempt,
+    DT,
+    glue,
+    htmltools,
+    thinkr
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.1
+Suggests: 
+    testthat,
+    spelling
+Config/testthat/edition: 2
+Language: en-US
