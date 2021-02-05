@@ -267,7 +267,7 @@ $(document).ready(function () {
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="index.html"><img id="logo" style="width: 52px;" src="800px-Wikidata-logo-black-en_fav.png" /></a>
+      <a class="navbar-brand" href="index.html"><img id="logo" style="width: 30px;" src="800px-Wikidata-logo-black-en_fav.png" /></a>
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
@@ -279,25 +279,25 @@ $(document).ready(function () {
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="http://wikidata-analytics.wmcloud.org/app/WDCM_OverviewDashboard">WDCM Overview Dashboard</a>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_OverviewDashboard">WDCM Overview Dashboard</a>
     </li>
     <li>
-      <a href="http://wikidata-analytics.wmcloud.org/app/WDCM_UsageDashboard">WDCM Usage Dashboard</a>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_UsageDashboard">WDCM Usage Dashboard</a>
     </li>
     <li>
-      <a href="http://wikidata-analytics.wmcloud.org/app/WDCM_SemanticsDashboard">WDCM Semantics Dashboard</a>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_SemanticsDashboard">WDCM Semantics Dashboard</a>
     </li>
     <li>
-      <a href="http://wikidata-analytics.wmcloud.org/app/WDCM_BiasesDashboard">WDCM Biases Dashboard</a>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_BiasesDashboard">WDCM Biases Dashboard</a>
     </li>
     <li>
-      <a href="http://wikidata-analytics.wmcloud.org/app/WDCM_GeoDashboard">WDCM Geo Dashboard</a>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_GeoDashboard">WDCM Geo Dashboard</a>
     </li>
     <li>
-      <a href="http://wikidata-analytics.wmcloud.org/app/WDCM_SitelinksDashboard">WDCM (S)itelinks Dashboard</a>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_SitelinksDashboard">WDCM (S)itelinks Dashboard</a>
     </li>
     <li>
-      <a href="http://wikidata-analytics.wmcloud.org/app/WDCM_TitlesDashboard">WDCM (T)itles Dashboard</a>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_TitlesDashboard">WDCM (T)itles Dashboard</a>
     </li>
   </ul>
 </li>
@@ -309,16 +309,16 @@ $(document).ready(function () {
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="http://wikidata-analytics.wmcloud.org/app/WD_pageviewsPerNamespace">WD Pageviews per Namespace</a>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_pageviewsPerNamespace">WD Pageviews per Namespace</a>
     </li>
     <li>
-      <a href="http://wikidata-analytics.wmcloud.org/app/WD_percentUsageDashboard">WD Usage and Coverage</a>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_percentUsageDashboard">WD Usage and Coverage</a>
     </li>
     <li>
-      <a href="http://wikidata-analytics.wmcloud.org/app/WD_HumanEdits">WD Human vs Bot Edits per Class</a>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_HumanEdits">WD Human vs Bot Edits per Class</a>
     </li>
     <li>
-      <a href="http://wikidata-analytics.wmcloud.org/app/WD_GameReferenceHunt">WD Game: Reference Treasure Hunt</a>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_GameReferenceHunt">WD Game: Reference Treasure Hunt</a>
     </li>
   </ul>
 </li>
@@ -330,10 +330,22 @@ $(document).ready(function () {
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="http://wikidata-analytics.wmcloud.org/app/WD_LanguagesLandscape">Wikidata Languages Landscape</a>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_LanguagesLandscape">Wikidata Languages Landscape</a>
     </li>
     <li>
-      <a href="http://wikidata-analytics.wmcloud.org/app/WD_ExternalIdentifiersDashboard">Wikidata External Identifiers Landscape</a>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_ExternalIdentifiersDashboard">Wikidata External Identifiers Landscape</a>
+    </li>
+  </ul>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Qurator
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/QURATOR_CuriousFacts">Curious Facts</a>
     </li>
   </ul>
 </li>
@@ -370,8 +382,11 @@ $(document).ready(function () {
 <p><img src="WD_IdentifiersNet_WikidataCon2019_Large.jpg" /> <font size="1">WikidataCon 2019: Wikidata External Identifiers Similarity Graph</font></p>
 <p>This is the starting point to navigate a set of analytic systems that monitor the growth, usage, and structure of Wikidata.</p>
 <p>The <b>Wikidata Concepts Monitor (WDCM)</b> system is a set of applications that monitor the re-use of Wikidata across the Wikimedia projects. All Wikimedia projects that maintain a <a href="https://www.mediawiki.org/wiki/Wikibase/Schema/wbc_entity_usage">client-side usage tracking with Wikibase</a> provide data on how our items are used in the respective wikies. The WDCM system encompasses several dashboards that monitor and analyze such data by putting them in various perspectives, e.g. the type of re-use, the similarity structure across wikies and Wikidata items in respect to their co-usage patterns, biases in Wikidata re-use, geographical distribution, and more.</p>
-<p>The <b>Analytics</b> menu will point to a number of dashboards that monitor various important Wikidata statistics, e.g. <a href="http://datakolektiv.org/app/WD_pageviewsPerNamespace">the number of pageviews</a> it receives across different namespaces, the <a href="http://datakolektiv.org/app/WD_HumanEdits">ratio of human to bot edits</a> across the Wikidata classes, the Wikidata <a href="http://datakolektiv.org/app/WD_percentUsageDashboard">total reuse and coverage</a> in different Wikimedia projects, specific dashboards like the one that tracks the results of the Wikidata Reference Treasure Hunt Game, and similar.</p>
-<p>The <b>Structural Systems</b> section points towards the most complex analytical systems that we currently maintain, the <a href="http://datakolektiv.org/app/WD_LanguagesLandscape">Wikidata Languages Landscape</a> and the <a href="http://datakolektiv.org/app/WD_ExternalIdentifiersDashboard">Wikidata External Identifiers Landscape</a>. Both systems combine information on the re-use of Wikidata in Wikimedia projects with the structural, ontological patterns in some particular Wikidata classes (e.g. languages, external identifiers) and external datasets to provide in-depth understanding of the development of Wikidata in the respective domains. The <b>Reports</b> section points to a selection of Wikidata analytic reports, e.g. the Wikidata ORES Quality Report.</p>
+<p>The <b>Analytics</b> menu will point to a number of dashboards that monitor various important Wikidata statistics, e.g. <a href="https://wikidata-analytics.wmcloud.org/app/WD_pageviewsPerNamespace">the number of pageviews</a> it receives across different namespaces, the <a href="https://wikidata-analytics.wmcloud.org/app/WD_HumanEdits">ratio of human to bot edits</a> across the Wikidata classes, the Wikidata <a href="https://wikidata-analytics.wmcloud.org/app/WD_percentUsageDashboard">total reuse and coverage</a> in different Wikimedia projects, specific dashboards like the one that tracks the results of the Wikidata Reference Treasure Hunt Game, and similar.</p>
+<p>The <b>Structural Systems</b> section points towards the most complex analytical systems that we currently maintain, the <a href="https://wikidata-analytics.wmcloud.org/app/WD_LanguagesLandscape">Wikidata Languages Landscape</a> and the <a href="https://wikidata-analytics.wmcloud.org/app/WD_ExternalIdentifiersDashboard">Wikidata External Identifiers Landscape</a>. Both systems combine information on the re-use of Wikidata in Wikimedia projects with the structural, ontological patterns in some particular Wikidata classes (e.g. languages, external identifiers) and external datasets to provide in-depth understanding of the development of Wikidata in the respective domains.</p>
+<p>Some of the most interesting and important datasets that we produce and use in Wikidata Analytics are reviewed and provided for download in the <b>Datasets</b> section. The <b>Reports</b> section points to a selection of Wikidata analytic reports, e.g. the <a href="https://wikidata-analytics.wmcloud.org/app_direct/WD_docs/Wikidata%20Quality%20Report.nb.html">Wikidata ORES Quality Report</a>. More about our work can be found in the <b>Resources</b> and <b>About</b> sections.</p>
+
+<script type="text/javascript" src="links.js"></script>
 
 <hr>
 <p>

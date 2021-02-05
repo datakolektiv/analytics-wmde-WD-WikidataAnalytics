@@ -34,6 +34,12 @@ navbar:
           href: https://wikidata-analytics.wmcloud.org/app/WD_LanguagesLandscape
         - text: "Wikidata External Identifiers Landscape"
           href: https://wikidata-analytics.wmcloud.org/app/WD_ExternalIdentifiersDashboard
+    - text: "Qurator"
+      menu:
+        - text: "Curious Facts"
+          href: https://wikidata-analytics.wmcloud.org/app/QURATOR_CuriousFacts
+        - text: "Current Events"
+          href: https://wikidata-analytics.wmcloud.org/app/QURATOR_CurrentEvents
     - text: "Reports"
       href: reports.html
     - text: "Datasets"
