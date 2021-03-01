@@ -40,6 +40,11 @@ proxy:
     description: Gender bias in Wikidata usage + North-South divide statistics and maps.
     container-image: wdcmbiases-img
     container-network: wd-analytics-net
+  - id: WDCM_StatementsDashboard
+    display-name: Wikidata Concepts Monitor - Statements Dashboard
+    description: Property use in Wikidata and reuse across the WMF universe.
+    container-image: wdcmstatements-img
+    container-network: wd-analytics-net
   - id: WDCM_SitelinksDashboard
     display-name: Wikidata Concepts Monitor - Sitelinks Dashboard
     description: Statistics on (S)itelinks Wikidata usage aspect + topic models for top Wikipedia projects.

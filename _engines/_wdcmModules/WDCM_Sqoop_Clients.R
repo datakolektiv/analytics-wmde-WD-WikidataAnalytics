@@ -186,6 +186,7 @@ for (i in 1:length(shards)) {
                                   shardTables[j],
                                   ' --delete-target-dir',
                                   sep = "")
+            print(paste0("Sqoop NOW: ", shardTables[j], "."))
             system(command = sqoopCommand, wait = TRUE)
             
             # - create Hive table if this is the first entry:
