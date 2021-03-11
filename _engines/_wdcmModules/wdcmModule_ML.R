@@ -132,8 +132,14 @@ setwd(etlDir)
 print("STEP: Semantic Modeling Phase: RESHAPING TDF MATRICES")
 selItems <- list.files()
 selItems <- selItems[grepl("^wdcm_category_item_", selItems)]
+# - 'Other' category is not modeled:
+w <- which(grepl("Other", selItems))
+if (length(w) > 0) { selItems <- selItems[-w] }
 itemFiles <- list.files()
 itemFiles <- itemFiles[grepl("^tfMatrix_", itemFiles)]
+# - 'Other' category is not modeled:
+w <- which(grepl("Other", itemFiles))
+if (length(w) > 0) { itemFiles <- itemFiles[-w] }
 for (i in 1:length(itemFiles)) {
   # - to runtime Log:
   print(paste("----------------------- Reshaping TDF matrix: category ", i, ".", sep = ""))

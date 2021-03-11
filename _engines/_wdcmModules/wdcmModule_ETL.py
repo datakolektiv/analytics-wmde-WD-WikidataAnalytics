@@ -306,6 +306,128 @@ for itemFile in itemFiles:
     # - detach itemview
     sqlContext.sql("DROP VIEW itemview")
 
+
+### --- wdcm analytical tables: OTHER category
+
+catName = "Other"
+# - produce completeItems
+itemFiles = list_files(hdfsPATH_WDCMCollectedItems)
+itemFiles = itemFiles[0:-1]
+for itemFile in itemFiles:
+    # read itemFile: list of items in category
+    items = sqlContext.read.csv(itemFile, header=True)
+    # - items: rename columns and cache
+    items.toDF('item', 'category').cache()
+    # - union:
+    if itemFile == itemFiles[0]:
+        completeItems = items
+    else:
+        completeItems = completeItems.union(items)
+
+# - Access wmf.wikidata_entity (copy of the Wikidata JSON dump) for items
+WD_items = sqlContext.sql('SELECT id FROM wmf.wikidata_entity WHERE snapshot="' + wikidataEntitySnapshot + '"')
+# - Cache WD_items
+WD_items.cache()
+# - Left Anti Join to filter out completeItems
+WD_items = WD_items.withColumnRenamed('id', 'item').join(completeItems, on=['item'], how='left_anti')
+del completeItems
+
+# - left join WD_items <- wdcmmain
+items = WD_items
+del WD_items
+# - add category column to items
+items = items.withColumn('category', lit('Other'))
+# - create View from items: itemview
+items.createTempView("itemview")
+# - left join items <- wdcmmain
+items = sqlContext.sql('SELECT itemview.item AS eu_entity_id, itemview.category AS category,\
+                        wdcmmain.eu_label AS eu_label, wdcmmain.eu_project AS eu_project,\
+                        wdcmmain.eu_count AS  eu_count\
+                        FROM itemview \
+                        LEFT JOIN wdcmmain \
+                        ON itemview.item = wdcmmain.eu_entity_id')
+# - produce: wdcm_item_category_
+# - description: total usage of the top topNpopularCategoryWDItems entities usage from a category,
+# - per entity, one file per category
+filename = "wdcm_category_item_" + catName + '.csv'
+filename = dataDir + filename
+wdcm_item_category = items.select(col('eu_entity_id'), col('eu_count'), col('eu_label')) \
+    .groupBy("eu_entity_id", "eu_label").sum("eu_count") \
+    .withColumnRenamed("sum(eu_count)", "eu_count")
+wdcm_item_category = wdcm_item_category.orderBy(wdcm_item_category['eu_count'].desc())
+# - save a version of wdcm_item_category limited to topNpopularCategoryWDItems:
+wdcm_item_category_save = wdcm_item_category.limit(int(topNpopularCategoryWDItems))
+# - toPandas, save locally:
+wdcm_item_category_save.coalesce(1).toPandas().to_csv(filename, header=True, index=False)
+# - delete wdcm_item_category_save
+del wdcm_item_category_save
+
+# - Term-Frequency Matrix
+# - filename
+filename = "tfMatrix_" + catName + '.csv'
+filename = dataDir + filename
+# - keep only NItemsTFMatrix items
+topItems = wdcm_item_category.limit(int(NItemsTFMatrix)).select('eu_entity_id').collect()
+topItems = [row.eu_entity_id for row in topItems]
+# - filter from WDCM_MainTableRaw:
+tf_category = WDCM_MainTableRaw.where(WDCM_MainTableRaw.eu_entity_id.isin(topItems))
+# - toPandas, save locally:
+tf_category.coalesce(1).toPandas().to_csv(filename, header=True, index=False)
+# - delete tf_category
+del tf_category
+# delete wdcm_item_category
+del wdcm_item_category
+
+# - produce: wdcm_category_sum_*
+# - description: sum(eu_count) for the category, one file per category
+filename = "wdcm_category_sum_" + catName + '.csv'
+wdcm_category = items.select(col('category'), col('eu_count')) \
+    .groupBy("category").sum("eu_count").withColumnRenamed("sum(eu_count)", "eu_count")
+# - filename:
+filename = dataDir + filename
+# - toPandas, save locally:
+wdcm_category.coalesce(1).toPandas().to_csv(filename, header=True, index=False)
+# delete wdcm_category
+del wdcm_category
+
+# - produce: wdcm_project_category
+# - description: sum(eu_count) aggregated per project, one file per category
+filename = "wdcm_project_category_" + catName + '.csv'
+wdcm_project_category = items.select(col('category'), col('eu_project'), col('eu_count')) \
+    .groupBy("category", "eu_project").sum("eu_count") \
+    .withColumnRenamed("sum(eu_count)", "eu_count").orderBy(['eu_count'], ascending=False)
+# - filename:
+filename = dataDir + filename
+# - toPandas, save locally:
+wdcm_project_category.coalesce(1).toPandas().to_csv(filename, header=True, index=False)
+# delete wdcm_project_category
+del wdcm_project_category
+
+# - produce: wdcm_project_category_item100
+# - description: top 100 WD items per project and per category, one file per category
+filename = "wdcm_project_category_item100_" + catName + '.csv'
+filename = dataDir + filename
+wdcm_project_category_item100 = items \
+    .groupBy(['eu_project', 'category', 'eu_entity_id', 'eu_label']).sum('eu_count') \
+    .withColumnRenamed('sum(eu_count)', 'eu_count') \
+    .filter(col('eu_count') > 1)
+# - group, sort and limit
+window = Window.partitionBy(wdcm_project_category_item100.eu_project, \
+                            wdcm_project_category_item100.category). \
+    orderBy(wdcm_project_category_item100.eu_count.desc())
+wdcm_project_category_item100 = wdcm_project_category_item100.select('*', row_number().over(window).alias('rank')) \
+    .filter(col('rank') <= 100)
+wdcm_project_category_item100 = wdcm_project_category_item100.drop("rank")
+# - toPandas, save locally:
+wdcm_project_category_item100.coalesce(1).toPandas().to_csv(filename, header=True, index=False)
+# - delete wdcm_project_category_item100
+del wdcm_project_category_item100
+
+# - unpersist items
+items.unpersist()
+# - detach itemview
+sqlContext.sql("DROP VIEW itemview")
+
 ### --- process GEO items
 
 # - reduce WDCM_MainTableRaw for further processing
