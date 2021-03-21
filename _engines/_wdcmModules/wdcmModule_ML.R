@@ -131,6 +131,8 @@ setwd(etlDir)
 # - to runtime Log:
 print("STEP: Semantic Modeling Phase: RESHAPING TDF MATRICES")
 selItems <- list.files()
+# - to runtime Log:
+print("Removing Other category if present from selItems.")
 selItems <- selItems[grepl("^wdcm_category_item_", selItems)]
 # - 'Other' category is not modeled:
 w <- which(grepl("Other", selItems))
@@ -139,6 +141,8 @@ itemFiles <- list.files()
 itemFiles <- itemFiles[grepl("^tfMatrix_", itemFiles)]
 # - 'Other' category is not modeled:
 w <- which(grepl("Other", itemFiles))
+# - to runtime Log:
+print("Removing Other category if present from itemFiles")
 if (length(w) > 0) { itemFiles <- itemFiles[-w] }
 for (i in 1:length(itemFiles)) {
   # - to runtime Log:
@@ -187,7 +191,11 @@ for (i in 1:length(itemFiles)) {
   setwd(mlInputDir)
   
   # - to Report:
+  print("----------------------------------------------------------------")
+  print("----------------------------------------------------------------")
   print(paste0("Estimating category: ", itemFiles[i]))
+  print("----------------------------------------------------------------")
+  print("----------------------------------------------------------------")
   
   categoryName <- strsplit(itemFiles[i], split = ".", fixed = T)[[1]][1]
   categoryName <- strsplit(categoryName, split = "_", fixed = T)[[1]][2]
@@ -338,7 +346,6 @@ for (i in 1:length(itemFiles)) {
   # - to ml results dir:
   setwd(mlDir)
   # - collect matrices:
-  # - wdcm_itemtopic
   wdcm_itemtopic <- as.data.frame(t(ldaModel$topic_word_distribution))
   colnames(wdcm_itemtopic) <- paste0("topic", 1:dim(wdcm_itemtopic)[2])
   itemTopicFileName <- paste('wdcm2_itemtopic',

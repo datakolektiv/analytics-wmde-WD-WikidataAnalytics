@@ -28,6 +28,8 @@ navbar:
           href: https://wikidata-analytics.wmcloud.org/app/WD_HumanEdits
         - text: "WD Game: Reference Treasure Hunt"
           href: https://wikidata-analytics.wmcloud.org/app/WD_GameReferenceHunt
+        - text: "WD Inequality: Hoover Index"
+          href: https://wikidata-analytics.wmcloud.org/app/WD_Inequality
     - text: "Structural Systems"
       menu:
         - text: "Wikidata Languages Landscape"

@@ -65,6 +65,11 @@ proxy:
     description: The dashboard tracks Wikidata usage and coverage across the WMF projects.
     container-image: wdusagecoverage-img
     container-network: wd-analytics-net
+  - id: WD_Inequality
+    display-name: Wikidata Inequality
+    description: Hoover Index for Wikidata Edits.
+    container-image: wdinequality-img
+    container-network: wd-analytics-net
   - id: WD_HumanEdits
     display-name: Wikidata Human vs Bot Edits per Class
     description: The dashboard tracks Wikidata revision separately for humans and bots.
@@ -95,7 +100,17 @@ proxy:
     description: Wikidata Analytics Portal landing page.
     container-image: wdanalyticslanding-img
     container-network: wd-analytics-net
-    
+  - id: QURATOR_CuriousFacts
+    display-name: Qurator Curious Facts
+    description: Finding anomalies in Wikidata.
+    container-image: quratorcuriousfacts-img
+    container-network: wd-analytics-net
+  - id: QURATOR_CurrentEvents
+    display-name: Qurator Current Events
+    description: What is being edited now in Wikidata?
+    container-image: quratorcurrentevents-img
+    container-network: wd-analytics-net
+  
 logging:
   file:
     shinyproxy.log

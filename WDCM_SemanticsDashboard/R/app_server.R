@@ -94,7 +94,13 @@ app_server <- function( input, output, session ) {
     links <- links[3:length(links)]
     tSNEmapsFiles <- links[which(grepl("wdcm2_tsne2D_project_", links, fixed = T))]
     itemTopicTables <- links[which(grepl("wdcm2_itemtopic_", links, fixed = T))]
+    # - remove wdcm2_itemtopic_Wikimedia.csv if present:
+    w <- which(itemTopicTables == "wdcm2_itemtopic_Wikimedia.csv")
+    if (length(w) > 0) {itemTopicTables <- itemTopicTables[-w]}
     projectTopicTables <- links[which(grepl("wdcm2_projecttopic_", links, fixed = T))]
+    # - remove wdcm2_projecttopic_Wikimedia.csv if present:
+    w <- which(projectTopicTables == "wdcm2_projecttopic_Wikimedia.csv")
+    if (length(w) > 0) {projectTopicTables <- projectTopicTables[-w]}
     
     ### --- fetch wdcm2_project
     incProgress(2/8, detail = "ETL dataset.")
@@ -175,6 +181,11 @@ app_server <- function( input, output, session ) {
   names(projectTypeColor) <- unique(wdcmProject$`Project Type`)
   # - determine Categories
   categories <- wdcmCategory$Category
+  # - remove "Other" category if present
+  wOther <- which(categories == "Other")
+  if (length(wOther) > 0) {categories <- categories[-wOther]}
+  
+  
   # - totalUsage
   totalUsage <- sum(wdcmProject$Usage)
   totalProjects <- length(wdcmProject$Project)
@@ -217,6 +228,7 @@ app_server <- function( input, output, session ) {
       dFile <- itemTopicTables[which(grepl(input$selectCategory, itemTopicTables))]
       incProgress(2/2, detail = "Items x Topics Matrix")
       iT <- get_WDCM_table(url_dir = ml_dir, dFile, row_names = F)
+      iT[, 1] <- NULL
       colnames(iT)[1] <- "Entity"
       iT
     })
@@ -254,19 +266,26 @@ app_server <- function( input, output, session ) {
       colnames(plotFrame) <- 'Entity'
       plotFrame <- cbind(plotFrame, dplyr::select(itemTopic(), cTopic))
       colnames(plotFrame) <- c('Id', 'Probability')
-      plotFrame <- dplyr::arrange(plotFrame, desc(Probability)) %>% head(50)
+      plotFrame <- dplyr::arrange(plotFrame, dplyr::desc(Probability)) %>% head(50)
       plotFrame$Label <- paste(1:dim(plotFrame)[1], ". ", plotFrame$Id, sep = "")
+      plotFrame$Label <- ifelse(nchar(plotFrame$Label) > 50, 
+                                paste0(
+                                  stringr::str_extract(plotFrame$Label, 'Q[[:digit:]]+'),
+                                  " - Label truncated."
+                                ),
+                                plotFrame$Label)
       plotFrame$Label <- factor(plotFrame$Label, 
                                 levels = plotFrame$Label[order(plotFrame$Probability)])
       plotFrame$Sign <- paste("(", 1:dim(plotFrame)[1], ") ", plotFrame$Id, sep = "")
-      ggplot2::ggplot(plotFrame, ggplot2::aes(x = Probability, 
-                            y = Label, 
-                            label = Sign)) +
+      ggplot2::ggplot(plotFrame, ggplot2::aes(x = Probability,
+                                              y = Label,
+                                              label = Sign)) +
         ggplot2::geom_line(size = .25, color = "#4c8cff", group = 1) + 
         ggplot2::geom_point(size = 1.5, color = "#4c8cff") + 
         ggplot2::geom_point(size = 1, color = "white") + 
         ggrepel::geom_label_repel(size = 3, segment.size = .25, show.legend = FALSE) +
-        ggplot2::ylab("Items Labels") + ggplot2::xlab("Item Importance\n(Item Probability in Topic)") +
+        ggplot2::ylab("Items Labels") + 
+        ggplot2::xlab("Item Importance\n(Item Probability in Topic)") +
         ggplot2::theme_minimal() +
         ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, size = 12, hjust = 1)) + 
         ggplot2::theme(axis.text.y = ggplot2::element_text(size = 12, hjust = 1)) +
@@ -289,21 +308,28 @@ app_server <- function( input, output, session ) {
       colnames(plotFrame) <- c('Id', 'Probability')
       plotFrame <- dplyr::arrange(plotFrame, desc(Probability)) %>% head(50)
       plotFrame$Label <- paste(1:dim(plotFrame)[1], ". ", plotFrame$Id, sep = "")
+      plotFrame$Label <- ifelse(nchar(plotFrame$Label) > 50, 
+                                paste0(
+                                  stringr::str_extract(plotFrame$Label, 'Q[[:digit:]]+'),
+                                  " - Label truncated."
+                                ),
+                                plotFrame$Label)
       plotFrame$Label <- factor(plotFrame$Label, 
                                 levels = plotFrame$Label[order(plotFrame$Probability)])
       plotFrame$Sign <- paste("(", 1:dim(plotFrame)[1], ") ", plotFrame$Id, sep = "")
       g <- ggplot2::ggplot(plotFrame, ggplot2::aes(x = Probability, 
-                                              y = Label, 
-                                              label = Sign)) +
+                            y = Label, 
+                            label = Sign)) +
         ggplot2::geom_line(size = .25, color = "#4c8cff", group = 1) + 
         ggplot2::geom_point(size = 1.5, color = "#4c8cff") + 
+        ggrepel::geom_label_repel(size = 3, segment.size = .25, show.legend = FALSE) +
         ggplot2::ylab("Items Labels") + 
         ggplot2::xlab("Item Importance\n(Item Probability in Topic)") +
         ggplot2::theme_minimal() +
-        ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, size = 12, hjust = 1)) + 
+        ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, size = 10, hjust = 1)) + 
         ggplot2::theme(axis.text.y = ggplot2::element_text(size = 10, hjust = 1)) +
         ggplot2::theme(axis.title.x = ggplot2::element_text(size = 12)) +
-        ggplot2::theme(axis.title.y = ggplot2::element_text(size = 10))
+        ggplot2::theme(axis.title.y = ggplot2::element_text(size = 12))
       plotly::ggplotly(g, 
                        tooltip = c("x","y"),
                        originalData = T) %>% 
@@ -329,6 +355,7 @@ app_server <- function( input, output, session ) {
         dplyr::arrange(desc(Usage)) %>% 
         head(50) %>% 
         dplyr::select(Entity, Label)
+      selItems$Entity <- paste0(selItems$Label, " (", selItems$Entity, ")")
       w <- which(itemNames %in% selItems$Entity)
       root <- root[w, ]
       root <- as.matrix(parallelDist::parDist(as.matrix(root), method = "euclidean"))

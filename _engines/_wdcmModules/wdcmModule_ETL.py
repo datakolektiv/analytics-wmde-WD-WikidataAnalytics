@@ -48,7 +48,7 @@
 import pyspark
 from pyspark.sql import SparkSession
 from pyspark.sql.window import Window
-from pyspark.sql.functions import rank, col, round, explode, row_number
+from pyspark.sql.functions import rank, col, round, explode, row_number, lit
 from pyspark import SparkFiles
 from pyspark.sql.types import *
 import numpy as np

@@ -101,6 +101,9 @@ mlInputDir <- params$general$mlInputDir
 # - production published-datasets:
 dataDir <- params$general$publicDir
 
+### --- functions
+source(paste0(fPath, 'wdcmFunctions.R'))
+
 ### ----------------------------------------------
 ### --- Production: Public Data Sets
 ### ----------------------------------------------
@@ -172,6 +175,33 @@ setwd(etlDir)
 write.csv(wdcm_project_item100, 
           "wdcm_project_item100_labels.csv")
 print("Fix labels for wdcm_project_item100.csv now...")
+
+
+### --- fetch labels for itemtopic matrices
+### --- USE: wd_api_fetch_labels() from wdcmModule_Compose.R
+lF <- list.files(mlDir)
+lF <- lF[grepl("wdcm2_itemtopic", lF)]
+for (i in 1:length(lF)) {
+  print(paste0("Fetch English labels for: ", lF[i]))
+  itemtopicFrame <- read.csv(paste0(mlDir, lF[i]),
+                             header = T,
+                             stringsAsFactors = F)
+  labs <- wd_api_fetch_labels(items = itemtopicFrame$X,
+                              language = "en", 
+                              fallback = T, 
+                              proxy = c(params$general$http_proxy, 
+                                        params$general$https_proxy))
+  itemtopicFrame <- left_join(itemtopicFrame, 
+                              labs, 
+                              by = c("X" = "title"))
+  itemtopicFrame$en_label[is.na(itemtopicFrame$en_label)] <- 
+    itemtopicFrame$X
+  itemtopicFrame$X <- paste0(itemtopicFrame$en_label, " (", 
+                             itemtopicFrame$X, ")")
+  itemtopicFrame$en_label <- NULL
+  write.csv(itemtopicFrame, 
+            paste0(mlDir, lF[i]))
+}
 
 # - GENERAL TIMING:
 generalT2 <- Sys.time()
