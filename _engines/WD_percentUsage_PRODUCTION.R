@@ -205,6 +205,7 @@ for (i in 1:length(projectsTracking)) {
                            dataDir, 'currentProject.tsv')
       # - command:
       mySqlCommand <- paste0(mySqlArgs, " -e ", mySqlInput, collapse = "")
+      print(paste0("Running the following query: ", mySqlCommand))
       system(command = mySqlCommand, wait = TRUE)
       fread(paste0(dataDir, 'currentProject.tsv'), sep = "\t", quote = "")
     },
@@ -252,6 +253,7 @@ for (i in 1:length(projectsTracking)) {
   } else {
     print(pages)
   }
+  Sys.sleep(2)
 }
 # - bind
 projectStats <- rbindlist(projectStats)

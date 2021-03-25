@@ -317,7 +317,7 @@ if (currentSnap != stopSnap) {
                           sparkDriverMemory, ' ',
                           sparkExecutorMemory, ' ',
                           sparkConfigDynamic, ' ',
-                          paste0(fPath, 'WD_Datamodel_Terms.py')),
+                          paste0(fPath, 'updateDatamodelTerms_20210321.py')),
          wait = T)
   
   ### --- Update EVERYTHING
