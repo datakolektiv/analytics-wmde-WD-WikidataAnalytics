@@ -51,7 +51,7 @@ app_ui <- function(request) {
       ),
       fluidRow(
         column(width = 6,
-               HTML('<p style="font-size:200%;"align="left"><b>QURATOR: Curious Facts</b></p>
+               HTML('<p style="font-size:200%;"align="left"><b>Curious Facts</b></p>
                   <p style="font-size:120%;"align="left"><b>The world is weird. Wikidata describes that weird world. 
                         Wikidata also sometimes makes mistakes. Let\'s find out which is which together!
                         Here are a bunch of statements from Wikidata that are potentially weird. 

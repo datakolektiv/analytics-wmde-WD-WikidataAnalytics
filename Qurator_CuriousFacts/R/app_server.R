@@ -97,7 +97,8 @@ app_server <- function( input, output, session ) {
                   fact, '</p><br>', 
                   '<p style="font-size:120%;"align="left"> This fact was established on: <b>', 
                   establishedOn, '</b>, and is based on the <b>', 
-                  iS$wdDumpSnapshot, '</b> snapshot in hdfs of the Wikidata JSON dump.')
+                  iS$wdDumpSnapshot, '</b> snapshot in hdfs of the Wikidata JSON dump. 
+                  Edits made after that date are not taken into account.')
     return(out)
     
   })
@@ -119,7 +120,7 @@ app_server <- function( input, output, session ) {
                          })
       if(is.null(srcimg)) {
         return(
-          '<p style="font-size:150%;"align="left"><b>OH NO - THERE IS NO IMAGE FOR THIS THING IN WIKIDATA.</b></p>'
+          NULL
         )
       }
       srcimg <- paste0("https://magnus-toolserver.toolforge.org/commonsapi.php?image=", 
@@ -129,11 +130,9 @@ app_server <- function( input, output, session ) {
       srcimg <- XML::xmlToList(XML::xmlParse(srcimg))
       
       if (length(!is.null(srcimg$file$urls$thumbnail)) > 0) {
-        return(paste0('<img src="',URLencode(srcimg$file$urls$thumbnail),'">'))   
+        return(paste0('<img src="', URLencode(srcimg$file$urls$thumbnail),'">'))   
       } else {
-        return(
-          '<p style="font-size:150%;"align="left"><b>OH NO - THERE IS NO IMAGE FOR THIS THING IN WIKIDATA.</b></p>'
-        )
+        return(NULL)
       }
     } else {
       return(
@@ -166,7 +165,8 @@ app_server <- function( input, output, session ) {
                     fact, '</p><hr>', 
                     '<p style="font-size:120%;"align="left"> This fact was established on: <b>', 
                     establishedOn, "</b>, and is based on the <b>", 
-                    iS$wdDumpSnapshot, "</b> snapshot in hdfs of the Wikidata JSON dump.")
+                    iS$wdDumpSnapshot, "</b> snapshot in hdfs of the Wikidata JSON dump. 
+                    Edits made after that date are not taken into account.")
       return(out)
       
     })
@@ -186,9 +186,7 @@ app_server <- function( input, output, session ) {
                              NULL  
                            })
         if(is.null(srcimg)) {
-          return(
-            '<p style="font-size:150%;"align="left"><b>OH NO - THERE IS NO IMAGE FOR THIS THING IN WIKIDATA.</b></p>'
-          )
+          return(NULL)
         }
         srcimg <- paste0("https://magnus-toolserver.toolforge.org/commonsapi.php?image=", 
                          srcimg, 
@@ -199,9 +197,7 @@ app_server <- function( input, output, session ) {
         if (length(!is.null(srcimg$file$urls$thumbnail)) > 0) {
           return(paste0('<img src="',URLencode(srcimg$file$urls$thumbnail),'">'))   
         } else {
-          return(
-            '<p style="font-size:150%;"align="left"><b>OH NO - THERE IS NO IMAGE FOR THIS THING IN WIKIDATA.</b></p>'
-          )
+          return(NULL)
         }
       } else {
         return(
