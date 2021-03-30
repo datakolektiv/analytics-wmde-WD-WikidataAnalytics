@@ -131,9 +131,9 @@ setwd(etlDir)
 # - to runtime Log:
 print("STEP: Semantic Modeling Phase: RESHAPING TDF MATRICES")
 selItems <- list.files()
+selItems <- selItems[grepl("^wdcm_category_item_", selItems)]
 # - to runtime Log:
 print("Removing Other category if present from selItems.")
-selItems <- selItems[grepl("^wdcm_category_item_", selItems)]
 # - 'Other' category is not modeled:
 w <- which(grepl("Other", selItems))
 if (length(w) > 0) { selItems <- selItems[-w] }
@@ -144,6 +144,8 @@ w <- which(grepl("Other", itemFiles))
 # - to runtime Log:
 print("Removing Other category if present from itemFiles")
 if (length(w) > 0) { itemFiles <- itemFiles[-w] }
+
+### --- Reshape TF-matrices + Project Selection Criteria
 for (i in 1:length(itemFiles)) {
   # - to runtime Log:
   print(paste("----------------------- Reshaping TDF matrix: category ", i, ".", sep = ""))
@@ -164,16 +166,23 @@ for (i in 1:length(itemFiles)) {
                          fill = 0)
   rownames(categoryFile) <- categoryFile$eu_project
   categoryFile$eu_project <- NULL
-  # - remove items with zero observations, if any
-  w <- which(colSums(categoryFile) == 0)
+  
+  # - remove from the project-entity matrix
+  # - any item of zero usage (if any)
+  itemSums <- colSums(categoryFile)
+  w <- which(itemSums == 0)
   if (length(w) > 0) {
     categoryFile <- categoryFile[, -w]
   }
-  # - remove projects with zero observations, if any
-  w <- which(rowSums(categoryFile) == 0)
-  if (length(w) > 0) {
-    categoryFile <- categoryFile[-w, ]
-  }
+    
+  # - keep projects which use more than ~20% of items
+  projectSums <- apply(categoryFile, 1, function(x){
+    sum(x > 0)
+  })
+  w <- which(projectSums >= dim(categoryFile)[2]/5)
+  categoryFile <- categoryFile[w, ]
+  print(dim(categoryFile))
+  
   # - save reshaped TF matrix
   write.csv(categoryFile, paste0(mlInputDir, itemFiles[i]))
 }
