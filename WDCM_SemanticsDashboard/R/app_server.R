@@ -228,7 +228,6 @@ app_server <- function( input, output, session ) {
       dFile <- itemTopicTables[which(grepl(input$selectCategory, itemTopicTables))]
       incProgress(2/2, detail = "Items x Topics Matrix")
       iT <- get_WDCM_table(url_dir = ml_dir, dFile, row_names = F)
-      iT[, 1] <- NULL
       colnames(iT)[1] <- "Entity"
       iT
     })
@@ -356,10 +355,10 @@ app_server <- function( input, output, session ) {
         head(50) %>% 
         dplyr::select(Entity, Label)
       selItems$Entity <- paste0(selItems$Label, " (", selItems$Entity, ")")
-      w <- which(itemNames %in% selItems$Entity)
+      w <- which(itemNames %in% stringr::str_extract(selItems$Entity, "Q[[:digit:]]+"))
       root <- root[w, ]
       root <- as.matrix(parallelDist::parDist(as.matrix(root), method = "euclidean"))
-      w <- which(selItems$Entity %in% itemNames)
+      w <- which(stringr::str_extract(selItems$Entity, "Q[[:digit:]]+") %in% itemNames)
       rownames(root) <- paste0(selItems$Label[w], " (", selItems$Entity[w], ")") 
       colnames(root) <- paste0(selItems$Label[w], " (", selItems$Entity[w], ")")
       indexMinDist <- sapply(rownames(root), function(x) {

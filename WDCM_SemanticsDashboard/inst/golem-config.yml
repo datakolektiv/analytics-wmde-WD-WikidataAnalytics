@@ -5,4 +5,4 @@ default:
 production:
   app_prod: yes
 dev:
-  golem_wd: /home/goransm/WMDE/WD_Analytics_FrontEnd/WDCM_SemanticsDashboard
+  golem_wd: !expr here::here()
