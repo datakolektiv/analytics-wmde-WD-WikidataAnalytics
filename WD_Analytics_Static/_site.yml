@@ -17,7 +17,9 @@ navbar:
         - text: "WDCM (S)itelinks Dashboard"
           href: https://wikidata-analytics.wmcloud.org/app/WDCM_SitelinksDashboard          
         - text: "WDCM (T)itles Dashboard"
-          href: https://wikidata-analytics.wmcloud.org/app/WDCM_TitlesDashboard          
+          href: https://wikidata-analytics.wmcloud.org/app/WDCM_TitlesDashboard
+        - text: "WDCM Statements Dashboard"
+          href: https://wikidata-analytics.wmcloud.org/app/WDCM_StatementsDashboard
     - text: "Analytics"
       menu:
         - text: "WD Pageviews per Namespace"

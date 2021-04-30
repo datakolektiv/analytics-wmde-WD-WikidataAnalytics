@@ -381,7 +381,7 @@ system(command = paste0(kerberosPrefix, ' hdfs dfs -ls'),
        wait = T)
 # - Run query
 query <- system(command = paste(kerberosPrefix, 
-                                '/usr/local/bin/beeline --incremental=true --silent -f "',
+                                ' /usr/local/bin/beeline --incremental=true --silent -f "',
                                 paste0(fPath, queryFile),
                                 '" > ', etlDir, filename,
                                 sep = ""),
@@ -411,7 +411,7 @@ system(command = paste0(kerberosPrefix, ' hdfs dfs -ls'),
        wait = T)
 # - Run query
 query <- system(command = paste(kerberosPrefix, 
-                                '/usr/local/bin/beeline --incremental=true --silent -f "',
+                                ' /usr/local/bin/beeline --incremental=true --silent -f "',
                                 paste0(fPath, queryFile),
                                 '" > ', etlDir, filename,
                                 sep = ""),

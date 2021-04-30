@@ -100,7 +100,7 @@ app_ui <- function(request) {
       fluidRow(
         column(width = 10,
                hr(),
-               HTML('<p style="font-size:80%;"><b>QURATOR Curious Facts :: Wikidata, WMDE 2021</b><br></p>'),
+               HTML('<p style="font-size:80%;"><b>Curious Facts :: Wikidata, WMDE 2021</b><br></p>'),
                HTML('<p style="font-size:80%;"><b>Contact:</b> Goran S. Milovanovic, Data Scientist, WMDE<br>
                                           <b>e-mail:</b> goran.milovanovic_ext@wikimedia.de<br><b>IRC:</b> goransm</p>'),
                br(), br()

@@ -181,7 +181,7 @@ for (i in 1:length(shards)) {
             # - sqoop command:
             # - /usr/bin/sqoop import --connect jdbc:mysql://s1-analytics-replica.eqiad.wmnet:3311/enwiki
             sqoopCommand <- paste("sudo -u analytics-privatedata kerberos-run-command analytics-privatedata /usr/bin/sqoop import --connect jdbc:mysql://", shardHostPort[i], ":331",i, "/", shardTables[j],
-                                  ' --password-file /user/goransm/mysql-analytics-research-client-pw.txt --username research -m 16 --driver org.mariadb.jdbc.Driver ',
+                                  ' --password-file /user/goransm/mysql-analytics-research-client-pw.txt --username research -m 16 ',
                                   '--query "select * from wbc_entity_usage where \\$CONDITIONS" --split-by eu_row_id --as-avrodatafile --target-dir /tmp/wmde/analytics/wdcm/wdcmsqoop/wdcm_clients_wb_entity_usage/wiki_db=',
                                   shardTables[j],
                                   ' --delete-target-dir',
