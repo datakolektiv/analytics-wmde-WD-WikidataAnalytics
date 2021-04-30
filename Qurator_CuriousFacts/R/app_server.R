@@ -136,7 +136,7 @@ app_server <- function( input, output, session ) {
       }
     } else {
       return(
-        '<p style="font-size:150%;"align="left"><b>OH NO - WE CANNNOT OBTAIN THE IMAGE NOF THIS ITEM.</b></p>'
+        '<p style="font-size:150%;"align="left"></p>'
       )
     }
     
@@ -201,7 +201,7 @@ app_server <- function( input, output, session ) {
         }
       } else {
         return(
-          '<p style="font-size:150%;"align="left"><b>OH NO - WE CANNNOT OBTAIN THE IMAGE NOF THIS ITEM.</b></p>'
+          '<p style="font-size:150%;"align="left"></p>'
         )
       }
       

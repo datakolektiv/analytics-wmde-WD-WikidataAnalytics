@@ -13,19 +13,19 @@ knitr::opts_chunk$set(
 )
 ```
 
-# QuratorCuriousFacts
+# CuriousFacts
 
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of QuratorCuriousFacts is to ...
+The goal of CuriousFacts is to ...
 
 ## Installation
 
-You can install the released version of QuratorCuriousFacts from [CRAN](https://CRAN.R-project.org) with:
+You can install the released version of CuriousFacts from [CRAN](https://CRAN.R-project.org) with:
 
 ``` r
-install.packages("QuratorCuriousFacts")
+install.packages("CuriousFacts")
 ```
 
 ## Example
@@ -33,7 +33,7 @@ install.packages("QuratorCuriousFacts")
 This is a basic example which shows you how to solve a common problem:
 
 ```{r example}
-library(QuratorCuriousFacts)
+library(CuriousFacts)
 ## basic example code
 ```
 

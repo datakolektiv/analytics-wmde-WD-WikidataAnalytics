@@ -39,7 +39,7 @@
 #' 
 #' @noRd
 app_sys <- function(...){
-  system.file(..., package = "QuratorCuriousFacts")
+  system.file(..., package = "CuriousFacts")
 }
 
 

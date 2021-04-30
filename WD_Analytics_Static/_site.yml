@@ -41,7 +41,7 @@ navbar:
     - text: "Qurator"
       menu:
         - text: "Curious Facts"
-          href: https://wikidata-analytics.wmcloud.org/app/QURATOR_CuriousFacts
+          href: https://wikidata-analytics.wmcloud.org/app/CuriousFacts
         - text: "Current Events"
           href: https://wikidata-analytics.wmcloud.org/app/QURATOR_CurrentEvents
     - text: "Reports"

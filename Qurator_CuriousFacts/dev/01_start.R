@@ -30,8 +30,8 @@
 
 ## 
 golem::fill_desc(
-  pkg_name = "QuratorCuriousFacts", # The Name of the package containing the App 
-  pkg_title = "Qurator - Curious Facts", # The Title of the package containing the App 
+  pkg_name = "CuriousFacts", # The Name of the package containing the App 
+  pkg_title = "Wikidata - Curious Facts", # The Title of the package containing the App 
   pkg_description = "The dashboards reports on anomalies in the Wikidata ontology.",  
   author_first_name = "Goran", # Your First Name
   author_last_name = "Milovanović", # Your Last Name
@@ -55,3 +55,4 @@ golem::use_recommended_tests()
 
 ## Use Recommended Packages ----
 golem::use_recommended_deps()
+

@@ -1,5 +1,5 @@
-Package: QuratorCuriousFacts
-Title: Qurator - Curious Facts
+Package: CuriousFacts
+Title: Wikidata - Curious Facts
 Version: 0.0.0.9000
 Authors@R: person('Goran', 'Milovanović', email = 'goran.milovanovic_ext@wikimedia.de', role = c('cre', 'aut'))
 Description: The dashboards reports on anomalies in the Wikidata ontology.

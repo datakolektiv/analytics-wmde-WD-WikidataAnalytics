@@ -77,7 +77,6 @@ app_ui <- function(request) {
                actionButton("button", "Give me some new weird stuff!")
         ), 
         column(width = 6,
-               HTML('<p style="font-size:150%;"align="left"><b>Image goes here:</b></p>'), 
                br(),
                shinycssloaders::withSpinner(htmlOutput('factImage'))
         )
