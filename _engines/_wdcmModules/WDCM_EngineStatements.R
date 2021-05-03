@@ -190,6 +190,23 @@ wd_api_fetch_labels <- function(items, language, fallback) {
 ### --- statistics
 statistics <- list()
 
+### --- determine current wmf.wikidata_entity snapshot
+# - Kerberos init
+system(command = 'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls', 
+       wait = T)
+query <- 'SHOW PARTITIONS wmf.wikidata_entity;'
+write(query, paste0(etlDir, 'snapshot_query.hql'))
+system(command = paste0(
+  'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata /usr/local/bin/beeline --incremental=true --silent -f "', 
+  paste0(etlDir, 'snapshot_query.hql'), '" > ',
+  paste0(etlDir, "wdsnaps.csv")),
+  wait = T)
+snaps <- read.csv(paste0(etlDir, 'wdsnaps.csv'), 
+                  stringsAsFactors = F)
+currentSnap <- tail(snaps$partition, 1)
+currentSnap <- substr(currentSnap, 10, 19)
+write.csv(currentSnap, paste0(etlDir, 'currentSnap.csv'))
+
 ### ---------------------------------------------------------------------------
 ### --- Apache Spark ETL 
 ### ---------------------------------------------------------------------------
@@ -260,12 +277,12 @@ statistics$items_used_in_wd_properties <- dim(dataSet)[1]
 # - remove temporary files
 lapply(paste0(etlDir, lF), file.remove)
 
-# - store Item usage in Wikidata properties dataSet
+# - store
 write.csv(dataSet, 
           paste0(etlDir, "wd_statements_item_usage.csv"))
 rm(dataSet); gc()
 
-### --- Property usage in Wikidata properties
+### --- Property usage in Wikidata: from claims
 system(paste0(
   'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls ',
   paste0(hdfsDir, 'wd_statements_property_usage'), ' > ', etlDir, 'files.txt'),
@@ -293,9 +310,69 @@ statistics$property_use_in_wd_properties <- dim(dataSet)[1]
 # - remove temporary files
 lapply(paste0(etlDir, lF), file.remove)
 
-# - store Item usage in Wikidata properties dataSet
+# - store
 write.csv(dataSet, 
           paste0(etlDir, "wd_statements_property_usage.csv"))
+rm(dataSet); gc()
+
+### --- Property usage in Wikidata: references
+system(paste0(
+  'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls ',
+  paste0(hdfsDir, 'wd_statements_properties_used_in_references'), ' > ', etlDir, 'files.txt'),
+  wait = T)
+files <- read.table(
+  paste0(etlDir, 'files.txt'), 
+  skip = 1)
+files <- as.character(files$V8)[2:length(files$V8)]
+file.remove(paste0(etlDir, 'files.txt'))
+for (i in 1:length(files)) {
+  system(paste0(
+    'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -text ',
+    files[i], ' > ',
+    paste0(etlDir, "wd_statements_properties_used_in_references", i, ".csv")), wait = T)
+}
+lF <- list.files(etlDir)
+lF <- lF[grepl("wd_statements_properties_used_in_references", lF)]
+dataSet <- lapply(paste0(etlDir, lF), fread)
+dataSet <- rbindlist(dataSet)
+colnames(dataSet) <- c('property', 'used_in_references')
+
+# - remove temporary files
+lapply(paste0(etlDir, lF), file.remove)
+
+# - store
+write.csv(dataSet, 
+          paste0(etlDir, "wd_statements_properties_used_in_references.csv"))
+rm(dataSet); gc()
+
+### --- Property usage in Wikidata: qualifiers
+system(paste0(
+  'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls ',
+  paste0(hdfsDir, 'wd_statements_properties_used_in_qualifiers'), ' > ', etlDir, 'files.txt'),
+  wait = T)
+files <- read.table(
+  paste0(etlDir, 'files.txt'), 
+  skip = 1)
+files <- as.character(files$V8)[2:length(files$V8)]
+file.remove(paste0(etlDir, 'files.txt'))
+for (i in 1:length(files)) {
+  system(paste0(
+    'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -text ',
+    files[i], ' > ',
+    paste0(etlDir, "wd_statements_properties_used_in_qualifiers", i, ".csv")), wait = T)
+}
+lF <- list.files(etlDir)
+lF <- lF[grepl("wd_statements_properties_used_in_qualifiers", lF)]
+dataSet <- lapply(paste0(etlDir, lF), fread)
+dataSet <- rbindlist(dataSet)
+colnames(dataSet) <- c('property', 'used_in_qualifiers')
+
+# - remove temporary files
+lapply(paste0(etlDir, lF), file.remove)
+
+# - store
+write.csv(dataSet, 
+          paste0(etlDir, "wd_statements_properties_used_in_qualifiers.csv"))
 rm(dataSet); gc()
 
 ### --- Number of references per Wikidata property
@@ -323,39 +400,9 @@ colnames(dataSet) <- c('property', 'num_references')
 # - remove temporary files
 lapply(paste0(etlDir, lF), file.remove)
 
-# - store Item usage in Wikidata properties dataSet
+# - store
 write.csv(dataSet, 
           paste0(etlDir, "wd_statements_num_ref_per_property.csv"))
-rm(dataSet); gc()
-
-### --- Property usage in references in Wikidata statements
-system(paste0(
-  'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls ',
-  paste0(hdfsDir, 'wd_statements_properties_used_in_references'), ' > ', etlDir, 'files.txt'),
-  wait = T)
-files <- read.table(
-  paste0(etlDir, 'files.txt'), 
-  skip = 1)
-files <- as.character(files$V8)[2:length(files$V8)]
-file.remove(paste0(etlDir, 'files.txt'))
-for (i in 1:length(files)) {
-  system(paste0(
-    'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -text ',
-    files[i], ' > ',
-    paste0(etlDir, "wd_statements_properties_used_in_references", i, ".csv")), wait = T)
-}
-lF <- list.files(etlDir)
-lF <- lF[grepl("wd_statements_properties_used_in_references", lF)]
-dataSet <- lapply(paste0(etlDir, lF), fread)
-dataSet <- rbindlist(dataSet)
-colnames(dataSet) <- c('property', 'used_in_references')
-
-# - remove temporary files
-lapply(paste0(etlDir, lF), file.remove)
-
-# - store Item usage in Wikidata properties dataSet
-write.csv(dataSet, 
-          paste0(etlDir, "wd_statements_properties_used_in_references.csv"))
 rm(dataSet); gc()
 
 ### ---------------------------------------------------------------------------
@@ -381,7 +428,7 @@ system(command = paste0(kerberosPrefix, ' hdfs dfs -ls'),
        wait = T)
 # - Run query
 query <- system(command = paste(kerberosPrefix, 
-                                ' /usr/local/bin/beeline --incremental=true --silent -f "',
+                                '/usr/local/bin/beeline --incremental=true --silent -f "',
                                 paste0(fPath, queryFile),
                                 '" > ', etlDir, filename,
                                 sep = ""),
@@ -411,7 +458,7 @@ system(command = paste0(kerberosPrefix, ' hdfs dfs -ls'),
        wait = T)
 # - Run query
 query <- system(command = paste(kerberosPrefix, 
-                                ' /usr/local/bin/beeline --incremental=true --silent -f "',
+                                '/usr/local/bin/beeline --incremental=true --silent -f "',
                                 paste0(fPath, queryFile),
                                 '" > ', etlDir, filename,
                                 sep = ""),
@@ -457,11 +504,17 @@ prop_usage <- read.csv(paste0(etlDir, "wd_statements_property_usage.csv"),
 prop_in_references <- read.csv(paste0(etlDir, "wd_statements_properties_used_in_references.csv"), 
                                header = T,
                                row.names = 1)
+prop_in_qualifiers <- read.csv(paste0(etlDir, "wd_statements_properties_used_in_qualifiers.csv"),
+                               header = T,
+                               row.names = 1)
 num_ref_in_properties <- read.csv(paste0(etlDir, "wd_statements_num_ref_per_property.csv"),
                                   header = T,
                                   row.names = 1)
 propertiesSet <- dplyr::full_join(prop_usage, 
                                   prop_in_references, 
+                                  by = "property")
+propertiesSet <- dplyr::full_join(propertiesSet, 
+                                  prop_in_qualifiers, 
                                   by = "property")
 propertiesSet <- dplyr::full_join(propertiesSet, 
                                   num_ref_in_properties, 
@@ -475,12 +528,14 @@ propertiesSet <- dplyr::left_join(propertiesSet,
 propertiesSet <- dplyr::select(propertiesSet, 
                                property, en_label, 
                                usage, used_in_references, 
+                               used_in_qualifiers,
                                num_references)
 propertiesSet[is.na(propertiesSet)] <- 0
 colnames(propertiesSet) <- c('property', 
                              'en_label',
                              'used_in_claims', 
-                             'used_in_references', 
+                             'used_in_references',
+                             'used_in_qualifiers',
                              'num_references')
 write.csv(propertiesSet, 
           paste0(etlDir, "wd_statements_propertiesSet.csv"))
@@ -519,6 +574,14 @@ items_reuse <- items_reuse[, c('item', 'en_label', 'C_reuse')]
 write.csv(items_reuse, 
           paste0(etlDir, "wd_statements_C_aspect_reuse_items_top10000.csv"))
 
+### --- update timestamp
+timestamp <- as.character(Sys.time())
+timestamp <- paste0(timestamp, " UTC")
+timestamp <- data.frame(timestamp = timestamp, 
+                        stringsAsFactors = F)
+write.csv(timestamp, 
+          paste0(etlDir, "updateTimestamp.csv"))
+
 ### -----------------------------------
 ### --- copy to pubDataDir
 ### -----------------------------------
@@ -528,7 +591,9 @@ print(paste0("copy to pubDataDir: ", Sys.time()))
 lF <- c('wd_statements_C_aspect_reuse_items_top10000.csv', 
         'wd_statements_C_aspect_reuse_properties.csv', 
         'wd_statements_propertiesSet.csv', 
-        'wd_statements_items_usage_top10000.csv')
+        'wd_statements_items_usage_top10000.csv', 
+        'currentSnap.csv', 
+        'updateTimestamp.csv')
 lapply(lF, function(x) {
   system(command = 
            paste0('cp ', etlDir, x, ' ', pubDataDir),
@@ -546,7 +611,7 @@ lapply(lF, function(x) {
 print("Copy main log to published; clean up log.")
 # - archive:
 lF <- list.files(logDir)
-lF <- lF[grepl('WDCM_EngineBiasesRuntimeLog', lF)]
+lF <- lF[grepl('WDCM_Engine_Statements_RuntimeLog', lF)]
 lapply(lF, function(x) {
   system(command = 
            paste0('cp ', logDir, x, ' ', logDir, 'archive/'),
