@@ -43,7 +43,7 @@ navbar:
         - text: "Curious Facts"
           href: https://wikidata-analytics.wmcloud.org/app/CuriousFacts
         - text: "Current Events"
-          href: https://wikidata-analytics.wmcloud.org/app/QURATOR_CurrentEvents
+          href: https://wikidata-analytics.wmcloud.org/app/CurrentEvents
     - text: "Reports"
       href: reports.html
     - text: "Datasets"

@@ -38,6 +38,7 @@
 app_server <- function( input, output, session ) {
   # Your application server logic 
   
+  # - endPointURL
   endPointURL <- 
     'https://query.wikidata.org/bigdata/namespace/wdq/sparql?query='
   
@@ -46,24 +47,25 @@ app_server <- function( input, output, session ) {
   withProgress(message = 'The Dashboard is loading data.', 
                detail = "Please be patient.", value = 0, {
                  
-                 dataM1 <- data.table::fread(system.file("_data", "dataM1_processed.csv", package = "QuratorCuriousFacts"),
-                                             header = T)
-                 infoM1 <- data.table::fread(system.file("_data", "infoM1.csv", package = "QuratorCuriousFacts"), header = T)
+                 dataM1 <- data.table::fread(system.file("_data", "dataM1.csv", package = "CuriousFacts"),
+                                             header = T, quote =)
+                 infoM1 <- data.table::fread(system.file("_data", "infoM1.csv", package = "CuriousFacts"), header = T)
                  infoM1$V1 <- NULL
 
                  incProgress(amount = .25, message = "M1 loaded.")
-                 dataM2 <- data.table::fread(system.file("_data", "dataM2_processed.csv", package = "QuratorCuriousFacts"),
+                 dataM2 <- data.table::fread(system.file("_data", "dataM2.csv", package = "CuriousFacts"),
                                              header = T)
-                 infoM2 <- data.table::fread(system.file("_data", "infoM2.csv", package = "QuratorCuriousFacts"), header = T)
+                 infoM2 <- data.table::fread(system.file("_data", "infoM2.csv", package = "CuriousFacts"), header = T)
                  infoM2$V1 <- NULL
+                 # - de-duplicate dataM2
+                 dataM2 <- dataM2[!duplicated(dataM2[, c('item', 'property')]), ]
 
                  incProgress(amount = .25, message = "M2 loaded.")
-                 dataM3 <- data.table::fread(system.file("_data", "dataM3_processed.csv", package = "QuratorCuriousFacts"),
+                 dataM3 <- data.table::fread(system.file("_data", "dataM3.csv", package = "CuriousFacts"),
                                              header = T)
-                 infoM3 <- data.table::fread(system.file("_data", "infoM3.csv", package = "QuratorCuriousFacts"), header = T)
+                 infoM3 <- data.table::fread(system.file("_data", "infoM3.csv", package = "CuriousFacts"), header = T)
                  infoM3$V1 <- NULL
                  
-
                  # - lists
                  incProgress(amount = .25, message = "M3 loaded.")
                  dataSet <- list(dataM1, dataM2, dataM3)
@@ -82,6 +84,8 @@ app_server <- function( input, output, session ) {
                       explanation, 
                       establishedOn)
   iS <- infoSet[[cD]]
+  # - the latest snapshot only:
+  iS <- iS[1, ]
   
   # - select random fact
   rf <- sample(1:dim(dS)[1], 1)
@@ -93,6 +97,23 @@ app_server <- function( input, output, session ) {
   output$fact <- renderText({
     
     # - format output
+    factFindQ <- stringr::str_extract_all(fact, "Q[[:digit:]]+")[[1]]
+    for (i in 1:length(factFindQ)) {
+      fact <- gsub(paste0('(', factFindQ[i], ')'),
+                   paste0('<a href="https://www.wikidata.org/wiki/\\1" target="_blank">',
+                          factFindQ[i], 
+                          "</a>"),
+                          fact)
+    }
+    factFindP <- stringr::str_extract_all(fact, "P[[:digit:]]+")[[1]]
+    for (i in 1:length(factFindP)) {
+      fact <- gsub(paste0('(', factFindP[i], ')'),
+                   paste0('<a href="https://www.wikidata.org/wiki/Property:\\1" target="_blank">',
+                          factFindP[i], 
+                          "</a>"),
+                   fact)
+    }
+
     out <- paste0('<p style="font-size:120%;"align="left">',
                   fact, '</p><br>', 
                   '<p style="font-size:120%;"align="left"> This fact was established on: <b>', 
@@ -151,6 +172,8 @@ app_server <- function( input, output, session ) {
                         explanation, 
                         establishedOn)
     iS <- infoSet[[cD]]
+    # - the latest snapshot only:
+    iS <- iS[1, ]
     
     # - select random fact
     rf <- sample(1:dim(dS)[1], 1)
@@ -161,6 +184,22 @@ app_server <- function( input, output, session ) {
     output$fact <- renderText({
       
       # - format output
+      factFindQ <- stringr::str_extract_all(fact, "Q[[:digit:]]+")[[1]]
+      for (i in 1:length(factFindQ)) {
+        fact <- gsub(paste0('(', factFindQ[i], ')'),
+                     paste0('<a href="https://www.wikidata.org/wiki/\\1" target="_blank">',
+                            factFindQ[i], 
+                            "</a>"),
+                     fact)
+      }
+      factFindP <- stringr::str_extract_all(fact, "P[[:digit:]]+")[[1]]
+      for (i in 1:length(factFindP)) {
+        fact <- gsub(paste0('(', factFindP[i], ')'),
+                     paste0('<a href="https://www.wikidata.org/wiki/Property:\\1" target="_blank">',
+                            factFindP[i], 
+                            "</a>"),
+                     fact)
+      }
       out <- paste0('<p style="font-size:120%;"align="left">',
                     fact, '</p><hr>', 
                     '<p style="font-size:120%;"align="left"> This fact was established on: <b>', 
