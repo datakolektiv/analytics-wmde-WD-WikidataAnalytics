@@ -74,50 +74,70 @@ app_server <- function( input, output, session ) {
     dataSet <- readRDS(gzcon(url(paste0(pubDir,
                                         "aggRev_minutes10_stats.Rds"))))
     
-    # - fix missing labels
-    dataSet$label[nchar(dataSet$label) == 0 | 
-                    grepl("No label defined", dataSet$label)] <- 
-      dataSet$title[nchar(dataSet$label) == 0 | 
-                      grepl("No label defined", dataSet$label)]
-    
-    # - produce html
-    url <- paste0('https://www.wikidata.org/wiki/', 
-                  dataSet$title)
-    text <- paste0(dataSet$label,
-                   " (",
-                   dataSet$title,
-                   ")")
-    url <- paste0('<a href="', 
-                  url, '" target="_blank">', 
-                  text, 
-                  "</a>")
-    newsLink <- paste0(googleNews, 
-                       dataSet$label) 
-    newsLink <- paste0('<a href="', 
-                       newsLink,
-                       '" target="_blank">Search URL</a>')
-    w <- which(grepl("No label defined", newsLink))
-    if (length(w) > 0) {
-      newsLink[w] <- ""
+    if (dim(dataSet)[1] > 0) {
+      
+      # - fix missing labels
+      dataSet$label[nchar(dataSet$label) == 0 | 
+                      grepl("No label defined", dataSet$label)] <- 
+        dataSet$title[nchar(dataSet$label) == 0 | 
+                        grepl("No label defined", dataSet$label)]
+      
+      # - produce html
+      url <- paste0('https://www.wikidata.org/wiki/', 
+                    dataSet$title)
+      text <- paste0(dataSet$label,
+                     " (",
+                     dataSet$title,
+                     ")")
+      url <- paste0('<a href="', 
+                    url, '" target="_blank">', 
+                    text, 
+                    "</a>")
+      newsLink <- paste0(googleNews, 
+                         dataSet$label) 
+      newsLink <- paste0('<a href="', 
+                         newsLink,
+                         '" target="_blank">Search URL</a>')
+      w <- which(grepl("No label defined", newsLink))
+      if (length(w) > 0) {
+        newsLink[w] <- ""
+      }
+      dataSet <- data.frame(Entity = url, 
+                            Revisions = dataSet$revisions, 
+                            Timestamp = dataSet$timestamp,
+                            Editors = dataSet$n_users,
+                            Search = newsLink,
+                            stringsAsFactors = F) %>% 
+        dplyr::filter(Revisions >= 3)
+      
+      DT::datatable(dataSet,
+                    options = list(
+                      pageLength = 25,
+                      width = '100%',
+                      escape = F,
+                      columnDefs = list(list(className = 'dt-left', targets = "_all"))
+                    ),
+                    rownames = FALSE, 
+                    escape = F
+      )
+      
+    } else {
+      
+      dataSet <- data.frame(`Message` = "No current events in the previous ten minutes.")
+      
+      DT::datatable(dataSet,
+                    options = list(
+                      pageLength = 25,
+                      width = '100%',
+                      escape = F,
+                      columnDefs = list(list(className = 'dt-left', targets = "_all"))
+                    ),
+                    rownames = FALSE,
+                    escape = F
+                    
+      )
+      
     }
-    dataSet <- data.frame(Entity = url, 
-                          Revisions = dataSet$revisions, 
-                          Timestamp = dataSet$timestamp,
-                          Editors = dataSet$n_users,
-                          Search = newsLink,
-                          stringsAsFactors = F) %>% 
-      dplyr::filter(Revisions >= 3)
-    
-    DT::datatable(dataSet,
-                  options = list(
-                    pageLength = 25,
-                    width = '100%',
-                    escape = F,
-                    columnDefs = list(list(className = 'dt-left', targets = "_all"))
-                  ),
-                  rownames = FALSE, 
-                  escape = F
-    )
     
   })
   
@@ -131,51 +151,73 @@ app_server <- function( input, output, session ) {
     dataSet <- readRDS(gzcon(url(paste0(pubDir,
                                         "aggRev_hours1_stats.Rds"))))
     
-    # - fix missing labels
-    dataSet$label[nchar(dataSet$label) == 0 | 
-                    grepl("No label defined", dataSet$label)] <- 
-      dataSet$title[nchar(dataSet$label) == 0 | 
-                      grepl("No label defined", dataSet$label)]
-    
-    # - produce html
-    url <- paste0('https://www.wikidata.org/wiki/', 
-                  dataSet$title)
-    text <- paste0(dataSet$label,
-                   " (",
-                   dataSet$title,
-                   ")")
-    url <- paste0('<a href="', 
-                  url, '" target="_blank">', 
-                  text, 
-                  "</a>")
-    newsLink <- paste0(googleNews, 
-                       dataSet$label) 
-    newsLink <- paste0('<a href="', 
-                       newsLink,
-                       '" target="_blank">Search URL</a>')
-    w <- which(grepl("No label defined", newsLink))
-    if (length(w) > 0) {
-      newsLink[w] <- ""
+    # - check if there is any current events, process or not
+    if (dim(dataSet)[1] > 0) {
+      
+      # - fix missing labels
+      dataSet$label[nchar(dataSet$label) == 0 | 
+                      grepl("No label defined", dataSet$label)] <- 
+        dataSet$title[nchar(dataSet$label) == 0 | 
+                        grepl("No label defined", dataSet$label)]
+      
+      # - produce html
+      url <- paste0('https://www.wikidata.org/wiki/', 
+                    dataSet$title)
+      text <- paste0(dataSet$label,
+                     " (",
+                     dataSet$title,
+                     ")")
+      url <- paste0('<a href="', 
+                    url, '" target="_blank">', 
+                    text, 
+                    "</a>")
+      newsLink <- paste0(googleNews, 
+                         dataSet$label) 
+      newsLink <- paste0('<a href="', 
+                         newsLink,
+                         '" target="_blank">Search URL</a>')
+      w <- which(grepl("No label defined", newsLink))
+      if (length(w) > 0) {
+        newsLink[w] <- ""
+      }
+      dataSet <- data.frame(Entity = url, 
+                            Revisions = dataSet$revisions, 
+                            Timestamp = dataSet$timestamp,
+                            Editors = dataSet$n_users,
+                            Search = newsLink,
+                            stringsAsFactors = F)%>% 
+        dplyr::filter(Revisions >= 5)
+      
+      DT::datatable(dataSet,
+                    options = list(
+                      pageLength = 25,
+                      width = '100%',
+                      escape = F,
+                      columnDefs = list(list(className = 'dt-left', targets = "_all"))
+                    ),
+                    rownames = FALSE,
+                    escape = F
+                    
+      )
+      
+    } else {
+      
+      dataSet <- data.frame(`Message` = "No current events in the previous hour.")
+      
+      DT::datatable(dataSet,
+                    options = list(
+                      pageLength = 25,
+                      width = '100%',
+                      escape = F,
+                      columnDefs = list(list(className = 'dt-left', targets = "_all"))
+                    ),
+                    rownames = FALSE,
+                    escape = F
+                    
+      )
+      
     }
-    dataSet <- data.frame(Entity = url, 
-                          Revisions = dataSet$revisions, 
-                          Timestamp = dataSet$timestamp,
-                          Editors = dataSet$n_users,
-                          Search = newsLink,
-                          stringsAsFactors = F)%>% 
-      dplyr::filter(Revisions >= 5)
     
-    DT::datatable(dataSet,
-                  options = list(
-                    pageLength = 25,
-                    width = '100%',
-                    escape = F,
-                    columnDefs = list(list(className = 'dt-left', targets = "_all"))
-                  ),
-                  rownames = FALSE,
-                  escape = F
-                  
-    )
     
   })
   
