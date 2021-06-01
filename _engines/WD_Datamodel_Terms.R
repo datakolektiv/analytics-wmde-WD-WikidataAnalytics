@@ -317,7 +317,7 @@ if (currentSnap != stopSnap) {
                           sparkDriverMemory, ' ',
                           sparkExecutorMemory, ' ',
                           sparkConfigDynamic, ' ',
-                          paste0(fPath, 'updateDatamodelTerms_20210321.py')),
+                          paste0(fPath, 'WD_Datamodel_Terms.py')),
          wait = T)
   
   ### --- Update EVERYTHING
@@ -503,27 +503,29 @@ if (currentSnap != stopSnap) {
            wait = T)
   }
   
+  ### --- copy and clean up log files:
+  
+  # - copy the main log file to published for timestamp
+  # - toRuntime log:
+  print("Copy main log to archive; clean up log.")
+  system(command = 
+           paste0('cp ', logDir, 'WD_Datamodel_Terms_LOG.log ' , logDir, 'archive'),
+         wait = T)
+  # - clean up
+  file.remove(paste0(logDir, 'WD_Datamodel_Terms_LOG.log'))
+  
+  # - to runtime Log:
+  print(paste("--- WD_Datamodel_Terms.R RUN ENDED ON:", 
+              Sys.time(), sep = " "))
+  # - conclusion
+  print("DONE. Exiting.")
+  
 } else {
   
   # - to runtime Log:
   print("Nothing to update.")
+  # - conclusion
+  print("DONE. Exiting.")
 
 }
 
-### --------------------------------------------------
-### --- copy and clean up log files:
-### --------------------------------------------------
-# - copy the main log file to published for timestamp
-# - toRuntime log:
-print("Copy main log to archive; clean up log.")
-system(command = 
-         paste0('cp ', logDir, 'WD_Datamodel_Terms_LOG.log ' , logDir, 'archive'),
-       wait = T)
-# - clean up
-file.remove(paste0(logDir, 'WD_Datamodel_Terms_LOG.log'))
-
-# - to runtime Log:
-print(paste("--- WD_Datamodel_Terms.R RUN ENDED ON:", 
-            Sys.time(), sep = " "))
-# - conclusion
-print("DONE. Exiting.")
