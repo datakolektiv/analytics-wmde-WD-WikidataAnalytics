@@ -59,6 +59,9 @@ app_server <- function( input, output, session ) {
                  infoM2$V1 <- NULL
                  # - de-duplicate dataM2
                  dataM2 <- dataM2[!duplicated(dataM2[, c('item', 'property')]), ]
+                 # - fix "^No label defined (Q[[:digit:]]+)" in dataM2$explanation
+                 dataM2$explanation <- gsub("^No label defined ", "", dataM2$explanation)
+                 
 
                  incProgress(amount = .25, message = "M2 loaded.")
                  dataM3 <- data.table::fread(system.file("_data", "dataM3.csv", package = "CuriousFacts"),
@@ -97,19 +100,19 @@ app_server <- function( input, output, session ) {
   output$fact <- renderText({
     
     # - format output
-    factFindQ <- stringr::str_extract_all(fact, "Q[[:digit:]]+")[[1]]
+    factFindQ <- stringr::str_extract_all(fact, "\\(Q[[:digit:]]+\\)")[[1]]
     for (i in 1:length(factFindQ)) {
-      fact <- gsub(paste0('(', factFindQ[i], ')'),
+      fact <- gsub(paste0(factFindQ[i]),
                    paste0('<a href="https://www.wikidata.org/wiki/\\1" target="_blank">',
-                          factFindQ[i], 
+                          gsub("\\(|\\)", "", factFindQ[i]), 
                           "</a>"),
                           fact)
     }
-    factFindP <- stringr::str_extract_all(fact, "P[[:digit:]]+")[[1]]
+    factFindP <- stringr::str_extract_all(fact, "\\(P[[:digit:]]+\\)")[[1]]
     for (i in 1:length(factFindP)) {
-      fact <- gsub(paste0('(', factFindP[i], ')'),
+      fact <- gsub(paste0(factFindP[i]),
                    paste0('<a href="https://www.wikidata.org/wiki/Property:\\1" target="_blank">',
-                          factFindP[i], 
+                          gsub("\\(|\\)", "", factFindP[i]), 
                           "</a>"),
                    fact)
     }
@@ -184,22 +187,23 @@ app_server <- function( input, output, session ) {
     output$fact <- renderText({
       
       # - format output
-      factFindQ <- stringr::str_extract_all(fact, "Q[[:digit:]]+")[[1]]
+      factFindQ <- stringr::str_extract_all(fact, "\\(Q[[:digit:]]+\\)")[[1]]
       for (i in 1:length(factFindQ)) {
-        fact <- gsub(paste0('(', factFindQ[i], ')'),
+        fact <- gsub(paste0(factFindQ[i]),
                      paste0('<a href="https://www.wikidata.org/wiki/\\1" target="_blank">',
-                            factFindQ[i], 
+                            gsub("\\(|\\)", "", factFindQ[i]), 
                             "</a>"),
                      fact)
       }
-      factFindP <- stringr::str_extract_all(fact, "P[[:digit:]]+")[[1]]
+      factFindP <- stringr::str_extract_all(fact, "\\(P[[:digit:]]+\\)")[[1]]
       for (i in 1:length(factFindP)) {
-        fact <- gsub(paste0('(', factFindP[i], ')'),
+        fact <- gsub(paste0(factFindP[i]),
                      paste0('<a href="https://www.wikidata.org/wiki/Property:\\1" target="_blank">',
-                            factFindP[i], 
+                            gsub("\\(|\\)", "", factFindP[i]), 
                             "</a>"),
                      fact)
       }
+      
       out <- paste0('<p style="font-size:120%;"align="left">',
                     fact, '</p><hr>', 
                     '<p style="font-size:120%;"align="left"> This fact was established on: <b>', 
