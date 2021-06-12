@@ -49,23 +49,24 @@ app_server <- function( input, output, session ) {
                  
                  dataM1 <- data.table::fread(system.file("_data", "dataM1.csv", package = "CuriousFacts"),
                                              header = T, quote =)
+                 dataM1$explanation <- gsub('\"\"\"', '', dataM1$explanation)
                  infoM1 <- data.table::fread(system.file("_data", "infoM1.csv", package = "CuriousFacts"), header = T)
                  infoM1$V1 <- NULL
 
                  incProgress(amount = .25, message = "M1 loaded.")
                  dataM2 <- data.table::fread(system.file("_data", "dataM2.csv", package = "CuriousFacts"),
                                              header = T)
+                 dataM2$explanation <- gsub('\"\"\"', '', dataM2$explanation)
                  infoM2 <- data.table::fread(system.file("_data", "infoM2.csv", package = "CuriousFacts"), header = T)
                  infoM2$V1 <- NULL
                  # - de-duplicate dataM2
                  dataM2 <- dataM2[!duplicated(dataM2[, c('item', 'property')]), ]
-                 # - fix "^No label defined (Q[[:digit:]]+)" in dataM2$explanation
-                 dataM2$explanation <- gsub("^No label defined ", "", dataM2$explanation)
-                 
-
+                  
                  incProgress(amount = .25, message = "M2 loaded.")
                  dataM3 <- data.table::fread(system.file("_data", "dataM3.csv", package = "CuriousFacts"),
                                              header = T)
+                 
+                 dataM3$explanation <- gsub('\"\"', '\"', dataM3$explanation)
                  infoM3 <- data.table::fread(system.file("_data", "infoM3.csv", package = "CuriousFacts"), header = T)
                  infoM3$V1 <- NULL
                  
@@ -93,29 +94,10 @@ app_server <- function( input, output, session ) {
   # - select random fact
   rf <- sample(1:dim(dS)[1], 1)
   fact <- dS$explanation[rf]
-  fact <- gsub('""', '"', fact)
   establishedOn <- dS$establishedOn[rf]
   
   ### --- First Fact
   output$fact <- renderText({
-    
-    # - format output
-    factFindQ <- stringr::str_extract_all(fact, "\\(Q[[:digit:]]+\\)")[[1]]
-    for (i in 1:length(factFindQ)) {
-      fact <- gsub(paste0(factFindQ[i]),
-                   paste0('<a href="https://www.wikidata.org/wiki/\\1" target="_blank">',
-                          gsub("\\(|\\)", "", factFindQ[i]), 
-                          "</a>"),
-                          fact)
-    }
-    factFindP <- stringr::str_extract_all(fact, "\\(P[[:digit:]]+\\)")[[1]]
-    for (i in 1:length(factFindP)) {
-      fact <- gsub(paste0(factFindP[i]),
-                   paste0('<a href="https://www.wikidata.org/wiki/Property:\\1" target="_blank">',
-                          gsub("\\(|\\)", "", factFindP[i]), 
-                          "</a>"),
-                   fact)
-    }
 
     out <- paste0('<p style="font-size:120%;"align="left">',
                   fact, '</p><br>', 
@@ -181,28 +163,9 @@ app_server <- function( input, output, session ) {
     # - select random fact
     rf <- sample(1:dim(dS)[1], 1)
     fact <- dS$explanation[rf]
-    fact <- gsub('""', '"', fact)
     establishedOn <- dS$establishedOn[rf]
     
     output$fact <- renderText({
-      
-      # - format output
-      factFindQ <- stringr::str_extract_all(fact, "\\(Q[[:digit:]]+\\)")[[1]]
-      for (i in 1:length(factFindQ)) {
-        fact <- gsub(paste0(factFindQ[i]),
-                     paste0('<a href="https://www.wikidata.org/wiki/\\1" target="_blank">',
-                            gsub("\\(|\\)", "", factFindQ[i]), 
-                            "</a>"),
-                     fact)
-      }
-      factFindP <- stringr::str_extract_all(fact, "\\(P[[:digit:]]+\\)")[[1]]
-      for (i in 1:length(factFindP)) {
-        fact <- gsub(paste0(factFindP[i]),
-                     paste0('<a href="https://www.wikidata.org/wiki/Property:\\1" target="_blank">',
-                            gsub("\\(|\\)", "", factFindP[i]), 
-                            "</a>"),
-                     fact)
-      }
       
       out <- paste0('<p style="font-size:120%;"align="left">',
                     fact, '</p><hr>', 

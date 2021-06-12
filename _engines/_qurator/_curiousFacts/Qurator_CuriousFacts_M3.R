@@ -155,7 +155,6 @@ system(command = paste0(
   hdfsDir),
   wait = T)
 
-
 ### --- Apache Spark ETL
 
 # - Spark deployment parameters:
@@ -235,12 +234,23 @@ dataSet <- dplyr::filter(dataSet,
 ### --- Reporter
 ### ----------------------------------------------------------------------------
 
-dataSet$explanation <- paste0(dataSet$itemLabel, 
-                              " (", dataSet$item, ") ", 
-                              "has ", dataSet$num_values, 
-                              " values for property: ", 
-                              dataSet$propertyLabel, 
-                              " (", dataSet$property, ").")
+# - add explanation
+tItem <- paste0('<a href="https://www.wikidata.org/wiki/', 
+                dataSet$item, 
+                '" target = "_blank">', 
+                dataSet$itemLabel, 
+                '</a>')
+tProperty <- paste0('<a href="https://www.wikidata.org/wiki/Property:',
+                    dataSet$property,
+                    '" target = "_blank">',
+                    dataSet$propertyLabel,
+                    '</a>')
+dataSet$explanation <- paste0(tItem,
+                              ' has ', dataSet$num_values, 
+                              ' values for Property ',
+                              tProperty, 
+                              ' but it should often be unique.')
+
 dataSet$establishedOn <- as.character(Sys.time())
 write.csv(dataSet, 
           paste0(reportingDir, "dataM3.csv"))

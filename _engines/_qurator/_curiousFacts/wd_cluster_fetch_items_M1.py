@@ -1,6 +1,6 @@
 
 ### ---------------------------------------------------------------------------
-### --- wd_cluster_fetch_items.py
+### --- wd_cluster_fetch_items_M1.py
 ### --- Version 1.0.0
 ### --- Author: Goran S. Milovanovic, Data Scientist, WMDE
 ### --- Developed under the contract between Goran Milovanovic PR Data Kolektiv
@@ -10,6 +10,7 @@
 ### ---------------------------------------------------------------------------
 ### --- DESCRIPTION:
 ### --- Pyspark ETL procedures for the WMDE/QURATOR system
+### --- M1 type anomaly solver
 ### ---------------------------------------------------------------------------
 ### ---------------------------------------------------------------------------
 ### --- LICENSE:

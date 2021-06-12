@@ -62,7 +62,7 @@ m1_problems <- read.csv(paste0(fPath, 'm1_problems.csv'),
 
 # - iterate over problems and solve
 failed <- numeric()
-for (i in 8:dim(m1_problems)[1]) {
+for (i in 3:dim(m1_problems)[1]) {
   
   print(paste0("--------------- ", 
                "Solving now problem : ", 
@@ -148,18 +148,46 @@ for (i in 8:dim(m1_problems)[1]) {
                                 itemLabs,
                                 by = 'propertyValue')
     
-    # - fix dataSet$id, dataSet$propValue
-    dataSet$itemLabel[dataSet$itemLabel == 'No label defined'] <-
-      dataSet$id[dataSet$itemLabel == 'No label defined']
-    dataSet$propertyValueLabel[dataSet$propertyValueLabel == 'No label defined'] <-
-      dataSet$propertyValue[dataSet$propertyValueLabel == 'No label defined']
-    
+    # - fix for No label defined
+    dataSet$itemLabel <- ifelse(dataSet$itemLabel == 'No label defined', 
+                                dataSet$id, 
+                                dataSet$itemLabel)
+    dataSet$propertyValueLabel <- ifelse(dataSet$propertyValueLabel == 'No label defined',
+                                          dataSet$propertyValue,
+                                          dataSet$propertyValueLabel)
+
     # - add explanation
-    dataSet$explanation <- paste0(dataSet$itemLabel, " (", 
-                                  dataSet$id, ") has the value for property: ", 
-                                  targetPropertyLabel, " (", targetProperty, "): ", 
-                                  dataSet$propertyValueLabel, " (", dataSet$propertyValue, "), which is not found in: ", 
-                                  referenceClassLabel, " (", referenceClass, ").")
+    tItem <- paste0('<a href="https://www.wikidata.org/wiki/', 
+                    dataSet$id, 
+                    '" target = "_blank">', 
+                    dataSet$itemLabel, 
+                    '</a>')
+    tProperty1 <- paste0('<a href="https://www.wikidata.org/wiki/Property:',
+                         targetProperty,
+                         '" target = "_blank">',
+                         targetPropertyLabel,
+                         '</a>')
+    tProperty2 <- paste0('<a href="https://www.wikidata.org/wiki/',
+                         dataSet$propertyValue,
+                         '" target = "_blank">',
+                         dataSet$propertyValueLabel,
+                         '</a>')
+    tReferenceClass <- paste0('<a href="https://www.wikidata.org/wiki/',
+                              referenceClass,
+                              '" target = "_blank">',
+                              referenceClassLabel,
+                              '</a>')
+    dataSet$explanation <- paste0(tItem, 
+                                  ' has a Statement "',
+                                  tProperty1,
+                                  ': ',
+                                  tProperty2, 
+                                  '" but ', 
+                                  dataSet$propertyValueLabel, 
+                                  ' is not found in the class "', 
+                                  tReferenceClass, 
+                                  '".')
+
     
     # - add metadata
     dumpSnapshot <- gsub("\\.csv", "", 
@@ -227,9 +255,4 @@ m1_problems$solved <- TRUE
 m1_problems$solved[failed] <- FALSE
 write.csv(m1_problems, 
           paste0(reportingDir, "m1_problems_solved.csv"))
-
-
-
-
-
 

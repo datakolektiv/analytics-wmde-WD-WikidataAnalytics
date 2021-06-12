@@ -167,87 +167,116 @@ for (i in 29:dim(m2_problems)[1]) {
     files <- read.table(paste0(dataDir, 'files.txt'), skip = 1)
     files <- as.character(files$V8)[2:length(as.character(files$V8))]
     file.remove(paste0(dataDir, 'files.txt'))
-    
-      for (j in 1:length(files)) {
-        system(paste0('sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -text ', 
-                      files[j], ' > ',  
-                      paste0(dataDir, "results_M2_", j, ".csv")), wait = T)
+    for (j in 1:length(files)) {
+      system(paste0(
+        'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -text ',
+        files[j], ' > ',
+        paste0(dataDir, "results_M2_", j, ".csv")), wait = T)
       }
-      # - read splits: dataSet
-      # - load
-      lF <- list.files(dataDir)
-      lF <- lF[grepl("results_M2_", lF)]
-      dataSet <- lapply(paste0(dataDir, lF), 
-                        function(x) {fread(x, header = F)})
-      # - collect
-      dataSet <- rbindlist(dataSet)
+    # - read splits: dataSet
+    # - load
+    lF <- list.files(dataDir)
+    lF <- lF[grepl("results_M2_", lF)]
+    dataSet <- lapply(paste0(dataDir, lF),
+                      function(x) {
+                        fread(x, header = F)
+                        })
+    # - collect
+    dataSet <- rbindlist(dataSet)
+    
+    if (dim(dataSet)[1] > 0) {
       
-      if (dim(dataSet)[1] > 0) {
+      # - schema
+      colnames(dataSet) <- c('item', 'property')
+        
+      # - PREPARE OUTPUT: targetClasses$classes, Explanation, timestamp, etc.
+      # - add Wikidata JSON Dump
+      dataSet$wdDumpSnapshot <- wdDumpSnapshot
+      # - add metadata
+      dataSet$establishedOn <- as.character(Sys.time())
+      dataSet$problemType <- 'M2'
+      dataSet$timeTaken <- timeTaken
       
-        # - schema
-        colnames(dataSet) <- c('item', 'property')
-        
-        # - PREPARE OUTPUT: targetClasses$classes, Explanation, timestamp, etc.
-        # - add Wikidata JSON Dump
-        dataSet$wdDumpSnapshot <- wdDumpSnapshot
-        # - add metadata
-        dataSet$establishedOn <- as.character(Sys.time())
-        dataSet$problemType <- 'M2'
-        dataSet$timeTaken <- timeTaken
-        
-        # - fetch 'en' item labels
-        print("--- fetch 'en' item labels")
-        items <- unique(dataSet$item)
-        itemLabs <- wd_api_fetch_labels(items = items,
-                                        language = 'en',
-                                        fallback = T)
-        colnames(itemLabs) <- c('item', 'itemLabel')
-        dataSet <- dplyr::left_join(dataSet,
-                                    itemLabs,
-                                    by = 'item')
-        # - fetch 'en' referenceClasses labels
-        items <-  targetClasses$classes
-        items <- strsplit(items, ", ")[[1]]
-        itemLabs <- wd_api_fetch_labels(items = items,
-                                        language = 'en',
-                                        fallback = T)
-        itemLabs <- paste0(itemLabs$en_label, " (", itemLabs$title, ")")
-        itemLabs <- paste(itemLabs, 
-                          collapse = ", ")
-        dataSet$referenceClasses <- itemLabs
-        # - fetch propertLabel
-        propLab <- wd_api_fetch_labels(items = unique(dataSet$property),
-                                       language = 'en',
-                                       fallback = T)
-        dataSet$propertyLab <- propLab$en_label
-        head(dataSet)
-        
-        # - add explanation
-        dataSet$explanation <- paste0(dataSet$itemLabel, " (", dataSet$item, ") ", 
-                                      "has property ", dataSet$propertyLab, " (", dataSet$property, "), ", 
-                                      "but the item is not found in any of the following classes: ", 
-                                      dataSet$referenceClasses)
-        dataSet$referenceClasses <- NULL
-        colnames(dataSet)
-        dataSet <- dplyr::select(dataSet, 
-                                 item, 
-                                 itemLabel, 
-                                 property,
-                                 propertyLab, 
-                                 explanation, 
-                                 problemType, 
-                                 wdDumpSnapshot,
-                                 establishedOn, 
-                                 timeTaken)
-        
-        # - store results
-        prop <- unique(dataSet$property)
-        CSVfilename <- paste0("M2_", propLab$title,
-                              "_", propLab$en_label, 
-                              "_problems_solved.csv")
-        CSVfilename <- gsub(" ", "_", CSVfilename, fixed = T)
-        write.csv(dataSet,
-                  paste0(analyticsDir, CSVfilename))
+      # - fetch 'en' item labels
+      print("--- fetch 'en' item labels")
+      items <- unique(dataSet$item)
+      itemLabs <- wd_api_fetch_labels(items = items,
+                                      language = 'en',
+                                      fallback = T)
+      colnames(itemLabs) <- c('item', 'itemLabel')
+      dataSet <- dplyr::left_join(dataSet,
+                                  itemLabs,
+                                  by = 'item')
+      # - fetch 'en' referenceClasses labels
+      refClasses <- targetClasses$classes
+      refClasses <- strsplit(refClasses, ", ")[[1]]
+      refClassesLabs <- wd_api_fetch_labels(items = refClasses,
+                                            language = 'en',
+                                            fallback = T)
+      # - fix for No label defined
+      refClassesLabs$en_label <- ifelse(refClassesLabs$en_label == 'No label defined',
+                                        refClassesLabs$title,
+                                        refClassesLabs$en_label)
+      tRefClasses <- paste0('<a href="https://www.wikidata.org/wiki/',
+                            refClassesLabs$title,
+                            '" target = "_blank">',
+                            refClassesLabs$en_label,
+                            '</a>')
+      tRefClasses <- paste(tRefClasses, collapse = ", ")
+
+      # - fetch propertLabel
+      propLab <- wd_api_fetch_labels(items = unique(dataSet$property),
+                                     language = 'en',
+                                     fallback = T)
+      dataSet$propertyLab <- propLab$en_label
+      
+      # - fix for No label defined
+      dataSet$itemLabel <- ifelse(dataSet$itemLabel == 'No label defined', 
+                                  dataSet$item, 
+                                  dataSet$itemLabel)
+      dataSet$propertyLab <- ifelse(dataSet$propertyLab == 'No label defined',
+                                    dataSet$property,
+                                    dataSet$propertyLab)
+      
+      # - add explanation
+      tItem <- paste0('<a href="https://www.wikidata.org/wiki/', 
+                      dataSet$item, 
+                      '" target = "_blank">', 
+                      dataSet$itemLabel, 
+                      '</a>')
+      tProperty <- paste0('<a href="https://www.wikidata.org/wiki/Property:',
+                          dataSet$property,
+                          '" target = "_blank">',
+                          dataSet$propertyLab,
+                          '</a>')
+      
+      dataSet$explanation <- paste0(tItem,
+                                    ' uses the Property ',
+                                    tProperty, 
+                                    ' but it is not found in any of the following classes: ',
+                                    tRefClasses, 
+                                    '.')
+      
+      # - prepare dataSet
+      dataSet <- dplyr::select(dataSet, 
+                               item, 
+                               itemLabel, 
+                               property,
+                               propertyLab, 
+                               explanation, 
+                               problemType, 
+                               wdDumpSnapshot,
+                               establishedOn, 
+                               timeTaken)
+      
+      # - store results
+      prop <- unique(dataSet$property)
+      CSVfilename <- paste0("M2_", propLab$title,
+                            "_", propLab$en_label, 
+                            "_problems_solved.csv")
+      CSVfilename <- gsub(" ", "_", CSVfilename, fixed = T)
+      write.csv(dataSet,
+                paste0(analyticsDir, CSVfilename))
         
       } else {
         print("------ FATAL: The following problem failed:")
@@ -270,7 +299,6 @@ for (i in 29:dim(m2_problems)[1]) {
   }
   
 }
-
 
 ### ----------------------------------------------------------------------------
 ### --- Module 2: Property constraints/Subject class
