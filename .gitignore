@@ -1,4 +1,5 @@
 *.xml
 *.csv
+*.Rhistory
 
 .Rproj.user

@@ -76,8 +76,8 @@ logFrame <- data.frame(id, section, project, startTime, endTime,
 
 ### --- delete previous runtime log:
 lF <- list.files()
-if ('WDCM_SqoopRuntimeLog.log' %in% lF) {
-  file.remove('WDCM_SqoopRuntimeLog.log')
+if ('WDCM_Sqoop_Clients_RUNTIME_LOG.log' %in% lF) {
+  file.remove('WDCM_Sqoop_Clients_RUNTIME_LOG.log')
 }
 
 ### -----------------------------------------------------------------

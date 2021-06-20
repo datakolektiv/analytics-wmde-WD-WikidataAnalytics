@@ -1,14 +1,17 @@
 
 ### ---------------------------------------------------------------------------
 ### --- WD_LanguagesLandscape.R
+### --- v 1.0.0
 ### --- Author: Goran S. Milovanovic, Data Scientist, WMDE
 ### --- Developed under the contract between Goran Milovanovic PR Data Kolektiv
 ### --- and WMDE.
 ### --- Contact: goran.milovanovic_ext@wikimedia.de
-### --- April 2019.
+### --- June 2021.
 ### ---------------------------------------------------------------------------
 ### --- COMMENT:
 ### --- R ETL procedures for the WD JSON dumps in hdfs
+### --- R Proximity Matrices for WD Languages Landscape project
+### --- R UNESCO/ETHNOLOGUE language status vs. WD use and re-use data
 ### ---------------------------------------------------------------------------
 ### ---------------------------------------------------------------------------
 ### --- LICENSE:
@@ -37,7 +40,7 @@
 ### --- over the Wikidata JSON dumps in hdfs.
 ### ---------------------------------------------------------------------------
 
-# - setup
+### --- Setup
 library(XML)
 library(data.table)
 library(stringr)
@@ -84,7 +87,7 @@ sparkExecutorCores <- params$spark$executor_cores
 sparkConfigDynamic <- params$spark$config
 
 ### ---------------------------------------------------
-### --- 1 The Fundamental Datasets
+### --- 1. The Fundamental Datasets
 ### ---------------------------------------------------
 
 # - clean dataDir
@@ -250,8 +253,11 @@ rm(dataSet); gc()
 ### --- 3. The Co-Occurence and Similarity Matrices
 ### --- from the Fundamental Dataset
 ### ---------------------------------------------------
-rm(list = setdiff(ls(), c('params', 'fPath')))
 
+# - clear all
+rm(list = setdiff(ls(), 'fPath'))
+
+### --- Setup
 library(XML)
 library(data.table)
 library(stringr)
@@ -270,14 +276,18 @@ library(ggrepel)
 library(scales)
 library(igraph)
 
-### --- Directories
+### --- params
+params <- xmlParse(paste0(fPath, "WD_LanguagesLandscape_Config.xml"))
+params <- xmlToList(params)
+
+### --- directories
 dataDir <- params$general$dataDir
 logDir <- params$general$logDir
 outDir <- params$general$outDir
-publicDir <- params$general$publicDir
+publicDir <- params$general$pubDataDir
 hdfsPath <- params$general$hdfsPath
 
-# - Set proxy
+### --- Set proxy
 Sys.setenv(
   http_proxy = params$general$http_proxy,
   https_proxy = params$general$http_proxy)
@@ -490,6 +500,8 @@ write.csv(tsne2DMap,
 ### --- 4. Wikidata Language Data Model: WDQS
 ### --------------------------------------------------------------
 
+
+### --- used languages
 usedLanguages <- read.csv(paste0(outDir, "wd_languages_count.csv"),
                           header = T, 
                           check.names = F,
@@ -834,7 +846,7 @@ write.csv(usedLanguages,
           paste0(outDir, 'WD_Languages_UsedLanguages.csv'))
 
 ### --------------------------------------------------------------
-### --- 6. Production Visualisation Data Sets
+### --- 5. Production Visualisation Data Sets
 ### --------------------------------------------------------------
 
 # - visualize: UNESCOLanguageStatus (P3823) vs. numSitelinks

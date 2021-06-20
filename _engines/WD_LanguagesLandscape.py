@@ -1,11 +1,12 @@
 
 ### ---------------------------------------------------------------------------
 ### --- wd_LanguagesLandscape.py
+### --- v 1.0.0
 ### --- Author: Goran S. Milovanovic, Data Scientist, WMDE
 ### --- Developed under the contract between Goran Milovanovic PR Data Kolektiv
 ### --- and WMDE.
 ### --- Contact: goran.milovanovic_ext@wikimedia.de
-### --- February 2020.
+### --- June 2021.
 ### ---------------------------------------------------------------------------
 ### --- COMMENT:
 ### --- Pyspark ETL procedures to process the WD JSON dumps in hdfs

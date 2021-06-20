@@ -1,11 +1,12 @@
 
 ### ---------------------------------------------------------------------------
 ### --- WD_LanguagesLandscape_Functions.R
+### --- v 1.0.0
 ### --- Author: Goran S. Milovanovic, Data Scientist, WMDE
 ### --- Developed under the contract between Goran Milovanovic PR Data Kolektiv
 ### --- and WMDE.
 ### --- Contact: goran.milovanovic_ext@wikimedia.de
-### --- April 2019.
+### --- June 2021.
 ### ---------------------------------------------------------------------------
 ### --- COMMENT:
 ### --- Functions for recursive search through the Wikidata hierarchy
