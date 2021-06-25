@@ -150,4 +150,13 @@ WD_dump = WD_dump.select('id', 'property', explode('snaks.property').alias('snak
 WD_dump = WD_dump.select('snakProperty').withColumnRenamed('snakProperty', 'property').groupBy('property').count().orderBy('count', ascending = False)
 WD_dump.coalesce(10).write.format('csv').mode("overwrite").save(hdfsDir + 'wd_statements_properties_used_in_references')
 
+### ---------------------------------------------------------------------------
+### --- 5. Properties used in qualifiers in  Wikidata
+### ---------------------------------------------------------------------------
 
+WD_dump = sqlContext.sql('SELECT id, claims FROM wmf.wikidata_entity WHERE snapshot="' + wikidataEntitySnapshot + '"')
+WD_dump.cache()
+WD_dump = WD_dump.select('id', explode('claims').alias('claims'))
+WD_dump = WD_dump.select('id', 'claims.mainSnak.property', explode('claims.qualifiers.property').alias('qualifier_propery'))
+WD_dump = WD_dump.select('qualifier_propery').withColumnRenamed('qualifier_propery', 'property').groupBy('property').count().orderBy('count', ascending = False)
+WD_dump.coalesce(10).write.format('csv').mode("overwrite").save(hdfsDir + 'wd_statements_properties_used_in_qualifiers')

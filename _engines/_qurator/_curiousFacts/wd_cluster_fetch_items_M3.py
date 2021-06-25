@@ -37,6 +37,7 @@ import pyspark
 from pyspark.sql import SparkSession
 from pyspark.sql.window import Window
 from pyspark.sql.functions import rank, col, round, explode, row_number, regexp_extract, lit
+from pyspark.sql.functions import monotonically_increasing_id 
 from pyspark import SparkFiles
 from pyspark.sql.types import *
 import numpy as np
@@ -97,14 +98,11 @@ separators = list(set(separators))
 
 ### --- find items with > 1 value on single value constraint properties
 WD_items = sqlContext.sql('SELECT id, claims FROM wmf.wikidata_entity WHERE snapshot="' + wikidataEntitySnapshot + '"')
-
 # - cache WD dump for items
 WD_items.cache()
-
 # - explode properties
 WD_items = WD_items.select('id', explode('claims').alias('claims'), ).select('id', 'claims.mainSnak', 'claims.qualifiers')
 WD_items = WD_items.select('id', 'mainSnak.property', 'mainSnak.dataValue.value', 'qualifiers.property')
-
 # - create cols_new so that seen columns will have a suffix 'qualifier'
 cols_new = [] 
 seen = set()
@@ -113,29 +111,18 @@ for c in WD_items.columns:
     seen.add(c)
 WD_items = WD_items.toDF(*cols_new)
 WD_items = WD_items.select('id', 'property', 'value', explode('property_qualifier').alias('qualifier'))
-
 # - filter by: properties list
 WD_items = WD_items.filter(WD_items['property'].isin(properties))
-
-# - filter out properties from 'id'
+# - filter out properties from 'id': keep only items
 WD_items = WD_items.filter((WD_items["id"].rlike('Q\d+')))
-
+# - introduce ids: ix
+WD_items = WD_items.withColumn('ix', row_number().over(Window.orderBy(monotonically_increasing_id())))
 # - filter by: no separator property P4155 is used to allow for multiple values
-propsP4155 = WD_items.select('property', 'qualifier')
-propsP4155 = propsP4155.filter(propsP4155["qualifier"].isin(separators)).select('property')
-WD_items = WD_items.join(propsP4155, on = 'property', how = 'left_anti')
-
-# - filter by: multiple points in time present
-# propsP585 = WD_items.select('property', 'qualifier')
-# propsP585 = propsP585.filter("qualifier == 'P585'").select('property')
-# WD_items = WD_items.join(propsP585, on = 'property', how = 'left_anti')
-
-# - filter: P1215 apparent magnitude  for astronomical objects (there are tons of single value constraints)
-# WD_items = WD_items.filter("property != 'P1215'")
-
+propsP4155 = WD_items.select('ix', 'property', 'qualifier')
+propsP4155 = propsP4155.filter(propsP4155["qualifier"].isin(separators)).select('ix')
+WD_items = WD_items.join(propsP4155, on = 'ix', how = 'left_anti')
 # - drop qualifiers + de-duplicate rows
 WD_items = WD_items.select('id', 'property', 'value').dropDuplicates()
-
 # - groupby id and property, count, and filter where count > 1
 WD_items = WD_items.select('id', 'property').groupBy('id', 'property').count()
 WD_items = WD_items.withColumnRenamed('id', 'item')
