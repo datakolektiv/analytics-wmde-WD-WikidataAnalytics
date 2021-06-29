@@ -36,7 +36,7 @@
 import pyspark
 from pyspark.sql import SparkSession
 from pyspark.sql.window import Window
-from pyspark.sql.functions import rank, col, round, explode, row_number, regexp_extract, lit
+from pyspark.sql.functions import rank, col, round, explode, explode_outer, row_number, regexp_extract, lit
 from pyspark.sql.functions import monotonically_increasing_id 
 from pyspark import SparkFiles
 from pyspark.sql.types import *
@@ -110,7 +110,7 @@ for c in WD_items.columns:
     cols_new.append('{}_qualifier'.format(c) if c in seen else c)
     seen.add(c)
 WD_items = WD_items.toDF(*cols_new)
-WD_items = WD_items.select('id', 'property', 'value', explode('property_qualifier').alias('qualifier'))
+WD_items = WD_items.select('id', 'property', 'value', explode_outer('property_qualifier').alias('qualifier'))
 # - filter by: properties list
 WD_items = WD_items.filter(WD_items['property'].isin(properties))
 # - filter out properties from 'id': keep only items
@@ -123,7 +123,7 @@ propsP4155 = propsP4155.filter(propsP4155["qualifier"].isin(separators)).select(
 WD_items = WD_items.join(propsP4155, on = 'ix', how = 'left_anti')
 # - drop qualifiers + de-duplicate rows
 WD_items = WD_items.select('id', 'property', 'value').dropDuplicates()
-# - groupby id and property, count, and filter where count > 1
+# - groupby id and property -> derive counts
 WD_items = WD_items.select('id', 'property').groupBy('id', 'property').count()
 WD_items = WD_items.withColumnRenamed('id', 'item')
 

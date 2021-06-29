@@ -62,7 +62,7 @@ sparqlEndPointURL <-
 ### ----------------------------------------------------------------------------
 
 ### --- WDQS: obtain properties with single value constraints
-query <- 'select ?property where {?property wdt:P2302 wd:Q19474404 .}'
+query <- 'select distinct ?property where {?property wdt:P2302 wd:Q19474404 .}'
 # - run query:
 repeat {
   res <- tryCatch({
@@ -141,9 +141,12 @@ print("--- M3: parse WDQS result.")
 res <- rawToChar(res$content)
 res <- fromJSON(res, simplifyDataFrame = T)
 res <- res$results$bindings
-res <- data.frame(separator = res$propertyConstraint$value,
+res <- data.frame(property = res$property$value,
+                  separator = res$propertyConstraint$value,
                   stringsAsFactors = F)
+res$property <- gsub("http://www.wikidata.org/entity/", "", res$property)
 res$separator <- gsub("http://www.wikidata.org/entity/", "", res$separator)
+res <- res[!duplicated(res), ]
 
 # - move to hdfs directory:
 print("--- M3: move to hdfs directory.")
@@ -249,7 +252,7 @@ dataSet$explanation <- paste0(tItem,
                               ' has ', dataSet$num_values, 
                               ' values for Property ',
                               tProperty, 
-                              ' but it should often be unique.')
+                              ' but is generally expected to have only one.')
 
 dataSet$establishedOn <- as.character(Sys.time())
 write.csv(dataSet, 
