@@ -58,16 +58,11 @@ renv::load(project = fPath, quiet = FALSE)
 # - lib
 library(XML)
 library(data.table)
-library(stringr)
-library(jsonlite)
 library(dplyr)
-library(tidyr)
-library(httr)
-library(htmltab)
 
 # - params
-params <- xmlParse(paste0(fPath, "WD_LanguagesLandscape_Config.xml"))
-params <- xmlToList(params)
+params <- XML::xmlParse(paste0(fPath, "WD_LanguagesLandscape_Config.xml"))
+params <- XML::xmlToList(params)
 
 # - dirs
 dataDir <- params$general$dataDir
@@ -135,7 +130,7 @@ lF <- lF[grepl("wd_dump_item_language", lF)]
 dataSet <- lapply(paste0(dataDir, lF), 
                   function(x) {fread(x, header = F)})
 # - collect
-dataSet <- rbindlist(dataSet)
+dataSet <- data.table::rbindlist(dataSet)
 # - schema
 colnames(dataSet) <- c('entity', 'language')
 
@@ -156,7 +151,7 @@ saveRDS(dataSet,
 
 ### --- how many languages, per item:
 
-setkey(dataSet, entity)
+data.table::setkey(dataSet, entity)
 itemCount <- dataSet[, .N ,by = entity]
 
 # - remove DataSet: save memory on stat100*
@@ -166,14 +161,14 @@ colnames(itemCount) <- c('entity', 'language_count')
 ### --- WDCM Usage dataset
 
 print("wdll_MapReduce: fread: wd_entities_reuse.tsv")
-wdcmReuse <- fread(paste0(
+wdcmReuse <- data.table::fread(paste0(
   dataDir, 'wd_entities_reuse.tsv'), 
   sep = "\t")
 
 # - schema
 colnames(wdcmReuse) <- c('entity', 'reuse')
-setkey(wdcmReuse, entity)
-setorder(wdcmReuse, -reuse)
+data.table::setkey(wdcmReuse, entity)
+data.table::setorder(wdcmReuse, -reuse)
 
 # - collect stats
 stats$totalN_entities_reused <- dim(wdcmReuse)[1]
@@ -184,10 +179,10 @@ saveRDS(wdcmReuse,
         paste0(outDir, "wd_entities_reuse.Rds"))
 
 # - left join: wdcmReuse on itemCount
-itemCount <- merge(itemCount, 
-                   wdcmReuse, 
-                   by = "entity", 
-                   all.x = TRUE)
+itemCount <- data.table::merge(itemCount,
+                               wdcmReuse,
+                               by = "entity",
+                               all.x = TRUE)
 itemCount <- itemCount[!is.na(reuse)]
 
 # - store
@@ -203,11 +198,11 @@ dataSet <- readRDS(paste0(
   )
 
 # - left join: wdcmReuse on dataSet
-setkey(dataSet, entity)
-dataSet <- merge(dataSet,
-                 wdcmReuse,
-                 by = "entity",
-                 all.x = TRUE)
+data.table::setkey(dataSet, entity)
+dataSet <- data.table::merge(dataSet,
+                             wdcmReuse,
+                             by = "entity",
+                             all.x = TRUE)
 # - clear
 rm(wdcmReuse); gc()
 
@@ -217,10 +212,10 @@ colnames(countUsedItems)[2] <- 'num_items_reused'
 dataSet[is.na(reuse), reuse := 0]
 dataSet <- dplyr::select(dataSet, -entity)
 dataSet <- dataSet[, .(reuse = sum(reuse), item_count = .N), by = "language"]
-dataSet <- merge(dataSet,
-                 countUsedItems,
-                 by = "language",
-                 all.x = TRUE)
+dataSet <- data.table::merge(dataSet,
+                             countUsedItems,
+                             by = "language",
+                             all.x = TRUE)
 
 # - store dataSet
 print("wdll_MapReduce: write.csv: dataSet -> wd_languages_count.csv")

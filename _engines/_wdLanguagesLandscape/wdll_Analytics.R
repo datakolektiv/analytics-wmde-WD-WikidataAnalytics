@@ -60,26 +60,11 @@ renv::load(project = fPath, quiet = FALSE)
 
 # - lib
 library(XML)
-library(data.table)
-library(stringr)
-library(spam)
-library(spam64)
-library(text2vec)
-library(WikidataR)
-library(httr)
-library(jsonlite)
 library(dplyr)
-library(htmltab)
-library(tidyr)
-library(Rtsne)
-library(ggplot2)
-library(ggrepel)
-library(scales)
-library(igraph)
 
 # - pars
-params <- xmlParse(paste0(fPath, "WD_LanguagesLandscape_Config.xml"))
-params <- xmlToList(params)
+params <- XML::xmlParse(paste0(fPath, "WD_LanguagesLandscape_Config.xml"))
+params <- XML::xmlToList(params)
 
 ### --- dirs
 dataDir <- params$general$dataDir

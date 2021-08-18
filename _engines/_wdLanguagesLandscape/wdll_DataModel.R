@@ -61,26 +61,14 @@ renv::load(project = fPath, quiet = FALSE)
 
 # - libs
 library(XML)
-library(data.table)
-library(stringr)
-library(spam)
-library(spam64)
-library(text2vec)
-library(WikidataR)
 library(httr)
 library(jsonlite)
-library(dplyr)
-library(htmltab)
-library(tidyr)
-library(Rtsne)
-library(ggplot2)
-library(ggrepel)
-library(scales)
-library(igraph)
+library(WikidataR)
+library(data.table)
 
 # - params
-params <- xmlParse(paste0(fPath, "WD_LanguagesLandscape_Config.xml"))
-params <- xmlToList(params)
+params <- XML::xmlParse(paste0(fPath, "WD_LanguagesLandscape_Config.xml"))
+params <- XML::xmlToList(params)
 
 # - dirs
 dataDir <- params$general$dataDir
@@ -170,17 +158,17 @@ print(paste("--- wdll_DataModel.R: Run SPARQL Query.",
             Sys.time(), sep = " "))
 repeat {
   res <- tryCatch({
-    GET(url = paste0(endPointURL, URLencode(query)))
+    httr::GET(url = paste0(endPointURL, URLencode(query)))
   },
   error = function(condition) {
     print("Something's wrong on WDQS: wait 10 secs, try again.")
     Sys.sleep(10)
-    GET(url = paste0(endPointURL, URLencode(query)))
+    httr::GET(url = paste0(endPointURL, URLencode(query)))
   },
   warning = function(condition) {
     print("Something's wrong on WDQS: wait 10 secs, try again.")
     Sys.sleep(10)
-    GET(url = paste0(endPointURL, URLencode(query)))
+    httr::GET(url = paste0(endPointURL, URLencode(query)))
   }
   )  
   if (res$status_code == 200) {
@@ -212,7 +200,7 @@ if (res$status_code == 200) {
 if (class(rc) == "logical") {
   print("rawToChar() conversion for the SPARQL query failed. Exiting.")
 } else  {
-  rc <- fromJSON(rc, simplifyDataFrame = T)
+  rc <- jsonlite::fromJSON(rc, simplifyDataFrame = T)
 }
 # - to runtime Log:
 print(paste("--- wdll_DataModel.R: form dataModel.", 
@@ -327,7 +315,7 @@ for (i in 1:length(lprops)) {
     gprops <- gprops[which(names(gprops) %in% dmodelProps$dmodelProperties)]
     if (length(gprops) > 0) {
       gprops <- lapply(gprops, function(x) {x$mainsnak})
-      gprops <- lapply(gprops, function(x) {flatten(x, recursive = TRUE)})
+      gprops <- lapply(gprops, function(x) {jsonlite::flatten(x, recursive = TRUE)})
       gprops <- rbindlist(gprops, fill = T, use.names = T)
       gprops$language <- x
       gprops$languageLabel <- dataModel$languageLabel[which(dataModel$language %in% x)][1]
@@ -356,7 +344,7 @@ w <- which(is.na(lprops))
 if (length(w) > 0) {
   lprops[w] <- NULL 
 }
-lprops <- rbindlist(lprops, fill = T, use.names = T)
+lprops <- data.table::rbindlist(lprops, fill = T, use.names = T)
 # - filter out P1098 (number of speakers)
 w <- which(lprops$propertyLabel %in% 'numberOfSpeakers')
 if (length(w) > 0) {
@@ -399,7 +387,7 @@ labels <- sapply(items,
                  function(x) {
                    repeat {
                      i <- tryCatch({
-                       get_item(x)
+                       WikidataR::get_item(x)
                      },
                      error = function(condition) {
                        Sys.sleep(2)

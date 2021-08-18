@@ -63,17 +63,10 @@ renv::load(project = fPath, quiet = FALSE)
 
 # - lib
 library(XML)
-library(data.table)
-library(stringr)
-library(jsonlite)
-library(dplyr)
-library(tidyr)
-library(httr)
-library(htmltab)
 
 # - pars
-params <- xmlParse(paste0(fPath, "WD_LanguagesLandscape_Config.xml"))
-params <- xmlToList(params)
+params <- XML::xmlParse(paste0(fPath, "WD_LanguagesLandscape_Config.xml"))
+params <- XML::xmlToList(params)
 
 # - dirs
 dataDir <- params$general$dataDir
@@ -114,9 +107,9 @@ if ('WLLP_MainReport.csv' %in% lF) {
 ### --------------------------------------------------
 
 ### --- Read WLLP paramereters: WD_LanguagesLandscape_Config_Deploy.xml
-params <- xmlParse(paste0(fPath, 
+params <- XML::xmlParse(paste0(fPath, 
                           "WD_LanguagesLandscape_Config_Deploy.xml"))
-params <- xmlToList(params)
+params <- XML::xmlToList(params)
 sparkMaster <- params$spark$master
 sparkDeployMode <- params$spark$deploy_mode
 sparkNumExecutors <- params$spark$num_executors
@@ -302,8 +295,8 @@ print("Log: RUN wdll_Analytics.R")
 system(command = paste0('export USER=goransm && nice -10 Rscript ',
                         paste0(fPath, 'wdll_Analytics.R '),
                         paste0(logDir, '> wdll_Analytics_LOG.log 2>&1')
-),
-wait = T)
+                        ),
+       wait = T)
 
 ### --------------------------------------------------
 ### --- log wdll_Analytics.R

@@ -61,17 +61,15 @@ renv::load(project = fPath, quiet = FALSE)
 # - lib
 library(XML)
 library(data.table)
-library(stringr)
 library(spam)
 library(spam64)
 library(text2vec)
 library(dplyr)
-library(tidyr)
 library(Rtsne)
 
 # - params
-params <- xmlParse(paste0(fPath, "WD_LanguagesLandscape_Config.xml"))
-params <- xmlToList(params)
+params <- XML::xmlParse(paste0(fPath, "WD_LanguagesLandscape_Config.xml"))
+params <- XML::xmlToList(params)
 
 # - directories
 dataDir <- params$general$dataDir
@@ -94,8 +92,8 @@ print(paste("--- wdll_Similarity.R. Load fundamental dataset.",
             Sys.time(), sep = " "))
 dataSet <- readRDS(paste0(outDir, "wd_entities_languages.Rds"))
 # - load wd_languages_count.csv
-langCount <- fread(paste0(outDir, "wd_languages_count.csv"), 
-                   header = T)
+langCount <- data.table::fread(paste0(outDir, "wd_languages_count.csv"),
+                               header = T)
 langCount$V1 <- NULL
 
 ### --- Compute co-occurences: labels across items
@@ -142,7 +140,7 @@ for (i in 1:length(startIx)) {
               sparse = T)
   rm(batchData)
   print(paste0("co-occurences now for contingency batch: ", i, " out of: ", nBatches, "."))
-  co_occur <- crossprod.spam(t(cT), y = NULL)
+  co_occur <- spam::crossprod.spam(t(cT), y = NULL)
   rm(cT)
   co_occur <- as.matrix(co_occur)
   diag(co_occur) <- 0
@@ -178,7 +176,7 @@ print(paste("--- wdll_Similarity.R. Compute similarity and distance matrix from 
 langMat <- as.matrix(lang[, 1:(dim(lang)[1])])
 rownames(langMat) <- colnames(langMat)
 # - cosine similarity:
-cosineSimMatrix = sim2(langMat, method = "cosine", norm = "l2")
+cosineSimMatrix = text2vec::sim2(langMat, method = "cosine", norm = "l2")
 cosineSimMatrix_Frame <- as.data.frame(cosineSimMatrix)
 cosineSimMatrix_Frame$language <- rownames(cosineSimMatrix_Frame)
 cosineSimMatrix_Frame <- dplyr::left_join(cosineSimMatrix_Frame,
@@ -205,10 +203,10 @@ print(paste("--- wdll_Similarity.R. tSNE 2D map from cosineDistMatrix_Frame.",
             Sys.time(), sep = " "))
 cosineDistMatrix_Frame <- 
   as.matrix(cosineDistMatrix_Frame[, 1:(dim(cosineDistMatrix_Frame)[1])])
-tsne2DMap <- Rtsne(cosineDistMatrix_Frame,
-                   theta = 0,
-                   is_distance = T,
-                   tsne_perplexity = 10)
+tsne2DMap <- Rtsne::Rtsne(cosineDistMatrix_Frame,
+                          theta = 0,
+                          is_distance = T,
+                          tsne_perplexity = 10)
 tsne2DMap <- as.data.frame(tsne2DMap$Y)
 colnames(tsne2DMap) <- paste("D", seq(1:dim(tsne2DMap)[2]), sep = "")
 tsne2DMap$language <- colnames(cosineDistMatrix_Frame)
@@ -249,7 +247,7 @@ print(paste0("Binary contingency in: ",
 # - clean-up dataSet
 rm(dataSet); gc()
 # - compute Jaccard Similarity Matrix
-distMatrix <- sim2(x = cT, y = NULL, 
+distMatrix <- text2vec::sim2(x = cT, y = NULL, 
                    method = "jaccard", 
                    norm = "none")
 print(paste0("Jaccard Similarity Matrix in: ", 
@@ -292,10 +290,10 @@ print(paste0("Jaccard matrices DONE in: ",
 print(paste("--- wdll_Similarity.R. tSNE 2d: distMatrix from Jaccard distances.", 
             Sys.time(), sep = " "))
 distMatrix <- as.matrix(distMatrix[, 1:(dim(distMatrix)[1])])
-tsne2DMap <- Rtsne(distMatrix,
-                   theta = 0,
-                   is_distance = T,
-                   tsne_perplexity = 10)
+tsne2DMap <- Rtsne::Rtsne(distMatrix,
+                          theta = 0,
+                          is_distance = T,
+                          tsne_perplexity = 10)
 tsne2DMap <- as.data.frame(tsne2DMap$Y)
 colnames(tsne2DMap) <- paste("D", seq(1:dim(tsne2DMap)[2]), sep = "")
 tsne2DMap$language <- colnames(distMatrix)
