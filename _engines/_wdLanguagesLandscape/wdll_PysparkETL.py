@@ -1,6 +1,6 @@
 
 ### ---------------------------------------------------------------------------
-### --- wdll_mapReduce.R
+### --- wdll_PysparkETL.py
 ### --- Version 1.0.0
 ### --- Author: Goran S. Milovanovic, Data Scientist, WMDE
 ### --- Developed under the contract between Goran Milovanovic PR Data Kolektiv
