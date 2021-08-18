@@ -48,8 +48,8 @@ print(paste("--- wdll_Similarity.R RUN STARTED ON:",
 print(paste("--- wdll_Similarity.R. Read params.", 
             Sys.time(), sep = " "))
 fPath <- as.character(commandArgs(trailingOnly = FALSE)[4])
-fPath <- gsub("--file=", "", fPath, fixed = T)
-fPath <- unlist(strsplit(fPath, split = "/", fixed = T))
+fPath <- gsub("--file=", "", fPath, fixed = TRUE)
+fPath <- unlist(strsplit(fPath, split = "/", fixed = TRUE))
 fPath <- paste(
   paste(fPath[1:length(fPath) - 1], collapse = "/"),
   "/",
@@ -93,7 +93,7 @@ print(paste("--- wdll_Similarity.R. Load fundamental dataset.",
 dataSet <- readRDS(paste0(outDir, "wd_entities_languages.Rds"))
 # - load wd_languages_count.csv
 langCount <- data.table::fread(paste0(outDir, "wd_languages_count.csv"),
-                               header = T)
+                               header = TRUE)
 langCount$V1 <- NULL
 
 ### --- Compute co-occurences: labels across items
@@ -113,7 +113,7 @@ rownames(lang) <- l
 colnames(lang) <- l
 # - entity batches
 it <- data.frame(item = it,
-                 stringsAsFactors = F)
+                 stringsAsFactors = FALSE)
 it$rand <- runif(dim(it)[1], 0, 1)
 it <- dplyr::arrange(it, rand)
 it <- it$item
@@ -137,7 +137,7 @@ for (i in 1:length(startIx)) {
   print(paste0("xtabs now for contingency batch: ", i, " out of: ", nBatches, "."))
   cT <- xtabs(~ language + entity,
               data = batchData, 
-              sparse = T)
+              sparse = TRUE)
   rm(batchData)
   print(paste0("co-occurences now for contingency batch: ", i, " out of: ", nBatches, "."))
   co_occur <- spam::crossprod.spam(t(cT), y = NULL)
@@ -205,14 +205,14 @@ cosineDistMatrix_Frame <-
   as.matrix(cosineDistMatrix_Frame[, 1:(dim(cosineDistMatrix_Frame)[1])])
 tsne2DMap <- Rtsne::Rtsne(cosineDistMatrix_Frame,
                           theta = 0,
-                          is_distance = T,
+                          is_distance = TRUE,
                           tsne_perplexity = 10)
 tsne2DMap <- as.data.frame(tsne2DMap$Y)
 colnames(tsne2DMap) <- paste("D", seq(1:dim(tsne2DMap)[2]), sep = "")
 tsne2DMap$language <- colnames(cosineDistMatrix_Frame)
 tsne2DMap <- dplyr::left_join(tsne2DMap, 
                               langCount, 
-                              by = 'language')
+                              by = "language")
 # - store tsne2DMap from Jaccard distance matrix
 # - to runtime Log:
 print(paste("--- wdll_Similarity.R. store tsne2DMap from Jaccard distance matrix.", 
@@ -292,14 +292,14 @@ print(paste("--- wdll_Similarity.R. tSNE 2d: distMatrix from Jaccard distances."
 distMatrix <- as.matrix(distMatrix[, 1:(dim(distMatrix)[1])])
 tsne2DMap <- Rtsne::Rtsne(distMatrix,
                           theta = 0,
-                          is_distance = T,
+                          is_distance = TRUE,
                           tsne_perplexity = 10)
 tsne2DMap <- as.data.frame(tsne2DMap$Y)
 colnames(tsne2DMap) <- paste("D", seq(1:dim(tsne2DMap)[2]), sep = "")
 tsne2DMap$language <- colnames(distMatrix)
 tsne2DMap <- dplyr::left_join(tsne2DMap, 
                               langCount, 
-                              by = 'language')
+                              by = "language")
 # - store tsne2DMap from Jaccard distance matrix
 # - to runtime Log:
 print(paste("--- wdll_Similarity.R. store WD_tsne2DMap_from_Jaccard_Distance.csv..", 

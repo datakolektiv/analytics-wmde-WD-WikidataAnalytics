@@ -48,8 +48,8 @@ print(paste("--- wdll_Analytics.R: read params.",
             Sys.time(), sep = " "))
 # - fPath: where the scripts is run from?
 fPath <- as.character(commandArgs(trailingOnly = FALSE)[4])
-fPath <- gsub("--file=", "", fPath, fixed = T)
-fPath <- unlist(strsplit(fPath, split = "/", fixed = T))
+fPath <- gsub("--file=", "", fPath, fixed = TRUE)
+fPath <- unlist(strsplit(fPath, split = "/", fixed = TRUE))
 fPath <- paste(
   paste(fPath[1:length(fPath) - 1], collapse = "/"),
   "/",
@@ -77,7 +77,7 @@ hdfsPath <- params$general$hdfsPath
 # - to runtime Log:
 print(paste("--- wdll_Analytics.R: source functions.", 
             Sys.time(), sep = " "))
-source(paste0(fPath, 'wdll_Functions.R'))
+source(paste0(fPath, "wdll_Functions.R"))
 
 #- set proxy
 Sys.setenv(
@@ -96,10 +96,10 @@ publicDir <- params$general$pubDataDir
 print(paste("--- wdll_Analytics.R: load WD_Languages_UsedLanguages.csvn as usedLanguages.", 
             Sys.time(), sep = " "))
 usedLanguages <- read.csv(paste0(outDir, "WD_Languages_UsedLanguages.csv"),
-                          header = T, 
-                          check.names = F,
+                          header = TRUE, 
+                          check.names = FALSE,
                           row.names = 1,
-                          stringsAsFactors = F)
+                          stringsAsFactors = FALSE)
 
 # - to runtime Log:
 print(paste("--- wdll_Analytics.R: produce visualization datasets.", 
@@ -110,10 +110,10 @@ pFrame <- usedLanguages %>%
   dplyr::select(language, description, UNESCOLanguageStatus, numSitelinks)
 pFrame <- pFrame[complete.cases(pFrame), ]
 pFrame$UNESCOLanguageStatus <- gsub("\\(Q.+$", "", pFrame$UNESCOLanguageStatus)
-colnames(pFrame) <- c('Language Code', 
-                      'Language', 
-                      'UNESCO Language Status', 
-                      'Sitelinks')
+colnames(pFrame) <- c("Language Code", 
+                      "Language", 
+                      "UNESCO Language Status", 
+                      "Sitelinks")
 write.csv(pFrame, 
           paste0(outDir, "WD_Vis_UNESCO Language Status_Sitelinks.csv"))
 
@@ -122,10 +122,10 @@ pFrame <- usedLanguages %>%
   dplyr::select(language, description, UNESCOLanguageStatus, item_count)
 pFrame <- pFrame[complete.cases(pFrame), ]
 pFrame$UNESCOLanguageStatus <- gsub("\\(Q.+$", "", pFrame$UNESCOLanguageStatus)
-colnames(pFrame) <- c('Language Code', 
-                      'Language', 
-                      'UNESCO Language Status', 
-                      'Labels')
+colnames(pFrame) <- c("Language Code", 
+                      "Language", 
+                      "UNESCO Language Status", 
+                      "Labels")
 write.csv(pFrame, 
           paste0(outDir, "WD_Vis_UNESCO Language Status_NumItems.csv"))
 
@@ -135,12 +135,12 @@ pFrame <- usedLanguages %>%
                 reuse, num_items_reused, item_count)
 pFrame <- pFrame[complete.cases(pFrame), ]
 pFrame$UNESCOLanguageStatus <- gsub("\\(Q.+$", "", pFrame$UNESCOLanguageStatus)
-colnames(pFrame) <- c('Language Code', 
-                      'Language', 
-                      'UNESCO Language Status', 
-                      'Reuse', 
-                      'Items Reused', 
-                      'Items')
+colnames(pFrame) <- c("Language Code", 
+                      "Language", 
+                      "UNESCO Language Status", 
+                      "Reuse", 
+                      "Items Reused", 
+                      "Items")
 write.csv(pFrame, 
           paste0(outDir, "WD_Vis_UNESCO Language Status_ItemReuse.csv"))
 
@@ -149,10 +149,10 @@ pFrame <- usedLanguages %>%
   dplyr::select(language, description, EthnologueLanguageStatus, numSitelinks)
 pFrame <- pFrame[complete.cases(pFrame), ]
 pFrame$EthnologueLanguageStatus <- gsub("\\(Q.+$", "", pFrame$EthnologueLanguageStatus)
-colnames(pFrame) <- c('Language Code', 
-                      'Language', 
-                      'Ethnologue Language Status', 
-                      'Sitelinks')
+colnames(pFrame) <- c("Language Code", 
+                      "Language", 
+                      "Ethnologue Language Status", 
+                      "Sitelinks")
 write.csv(pFrame, 
           paste0(outDir, "WD_Vis_EthnologueLanguageStatus_Sitelinks.csv"))
 
@@ -161,10 +161,10 @@ pFrame <- usedLanguages %>%
   dplyr::select(language, description, EthnologueLanguageStatus, item_count)
 pFrame <- pFrame[complete.cases(pFrame), ]
 pFrame$EthnologueLanguageStatus <- gsub("\\(Q.+$", "", pFrame$EthnologueLanguageStatus)
-colnames(pFrame) <- c('Language Code', 
-                      'Language', 
-                      'Ethnologue Language Status', 
-                      'Labels')
+colnames(pFrame) <- c("Language Code", 
+                      "Language", 
+                      "Ethnologue Language Status", 
+                      "Labels")
 write.csv(pFrame, 
           paste0(outDir, "WD_Vis_EthnologueLanguageStatus_NumItems.csv"))
 
@@ -174,12 +174,12 @@ pFrame <- usedLanguages %>%
                 reuse, num_items_reused, item_count)
 pFrame <- pFrame[complete.cases(pFrame), ]
 pFrame$EthnologueLanguageStatus <- gsub("\\(Q.+$", "", pFrame$EthnologueLanguageStatus)
-colnames(pFrame) <- c('Language Code', 
-                      'Language', 
-                      'Ethnologue Language Status', 
-                      'Reuse', 
-                      'Items Reused', 
-                      'Items')
+colnames(pFrame) <- c("Language Code", 
+                      "Language", 
+                      "Ethnologue Language Status", 
+                      "Reuse", 
+                      "Items Reused", 
+                      "Items")
 write.csv(pFrame, 
           paste0(outDir, "WD_Vis_EthnologueLanguageStatus_ItemReuse.csv"))
 
@@ -190,14 +190,14 @@ print(paste("--- wdll_Analytics.R: wd_Superclasses_Recurrently() for Ontology St
             Sys.time(), sep = " "))
 entity <- unique(usedLanguages$languageURI)
 myWD <- wd_Superclasses_Recurrently(entity = entity, 
-                                    language = 'en', 
-                                    cleanup = T,
-                                    fetchSubClasses = F,
-                                    fetchCounts = F,
+                                    language = "en", 
+                                    cleanup = TRUE,
+                                    fetchSubClasses = FALSE,
+                                    fetchCounts = FALSE,
                                     SPARQL_Endpoint = endPointURL)
 
 saveRDS(myWD, 
-        paste0(outDir, 'myWD.Rds'))
+        paste0(outDir, "myWD.Rds"))
 
 # - prepate dataSet for dashboard visualization
 # - to runtime Log:
@@ -208,7 +208,7 @@ dC <- dplyr::filter(dC,
                     ((item %in% entity) | (grepl("lang|ling", dC$itemLabel))) & 
                       ((superClass %in% entity) | (grepl("lang|ling", dC$superClassLabel))))
 write.csv(dC, 
-          paste0(outDir, 'WD_Languages_OntologyStructure.csv'))
+          paste0(outDir, "WD_Languages_OntologyStructure.csv"))
 
 # - to runtime Log:
 print(paste("--- wdll_Analytics.R ENDED ON:", 

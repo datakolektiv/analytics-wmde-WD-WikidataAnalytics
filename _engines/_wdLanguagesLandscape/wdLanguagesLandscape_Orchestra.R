@@ -51,8 +51,8 @@ generalT1 <- Sys.time()
 ### --- Read WLP paramereters
 # - fPath: where the scripts is run from?
 fPath <- as.character(commandArgs(trailingOnly = FALSE)[4])
-fPath <- gsub("--file=", "", fPath, fixed = T)
-fPath <- unlist(strsplit(fPath, split = "/", fixed = T))
+fPath <- gsub("--file=", "", fPath, fixed = TRUE)
+fPath <- unlist(strsplit(fPath, split = "/", fixed = TRUE))
 fPath <- paste(
   paste(fPath[1:length(fPath) - 1], collapse = "/"),
   "/",
@@ -84,22 +84,22 @@ print("Log: START")
 setwd(logDir)
 # - write to WDCM main reporting file:
 lF <- list.files()
-if ('WLLP_MainReport.csv' %in% lF) {
-  mainReport <- read.csv('WLLP_MainReport.csv',
-                         header = T,
+if ("WLLP_MainReport.csv" %in% lF) {
+  mainReport <- read.csv("WLLP_MainReport.csv",
+                         header = TRUE,
                          row.names = 1,
-                         check.names = F,
-                         stringsAsFactors = F)
-  newReport <- data.frame(Step = 'WLLP Orchestra START',
+                         check.names = FALSE,
+                         stringsAsFactors = FALSE)
+  newReport <- data.frame(Step = "WLLP Orchestra START",
                           Time = as.character(Sys.time()),
-                          stringsAsFactors = F)
+                          stringsAsFactors = FALSE)
   mainReport <- rbind(mainReport, newReport)
-  write.csv(mainReport, 'WLLP_MainReport.csv')
+  write.csv(mainReport, "WLLP_MainReport.csv")
 } else {
-  newReport <- data.frame(Step = 'WLLP Orchestra START',
+  newReport <- data.frame(Step = "WLLP Orchestra START",
                           Time = as.character(Sys.time()),
-                          stringsAsFactors = F)
-  write.csv(newReport, 'WLLP_MainReport.csv')
+                          stringsAsFactors = FALSE)
+  write.csv(newReport, "WLLP_MainReport.csv")
 }
 
 ### --------------------------------------------------
@@ -129,7 +129,7 @@ print(paste("--- wd_processDump_Spark.py Pyspark ETL Procedures STARTED ON:",
             Sys.time(), sep = " "))
 # - Kerberos init
 system(command = 'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls', 
-       wait = T)
+       wait = TRUE)
 system(command = paste0('sudo -u analytics-privatedata spark2-submit ', 
                         sparkMaster, ' ',
                         sparkDeployMode, ' ', 
@@ -137,8 +137,8 @@ system(command = paste0('sudo -u analytics-privatedata spark2-submit ',
                         sparkExecutorMemory, ' ',
                         sparkExecutorCores, ' ',
                         sparkConfigDynamic, ' ',
-                        paste0(fPath, 'wdll_PysparkETL.py')),
-       wait = T)
+                        paste0(fPath, "wdll_PysparkETL.py")),
+       wait = TRUE)
 
 ### --------------------------------------------------
 ### --- log Pyspark: WD_LanguagesLandscape.py
@@ -149,22 +149,22 @@ print("--- LOG: Pyspark: WD_LanguagesLandscape.py step completed.")
 setwd(logDir)
 # - write to WDCM main reporting file:
 lF <- list.files()
-if ('WLLP_MainReport.csv' %in% lF) {
-  mainReport <- read.csv('WLLP_MainReport.csv',
-                         header = T,
+if ("WLLP_MainReport.csv" %in% lF) {
+  mainReport <- read.csv("WLLP_MainReport.csv",
+                         header = TRUE,
                          row.names = 1,
-                         check.names = F,
-                         stringsAsFactors = F)
-  newReport <- data.frame(Step = 'Pyspark ETL',
+                         check.names = FALSE,
+                         stringsAsFactors = FALSE)
+  newReport <- data.frame(Step = "Pyspark ETL",
                           Time = as.character(Sys.time()),
-                          stringsAsFactors = F)
+                          stringsAsFactors = FALSE)
   mainReport <- rbind(mainReport, newReport)
-  write.csv(mainReport, 'WLLP_MainReport.csv')
+  write.csv(mainReport, "WLLP_MainReport.csv")
 } else {
-  newReport <- data.frame(Step = 'Pyspark ETL',
+  newReport <- data.frame(Step = "Pyspark ETL",
                           Time = as.character(Sys.time()),
-                          stringsAsFactors = F)
-  write.csv(newReport, 'WLLP_MainReport.csv')
+                          stringsAsFactors = FALSE)
+  write.csv(newReport, "WLLP_MainReport.csv")
 }
 
 ### --------------------------------------------------
@@ -178,7 +178,7 @@ system(command = paste0('export USER=goransm && nice -10 Rscript ',
                         paste0(fPath, 'wdll_mapReduce.R '),
                         paste0(logDir, '> wdll_mapReduce_LOG.log 2>&1')
                         ),
-       wait = T)
+       wait = TRUE)
 
 ### --------------------------------------------------
 ### --- log wdll_mapReduce.R
@@ -189,22 +189,22 @@ print("--- LOG: wdll_mapReduce.R step completed.")
 setwd(logDir)
 # - write to WDCM main reporting file:
 lF <- list.files()
-if ('WLLP_MainReport.csv' %in% lF) {
-  mainReport <- read.csv('WLLP_MainReport.csv',
-                         header = T,
+if ("WLLP_MainReport.csv" %in% lF) {
+  mainReport <- read.csv("WLLP_MainReport.csv",
+                         header = TRUE,
                          row.names = 1,
-                         check.names = F,
-                         stringsAsFactors = F)
-  newReport <- data.frame(Step = 'MapReduce ETL',
+                         check.names = FALSE,
+                         stringsAsFactors = FALSE)
+  newReport <- data.frame(Step = "MapReduce ETL",
                           Time = as.character(Sys.time()),
-                          stringsAsFactors = F)
+                          stringsAsFactors = FALSE)
   mainReport <- rbind(mainReport, newReport)
-  write.csv(mainReport, 'WLLP_MainReport.csv')
+  write.csv(mainReport, "WLLP_MainReport.csv")
 } else {
-  newReport <- data.frame(Step = 'MapReduce ETL',
+  newReport <- data.frame(Step = "MapReduce ETL",
                           Time = as.character(Sys.time()),
-                          stringsAsFactors = F)
-  write.csv(newReport, 'WLLP_MainReport.csv')
+                          stringsAsFactors = FALSE)
+  write.csv(newReport, "WLLP_MainReport.csv")
 }
 
 ### --------------------------------------------------
@@ -218,7 +218,7 @@ system(command = paste0('export USER=goransm && nice -10 Rscript ',
                         paste0(fPath, 'wdll_Similarity.R '),
                         paste0(logDir, '> wdll_Similarity_LOG.log 2>&1')
 ),
-wait = T)
+wait = TRUE)
 
 ### --------------------------------------------------
 ### --- log wdll_Similarity.R
@@ -229,22 +229,22 @@ print("--- LOG: wdll_Similarity.R step completed.")
 setwd(logDir)
 # - write to WDCM main reporting file:
 lF <- list.files()
-if ('WLLP_MainReport.csv' %in% lF) {
-  mainReport <- read.csv('WLLP_MainReport.csv',
-                         header = T,
+if ("WLLP_MainReport.csv" %in% lF) {
+  mainReport <- read.csv("WLLP_MainReport.csv",
+                         header = TRUE,
                          row.names = 1,
-                         check.names = F,
-                         stringsAsFactors = F)
-  newReport <- data.frame(Step = 'Similarity',
+                         check.names = FALSE,
+                         stringsAsFactors = FALSE)
+  newReport <- data.frame(Step = "Similarity",
                           Time = as.character(Sys.time()),
-                          stringsAsFactors = F)
+                          stringsAsFactors = FALSE)
   mainReport <- rbind(mainReport, newReport)
-  write.csv(mainReport, 'WLLP_MainReport.csv')
+  write.csv(mainReport, "WLLP_MainReport.csv")
 } else {
-  newReport <- data.frame(Step = 'Similarity',
+  newReport <- data.frame(Step = "Similarity",
                           Time = as.character(Sys.time()),
-                          stringsAsFactors = F)
-  write.csv(newReport, 'WLLP_MainReport.csv')
+                          stringsAsFactors = FALSE)
+  write.csv(newReport, "WLLP_MainReport.csv")
 }
 
 ### --------------------------------------------------
@@ -256,7 +256,7 @@ print("Log: RUN wdll_DataModel.R")
 system(command = paste0('export USER=goransm && nice -10 Rscript ',
                         paste0(fPath, 'wdll_DataModel.R '),
                         paste0(logDir, '> wdll_DataModel_LOG.log 2>&1')),
-       wait = T)
+       wait = TRUE)
 
 ### --------------------------------------------------
 ### --- log wdll_DataModel.R
@@ -267,22 +267,22 @@ print("--- LOG: wdll_DataModel.R step completed.")
 setwd(logDir)
 # - write to WDCM main reporting file:
 lF <- list.files()
-if ('WLLP_MainReport.csv' %in% lF) {
-  mainReport <- read.csv('WLLP_MainReport.csv',
-                         header = T,
+if ("WLLP_MainReport.csv" %in% lF) {
+  mainReport <- read.csv("WLLP_MainReport.csv",
+                         header = TRUE,
                          row.names = 1,
-                         check.names = F,
-                         stringsAsFactors = F)
-  newReport <- data.frame(Step = 'Data Model',
+                         check.names = FALSE,
+                         stringsAsFactors = FALSE)
+  newReport <- data.frame(Step = "Data Model",
                           Time = as.character(Sys.time()),
-                          stringsAsFactors = F)
+                          stringsAsFactors = FALSE)
   mainReport <- rbind(mainReport, newReport)
-  write.csv(mainReport, 'WLLP_MainReport.csv')
+  write.csv(mainReport, "WLLP_MainReport.csv")
 } else {
-  newReport <- data.frame(Step = 'Data Model',
+  newReport <- data.frame(Step = "Data Model",
                           Time = as.character(Sys.time()),
-                          stringsAsFactors = F)
-  write.csv(newReport, 'WLLP_MainReport.csv')
+                          stringsAsFactors = FALSE)
+  write.csv(newReport, "WLLP_MainReport.csv")
 }
 
 ### --------------------------------------------------
@@ -296,7 +296,7 @@ system(command = paste0('export USER=goransm && nice -10 Rscript ',
                         paste0(fPath, 'wdll_Analytics.R '),
                         paste0(logDir, '> wdll_Analytics_LOG.log 2>&1')
                         ),
-       wait = T)
+       wait = TRUE)
 
 ### --------------------------------------------------
 ### --- log wdll_Analytics.R
@@ -307,22 +307,22 @@ print("--- LOG: wdll_Analytics.R step completed.")
 setwd(logDir)
 # - write to WDCM main reporting file:
 lF <- list.files()
-if ('WLLP_MainReport.csv' %in% lF) {
-  mainReport <- read.csv('WLLP_MainReport.csv',
-                         header = T,
+if ("WLLP_MainReport.csv" %in% lF) {
+  mainReport <- read.csv("WLLP_MainReport.csv",
+                         header = TRUE,
                          row.names = 1,
-                         check.names = F,
-                         stringsAsFactors = F)
-  newReport <- data.frame(Step = 'Analytics',
+                         check.names = FALSE,
+                         stringsAsFactors = FALSE)
+  newReport <- data.frame(Step = "Analytics",
                           Time = as.character(Sys.time()),
-                          stringsAsFactors = F)
+                          stringsAsFactors = FALSE)
   mainReport <- rbind(mainReport, newReport)
-  write.csv(mainReport, 'WLLP_MainReport.csv')
+  write.csv(mainReport, "WLLP_MainReport.csv")
 } else {
-  newReport <- data.frame(Step = 'Analytics',
+  newReport <- data.frame(Step = "Analytics",
                           Time = as.character(Sys.time()),
-                          stringsAsFactors = F)
-  write.csv(newReport, 'WLLP_MainReport.csv')
+                          stringsAsFactors = FALSE)
+  write.csv(newReport, "WLLP_MainReport.csv")
 }
 
 
@@ -335,22 +335,22 @@ print("Copy outputs to public directory.")
 write(paste0("Last updated on: ", Sys.time()), 
       paste0(outDir, "WDLanguagesUpdateString.txt"))
 
-cFiles <- c('WD_Languages_OntologyStructure.csv',
-            'WD_Languages_UsedLanguages.csv',
-            'WD_Languages_Jaccard_Similarity.csv',
-            'WD_Vis_UNESCO\\ Language\\ Status_Sitelinks.csv',
-            'WD_Vis_EthnologueLanguageStatus_Sitelinks.csv',
-            'WD_Vis_UNESCO\\ Language\\ Status_NumItems.csv',
-            'WD_Vis_EthnologueLanguageStatus_NumItems.csv',
-            'WD_Vis_UNESCO\\ Language\\ Status_ItemReuse.csv',
-            'WD_Vis_EthnologueLanguageStatus_ItemReuse.csv',
-            'wd_languages_count.csv', 
-            'WDLanguagesUpdateString.txt')
+cFiles <- c("WD_Languages_OntologyStructure.csv",
+            "WD_Languages_UsedLanguages.csv",
+            "WD_Languages_Jaccard_Similarity.csv",
+            "WD_Vis_UNESCO\\ Language\\ Status_Sitelinks.csv",
+            "WD_Vis_EthnologueLanguageStatus_Sitelinks.csv",
+            "WD_Vis_UNESCO\\ Language\\ Status_NumItems.csv",
+            "WD_Vis_EthnologueLanguageStatus_NumItems.csv",
+            "WD_Vis_UNESCO\\ Language\\ Status_ItemReuse.csv",
+            "WD_Vis_EthnologueLanguageStatus_ItemReuse.csv",
+            "wd_languages_count.csv", 
+            "WDLanguagesUpdateString.txt")
 for (i in 1:length(cFiles)) {
-  print(paste0('Copying: ', cFiles[i], ' to publicDir.'))
+  print(paste0("Copying: ", cFiles[i], " to publicDir."))
   system(command = 
            paste0('cp ', outDir, cFiles[i], ' ', publicDir),
-         wait = T)
+         wait = TRUE)
 }
 
 ### --------------------------------------------------
@@ -362,21 +362,21 @@ print("Log: END WLLP Orchestra")
 setwd(logDir)
 # - write to WDCM main reporting file:
 lF <- list.files()
-if ('WDCM_MainReport.csv' %in% lF) {
-  mainReport <- read.csv('WLLP_MainReport.csv',
-                         header = T,
+if ("WDCM_MainReport.csv" %in% lF) {
+  mainReport <- read.csv("WLLP_MainReport.csv",
+                         header = TRUE,
                          row.names = 1,
-                         check.names = F,
-                         stringsAsFactors = F)
-  newReport <- data.frame(Step = 'WLLP Orchestra END',
+                         check.names = FALSE,
+                         stringsAsFactors = FALSE)
+  newReport <- data.frame(Step = "WLLP Orchestra END",
                           Time = as.character(Sys.time()),
-                          stringsAsFactors = F)
+                          stringsAsFactors = FALSE)
   mainReport <- rbind(mainReport, newReport)
-  write.csv(mainReport, 'WLLP_MainReport.csv')
+  write.csv(mainReport, "WLLP_MainReport.csv")
 } else {
-  newReport <- data.frame(Step = 'WLLP Orchestra END',
+  newReport <- data.frame(Step = "WLLP Orchestra END",
                           Time = as.character(Sys.time()),
-                          stringsAsFactors = F)
+                          stringsAsFactors = FALSE)
   write.csv(newReport, 'WLLP_MainReport.csv')
 }
 
@@ -394,14 +394,14 @@ print(paste0("--- wdLanguagesLandscape_Orchestra.R RUN COMPLETED IN: ",
 print("Copy main log to published; clean up log.")
 system(command = 
          paste0('cp ', logDir, 'WLLP_MainReport.csv ' , dataDir),
-       wait = T)
+       wait = TRUE)
 # - archive:
 lF <- list.files(logDir)
-lF <- lF[grepl('log$|Errors', lF)]
+lF <- lF[grepl("log$|Errors", lF)]
 lapply(lF, function(x) {
   system(command = 
            paste0('cp ', logDir, x, ' ', logDir, 'archive/'),
-         wait = T)
+         wait = TRUE)
 })
 # - clean up
 file.remove(paste0(logDir, lF))

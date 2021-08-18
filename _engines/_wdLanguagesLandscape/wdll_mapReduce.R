@@ -45,8 +45,8 @@ print(paste("--- wdll_mapReduce.R RUN STARTED ON:",
 
 # - fPath: where the scripts is run from?
 fPath <- as.character(commandArgs(trailingOnly = FALSE)[4])
-fPath <- gsub("--file=", "", fPath, fixed = T)
-fPath <- unlist(strsplit(fPath, split = "/", fixed = T))
+fPath <- gsub("--file=", "", fPath, fixed = TRUE)
+fPath <- unlist(strsplit(fPath, split = "/", fixed = TRUE))
 fPath <- paste(
   paste(fPath[1:length(fPath) - 1], collapse = "/"),
   "/",
@@ -91,7 +91,7 @@ print(paste("wdll_MapReduce: Fetching reuse data from goransm.wdcm_clients_wb_en
             Sys.time(), sep = " "))
 # - Kerberos init
 system(command = paste0(kerberosPrefix, ' hdfs dfs -ls'), 
-       wait = T)
+       wait = TRUE)
 # - Run query
 query <- system(command = paste(kerberosPrefix, 
                                 '/usr/local/bin/beeline --incremental=true --silent -f "',
@@ -113,14 +113,14 @@ print(paste("wdll_MapReduce: Collect Final Labels Dataset STARTED ON:",
 system(paste0('sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls ', 
               hdfsPath, 'wd_dump_item_language > ', 
               dataDir, 'files.txt'), 
-       wait = T)
+       wait = TRUE)
 files <- read.table(paste0(dataDir, 'files.txt'), skip = 1)
 files <- as.character(files$V8)[2:length(as.character(files$V8))]
 file.remove(paste0(dataDir, 'files.txt'))
 for (i in 1:length(files)) {
   system(paste0('sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -text ', 
                 files[i], ' > ',  
-                paste0(dataDir, "wd_dump_item_language", i, ".csv")), wait = T)
+                paste0(dataDir, "wd_dump_item_language", i, ".csv")), wait = TRUE)
 }
 print("wdll_MapReduce: read splits - dataSet")
 # - read splits: dataSet
@@ -128,11 +128,13 @@ print("wdll_MapReduce: read splits - dataSet")
 lF <- list.files(dataDir)
 lF <- lF[grepl("wd_dump_item_language", lF)]
 dataSet <- lapply(paste0(dataDir, lF), 
-                  function(x) {fread(x, header = F)})
+                  function(x) {
+                    fread(x, header = FALSE)
+                    })
 # - collect
 dataSet <- data.table::rbindlist(dataSet)
 # - schema
-colnames(dataSet) <- c('entity', 'language')
+colnames(dataSet) <- c("entity", "language")
 
 # - collect stats
 stats <- list()
@@ -156,17 +158,17 @@ itemCount <- dataSet[, .N ,by = entity]
 
 # - remove DataSet: save memory on stat100*
 rm(dataSet); gc()
-colnames(itemCount) <- c('entity', 'language_count')
+colnames(itemCount) <- c("entity", "language_count")
 
 ### --- WDCM Usage dataset
 
 print("wdll_MapReduce: fread: wd_entities_reuse.tsv")
 wdcmReuse <- data.table::fread(paste0(
-  dataDir, 'wd_entities_reuse.tsv'), 
+  dataDir, "wd_entities_reuse.tsv"), 
   sep = "\t")
 
 # - schema
-colnames(wdcmReuse) <- c('entity', 'reuse')
+colnames(wdcmReuse) <- c("entity", "reuse")
 data.table::setkey(wdcmReuse, entity)
 data.table::setorder(wdcmReuse, -reuse)
 
@@ -208,7 +210,7 @@ rm(wdcmReuse); gc()
 
 # - compute re-use per language
 countUsedItems <- dataSet[!is.na(reuse), .N, by = "language"]
-colnames(countUsedItems)[2] <- 'num_items_reused'
+colnames(countUsedItems)[2] <- "num_items_reused"
 dataSet[is.na(reuse), reuse := 0]
 dataSet <- dplyr::select(dataSet, -entity)
 dataSet <- dataSet[, .(reuse = sum(reuse), item_count = .N), by = "language"]

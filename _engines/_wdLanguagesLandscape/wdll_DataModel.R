@@ -49,8 +49,8 @@ print(paste("--- wdll_DataModel.R: read params.",
 
 # - fPath: where the scripts is run from?
 fPath <- as.character(commandArgs(trailingOnly = FALSE)[4])
-fPath <- gsub("--file=", "", fPath, fixed = T)
-fPath <- unlist(strsplit(fPath, split = "/", fixed = T))
+fPath <- gsub("--file=", "", fPath, fixed = TRUE)
+fPath <- unlist(strsplit(fPath, split = "/", fixed = TRUE))
 fPath <- paste(
   paste(fPath[1:length(fPath) - 1], collapse = "/"),
   "/",
@@ -97,46 +97,46 @@ publicDir <- params$general$pubDataDir
 print(paste("--- wdll_DataModel.R: read wd_languages_count.csv.", 
             Sys.time(), sep = " "))
 usedLanguages <- read.csv(paste0(outDir, "wd_languages_count.csv"),
-                          header = T, 
-                          check.names = F,
+                          header = TRUE, 
+                          check.names = FALSE,
                           row.names = 1,
-                          stringsAsFactors = F)
+                          stringsAsFactors = FALSE)
 
 ### --- define data model for languages: essential properties
 
-dmodelProperties <- c('P31', 'P279', 'P361', 'P17', 
-                      'P4132', 'P2989', 'P3161', 'P5109', 
-                      'P5110', 'P282', 'P1018', 'P1098', 
-                      'P1999', 'P3823', 'P424', 'P2341', 
-                      'P527', 'P218', 'P219', 'P220', 
-                      'P1627', 'P3916', 'P1394', 'P2581')
-dmodelPropertiesLabs <- c('instanceOf', 
-                          'subclassOf', 
-                          'partOf', 
-                          'country', 
-                          'linguisticTypology', 
-                          'hasGrammaticalCase', 
-                          'hasGrammaticalMood', 
-                          'hasGrammaticalGender', 
-                          'hasGrammaticalPerson', 
-                          'writingSystem', 
-                          'languageRegulatoryBody', 
-                          'numberOfSpeakers', 
-                          'UNESCOLanguageStatus', 
-                          'EthnologueLanguageStatus', 
-                          'WikimediaLanguageCode', 
-                          'indigenousTo', 
-                          'hasPart', 
-                          'ISO639_1code', 
-                          'ISO639_2code', 
-                          'ISO639_3code', 
-                          'EthnologueLanguageCode', 
-                          'UNESCOThesaurusID', 
-                          'GlottologCode', 
-                          'BabelNetID')
+dmodelProperties <- c("P31", "P279", "P361", "P17", 
+                      "P4132", "P2989", "P3161", "P5109", 
+                      "P5110", "P282", "P1018", "P1098", 
+                      "P1999", "P3823", "P424", "P2341", 
+                      "P527", "P218", "P219", "P220", 
+                      "P1627", "P3916", "P1394", "P2581")
+dmodelPropertiesLabs <- c("instanceOf", 
+                          "subclassOf", 
+                          "partOf", 
+                          "country", 
+                          "linguisticTypology", 
+                          "hasGrammaticalCase", 
+                          "hasGrammaticalMood", 
+                          "hasGrammaticalGender", 
+                          "hasGrammaticalPerson", 
+                          "writingSystem", 
+                          "languageRegulatoryBody", 
+                          "numberOfSpeakers", 
+                          "UNESCOLanguageStatus", 
+                          "EthnologueLanguageStatus", 
+                          "WikimediaLanguageCode", 
+                          "indigenousTo", 
+                          "hasPart", 
+                          "ISO639_1code", 
+                          "ISO639_2code", 
+                          "ISO639_3code", 
+                          "EthnologueLanguageCode", 
+                          "UNESCOThesaurusID", 
+                          "GlottologCode", 
+                          "BabelNetID")
 dmodelProps <- data.frame(dmodelProperties = dmodelProperties, 
                           propertyLabel = dmodelPropertiesLabs, 
-                          stringsAsFactors = F)
+                          stringsAsFactors = FALSE)
 
 ### --- dataModel basics: languages + labels + WikimediaLanguage Code 
 
@@ -200,7 +200,7 @@ if (res$status_code == 200) {
 if (class(rc) == "logical") {
   print("rawToChar() conversion for the SPARQL query failed. Exiting.")
 } else  {
-  rc <- jsonlite::fromJSON(rc, simplifyDataFrame = T)
+  rc <- jsonlite::fromJSON(rc, simplifyDataFrame = TRUE)
 }
 # - to runtime Log:
 print(paste("--- wdll_DataModel.R: form dataModel.", 
@@ -209,7 +209,7 @@ dataModel <- data.frame(language = rc[[2]]$bindings$language$value,
                         languageLabel = rc[[2]]$bindings$languageLabel$value,
                         wikimediaCode = rc[[2]]$bindings$WikimediaLanguageCode$value,
                         description = rc[[2]]$bindings$desc$value,
-                        stringsAsFactors = F)
+                        stringsAsFactors = FALSE)
 dataModel$language <- gsub("http://www.wikidata.org/entity/", "", dataModel$language)
 dataModel <- dataModel[!duplicated(dataModel), ]
 
@@ -218,7 +218,7 @@ usedLanguages <- dplyr::left_join(usedLanguages,
                                   dplyr::select(dataModel, 
                                                 language, wikimediaCode, description),
                                   by = c("language" = "wikimediaCode"))
-colnames(usedLanguages)[5] <- 'languageURI'
+colnames(usedLanguages)[5] <- "languageURI"
 
 ### --- Find duplicated languages (i.e. more than one Wikimedia language code)
 # - compare the Wikimedia language codes in dataModel with the unique codes found in
@@ -250,7 +250,7 @@ dataModel$duplicated <- sapply(dataModel$language, function(x) {
 # - remove language duplicates: where their Wikimedia language code is
 # - not used:
 dataModel <- dplyr::filter(dataModel,
-                           !((duplicated == T) & (checkWMcode == F)))
+                           !((duplicated == TRUE) & (checkWMcode == FALSE)))
 dataModel$checkWMcode <- NULL
 dataModel$duplicated <- NULL
 # - check that all dataModel$language are items:
@@ -316,10 +316,10 @@ for (i in 1:length(lprops)) {
     if (length(gprops) > 0) {
       gprops <- lapply(gprops, function(x) {x$mainsnak})
       gprops <- lapply(gprops, function(x) {jsonlite::flatten(x, recursive = TRUE)})
-      gprops <- rbindlist(gprops, fill = T, use.names = T)
+      gprops <- rbindlist(gprops, fill = TRUE, use.names = TRUE)
       gprops$language <- x
       gprops$languageLabel <- dataModel$languageLabel[which(dataModel$language %in% x)][1]
-      if ('property' %in% colnames(gprops)) {
+      if ("property" %in% colnames(gprops)) {
         gprops <- dplyr::left_join(gprops, 
                                    dmodelProps,
                                    by = c("property" = "dmodelProperties"))
@@ -344,9 +344,9 @@ w <- which(is.na(lprops))
 if (length(w) > 0) {
   lprops[w] <- NULL 
 }
-lprops <- data.table::rbindlist(lprops, fill = T, use.names = T)
+lprops <- data.table::rbindlist(lprops, fill = TRUE, use.names = TRUE)
 # - filter out P1098 (number of speakers)
-w <- which(lprops$propertyLabel %in% 'numberOfSpeakers')
+w <- which(lprops$propertyLabel %in% "numberOfSpeakers")
 if (length(w) > 0) {
   lprops <- lprops[-w, ] 
 }
@@ -415,7 +415,7 @@ lprops$value <- sapply(lprops$value, function(x) {
 # - add Wikimedia Language codes to lprops
 lprops <- dplyr::left_join(lprops, 
                            dplyr::select(dataModel, languageLabel, wikimediaCode), 
-                           by = 'languageLabel')
+                           by = "languageLabel")
 
 # - re-structure dataModel
 # - to runtime Log:
@@ -441,11 +441,11 @@ dataModel_properties$property <- paste0(
 dataModel_properties$propertyLabel <- NULL
 
 write.csv(dataModel_basic, 
-          paste0(outDir, 'dataModel_basic.csv'))
+          paste0(outDir, "dataModel_basic.csv"))
 write.csv(dataModel_properties, 
-          paste0(outDir, 'dataModel_properties.csv'))
+          paste0(outDir, "dataModel_properties.csv"))
 write.csv(usedLanguages, 
-          paste0(outDir, 'WD_Languages_UsedLanguages.csv'))
+          paste0(outDir, "WD_Languages_UsedLanguages.csv"))
 
 ### --- add to usedLanguages:  
 
@@ -457,42 +457,42 @@ write.csv(usedLanguages,
 print(paste("--- wdll_DataModel.R: EthnologueLanguageCode.", 
             Sys.time(), sep = " "))
 EthnologueLanguageCode <- dplyr::filter(dataModel_properties,
-                                        property == 'EthnologueLanguageCode (P1627)') %>%
+                                        property == "EthnologueLanguageCode (P1627)") %>%
   dplyr::select(wikimediaCode, property, value) %>% 
   dplyr::filter(!is.na(wikimediaCode) & !is.na(value))
 usedLanguages <- dplyr::left_join(usedLanguages, 
                                   dplyr::select(EthnologueLanguageCode, 
                                                 wikimediaCode, value),
                                   by = c("language" = "wikimediaCode"))
-colnames(usedLanguages)[7] <- 'EthnologueLanguageCode'
+colnames(usedLanguages)[7] <- "EthnologueLanguageCode"
 
 # - add: EthnologueLanguageStatus (P3823)
 # - to runtime Log:
 print(paste("--- wdll_DataModel.R: EthnologueLanguageStatus.", 
             Sys.time(), sep = " "))
 EthnologueLanguageStatus <- dplyr::filter(dataModel_properties,
-                                          property == 'EthnologueLanguageStatus (P3823)') %>%
+                                          property == "EthnologueLanguageStatus (P3823)") %>%
   dplyr::select(wikimediaCode, property, value) %>% 
   dplyr::filter(!is.na(wikimediaCode) & !is.na(value))
 usedLanguages <- dplyr::left_join(usedLanguages, 
                                   dplyr::select(EthnologueLanguageStatus, 
                                                 wikimediaCode, value),
                                   by = c("language" = "wikimediaCode"))
-colnames(usedLanguages)[8] <- 'EthnologueLanguageStatus'
+colnames(usedLanguages)[8] <- "EthnologueLanguageStatus"
 
 # - add: UNESCOLanguageStatus (P1999)
 # - to runtime Log:
 print(paste("--- wdll_DataModel.R: UNESCOLanguageStatus.", 
             Sys.time(), sep = " "))
 UNESCOLanguageStatus <- dplyr::filter(dataModel_properties,
-                                      property == 'UNESCOLanguageStatus (P1999)') %>%
+                                      property == "UNESCOLanguageStatus (P1999)") %>%
   dplyr::select(wikimediaCode, property, value) %>% 
   dplyr::filter(!is.na(wikimediaCode) & !is.na(value))
 usedLanguages <- dplyr::left_join(usedLanguages, 
                                   dplyr::select(UNESCOLanguageStatus, 
                                                 wikimediaCode, value),
                                   by = c("language" = "wikimediaCode"))
-colnames(usedLanguages)[9] <- 'UNESCOLanguageStatus'
+colnames(usedLanguages)[9] <- "UNESCOLanguageStatus"
 
 # - add: numSitelinks from dataModel_basic:
 # - to runtime Log:
@@ -506,7 +506,7 @@ usedLanguages <- dplyr::left_join(usedLanguages,
 print(paste("--- wdll_DataModel.R: store: WD_Languages_UsedLanguages.csv.", 
             Sys.time(), sep = " "))
 write.csv(usedLanguages, 
-          paste0(outDir, 'WD_Languages_UsedLanguages.csv'))
+          paste0(outDir, "WD_Languages_UsedLanguages.csv"))
 
 # - to runtime Log:
 print(paste("--- wdll_DataModel.R ENDED ON:", 
