@@ -249,10 +249,9 @@ tProperty <- paste0('<a href="https://www.wikidata.org/wiki/Property:',
                     dataSet$propertyLabel,
                     '</a>')
 dataSet$explanation <- paste0(tItem,
-                              ' has ', dataSet$num_values, 
-                              ' values for Property ',
+                              ' has multiple values for Property ',
                               tProperty, 
-                              ' but is generally expected to have only one.')
+                              ', but is generally expected to have only one.')
 
 dataSet$establishedOn <- as.character(Sys.time())
 write.csv(dataSet, 

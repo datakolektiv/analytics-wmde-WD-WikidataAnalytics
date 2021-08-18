@@ -1,43 +1,40 @@
 
 ### ---------------------------------------------------------------------------
-### --- wd_LanguagesLandscape.py
-### --- v 1.0.0
+### --- wdll_mapReduce.R
+### --- Version 1.0.0
 ### --- Author: Goran S. Milovanovic, Data Scientist, WMDE
 ### --- Developed under the contract between Goran Milovanovic PR Data Kolektiv
 ### --- and WMDE.
 ### --- Contact: goran.milovanovic_ext@wikimedia.de
-### --- June 2021.
+### --- August 2021.
 ### ---------------------------------------------------------------------------
-### --- COMMENT:
-### --- Pyspark ETL procedures to process the WD JSON dumps in hdfs
+### --- DESCRIPTION:
+### --- Orchestrate WD Languages Landscape modules:
+### --- 1. wdll_PysparkETL.py
+### --- Pyspark ETL for WDLL
 ### ---------------------------------------------------------------------------
 ### ---------------------------------------------------------------------------
 ### --- LICENSE:
 ### ---------------------------------------------------------------------------
 ### --- GPL v2
-### --- This file is part of the Wikidata Languages Project (WLP)
+### --- This file is part of WD Languages Landscape (WDLL)
 ### ---
-### --- WLP is free software: you can redistribute it and/or modify
+### --- WDLL is free software: you can redistribute it and/or modify
 ### --- it under the terms of the GNU General Public License as published by
 ### --- the Free Software Foundation, either version 2 of the License, or
 ### --- (at your option) any later version.
 ### ---
-### --- WLP is distributed in the hope that it will be useful,
+### --- WDLL is distributed in the hope that it will be useful,
 ### --- but WITHOUT ANY WARRANTY; without even the implied warranty of
 ### --- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ### --- GNU General Public License for more details.
 ### ---
 ### --- You should have received a copy of the GNU General Public License
-### --- along with WLP. If not, see <http://www.gnu.org/licenses/>.
-### ---------------------------------------------------------------------------
-### ---------------------------------------------------------------------------
-### --- Script: WD_LanguagesLandscape.py
-### ---------------------------------------------------------------------------
-### --- DESCRIPTION:
-### --- WD_LanguagesLandscape.py performs ETL procedures
-### --- over the Wikidata JSON dumps in hdfs.
-### ---------------------------------------------------------------------------
+### --- along with WDLL If not, see <http://www.gnu.org/licenses/>.
 
+### ---------------------------------------------------------------------------
+### --- Script 1: wdll_PysparkETL.py
+### ---------------------------------------------------------------------------
 
 ### --- Modules
 import pyspark
@@ -85,7 +82,6 @@ WD_dump.cache()
 WD_dump = WD_dump.select('id', explode('labels').alias("language", "label"))
 WD_dump = WD_dump.select('id', 'language')
 
-
 # - repartition
 WD_dump = WD_dump.orderBy(["id"])
 WD_dump = WD_dump.repartition(10)
@@ -95,8 +91,3 @@ WD_dump.write.format('csv').mode("overwrite").save(hdfsPath + 'wd_dump_item_lang
 
 # - clear
 sc.catalog.clearCache()
-
-
-
-
-

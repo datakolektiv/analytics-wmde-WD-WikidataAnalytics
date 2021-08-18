@@ -114,18 +114,29 @@ wd_Superclasses_Recurrently <- function(entity,
       if (class(res) != 'logical') {
         break
       }
-    }    # - fromJSON
-    results[[1]] <- fromJSON(rawToChar(res$content))
-    if (length(results[[1]]$results$bindings) == 0) {
-      results[[1]] <- NULL
+    }    
+    # - fromJSON
+    results[[1]] <- tryCatch({
+      fromJSON(rawToChar(res$content))
+      },
+      error = function(condition) {
+        return(NULL)
+      })
+    if (!is.null(results[[1]])) {
+      if (length(results[[1]]$results$bindings) == 0) {
+        results[[1]] <- NULL
+      } else {
+        results[[1]] <- data.frame(item = results[[1]]$results$bindings$item$value,
+                                   itemLabel = results[[1]]$results$bindings$itemLabel$value,
+                                   superClass = results[[1]]$results$bindings$Superclass$value,
+                                   superClassLabel = results[[1]]$results$bindings$SuperclassLabel$value,
+                                   stringsAsFactors = F)
+        results[[1]]$relation <- rep('P279', dim(results[[1]])[1])
+      }  
     } else {
-      results[[1]] <- data.frame(item = results[[1]]$results$bindings$item$value,
-                                 itemLabel = results[[1]]$results$bindings$itemLabel$value,
-                                 superClass = results[[1]]$results$bindings$Superclass$value,
-                                 superClassLabel = results[[1]]$results$bindings$SuperclassLabel$value,
-                                 stringsAsFactors = F)
-      results[[1]]$relation <- rep('P279', dim(results[[1]])[1])
+      results[[1]] <- NULL
     }
+    
     
     # - compose SPARQL query2: P31 InstanceOf
     query2 <- paste0(
@@ -147,17 +158,27 @@ wd_Superclasses_Recurrently <- function(entity,
       if (class(res) != 'logical') {
         break
       }
-    }    # - fromJSON
-    results[[2]] <- fromJSON(rawToChar(res$content))
-    if (length(results[[2]]$results$bindings) == 0) {
-      results[[2]] <- NULL
+    }    
+    # - fromJSON
+    results[[2]] <- tryCatch({
+      fromJSON(rawToChar(res$content))
+    },
+    error = function(condition) {
+      return(NULL)
+    })
+    if (!is.null(results[[2]])) {
+      if (length(results[[2]]$results$bindings) == 0) {
+        results[[2]] <- NULL
+      } else {
+        results[[2]] <- data.frame(item = results[[2]]$results$bindings$item$value,
+                                   itemLabel = results[[2]]$results$bindings$itemLabel$value,
+                                   superClass = results[[2]]$results$bindings$Superclass$value,
+                                   superClassLabel = results[[2]]$results$bindings$SuperclassLabel$value,
+                                   stringsAsFactors = F)
+        results[[2]]$relation <- rep('P31', dim(results[[2]])[1])
+      }  
     } else {
-      results[[2]] <- data.frame(item = results[[2]]$results$bindings$item$value,
-                                 itemLabel = results[[2]]$results$bindings$itemLabel$value,
-                                 superClass = results[[2]]$results$bindings$Superclass$value,
-                                 superClassLabel = results[[2]]$results$bindings$SuperclassLabel$value,
-                                 stringsAsFactors = F)
-      results[[2]]$relation <- rep('P31', dim(results[[2]])[1])
+      results[[2]] <- NULL
     }
     
     # - compose SPARQL query3: P361 PartOf
@@ -180,17 +201,27 @@ wd_Superclasses_Recurrently <- function(entity,
       if (class(res) != 'logical') {
         break
       }
-    }    # - fromJSON
-    results[[3]] <- fromJSON(rawToChar(res$content))
-    if (length(results[[3]]$results$bindings) == 0) {
-      results[[3]] <- NULL
+    }
+    # - fromJSON
+    results[[3]] <- tryCatch({
+      fromJSON(rawToChar(res$content))
+    },
+    error = function(condition) {
+      return(NULL)
+    })
+    if (!is.null(results[[3]])) {
+      if (length(results[[3]]$results$bindings) == 0) {
+        results[[3]] <- NULL
+      } else {
+        results[[3]] <- data.frame(item = results[[3]]$results$bindings$item$value,
+                                   itemLabel = results[[3]]$results$bindings$itemLabel$value,
+                                   superClass = results[[3]]$results$bindings$PartOf$value,
+                                   superClassLabel = results[[3]]$results$bindings$PartOfLabel$value,
+                                   stringsAsFactors = F)
+        results[[3]]$relation <- rep('P361', dim(results[[3]])[1])
+      }  
     } else {
-      results[[3]] <- data.frame(item = results[[3]]$results$bindings$item$value,
-                                 itemLabel = results[[3]]$results$bindings$itemLabel$value,
-                                 superClass = results[[3]]$results$bindings$PartOf$value,
-                                 superClassLabel = results[[3]]$results$bindings$PartOfLabel$value,
-                                 stringsAsFactors = F)
-      results[[3]]$relation <- rep('P361', dim(results[[3]])[1])
+      results[[3]] <- NULL
     }
     
     # - query to fetch immediate P31 superclasses:
@@ -216,17 +247,26 @@ wd_Superclasses_Recurrently <- function(entity,
       }
     }
     # - fromJSON
-    results[[4]] <- fromJSON(rawToChar(res$content))
-    if (length(results[[4]]$results$bindings) == 0) {
-      results[[4]] <- NULL
+    results[[4]] <- tryCatch({
+      fromJSON(rawToChar(res$content))
+    },
+    error = function(condition) {
+      return(NULL)
+    })
+    if (!is.null(results[[4]])) {
+      if (length(results[[4]]$results$bindings) == 0) {
+        results[[4]] <- NULL
+      } else {
+        results[[4]] <- results[[4]]$results$bindings
+        results[[4]] <- data.frame(item = paste0('http://www.wikidata.org/entity/', rep(entity[i], dim(results[[4]])[1])),
+                                   itemLabel = rep(entityLab[i], dim(results[[4]])[1]),
+                                   superClass = results[[4]]$Superclass$value,
+                                   superClassLabel = results[[4]]$SuperclassLabel$value,
+                                   relation = 'P31',
+                                   stringsAsFactors = F)
+      } 
     } else {
-      results[[4]] <- results[[4]]$results$bindings
-      results[[4]] <- data.frame(item = paste0('http://www.wikidata.org/entity/', rep(entity[i], dim(results[[4]])[1])),
-                                 itemLabel = rep(entityLab[i], dim(results[[4]])[1]),
-                                 superClass = results[[4]]$Superclass$value,
-                                 superClassLabel = results[[4]]$SuperclassLabel$value,
-                                 relation = 'P31',
-                                 stringsAsFactors = F)
+      results[[4]] <- NULL
     }
     
     # - query to fetch immediate P279 superclasses:
@@ -250,18 +290,28 @@ wd_Superclasses_Recurrently <- function(entity,
       if (class(res) != 'logical') {
         break
       }
-    }    # - fromJSON
-    results[[5]] <- fromJSON(rawToChar(res$content))
-    if (length(results[[5]]$results$bindings) == 0) {
-      results[[5]] <- NULL
+    }
+    # - fromJSON
+    results[[5]] <- tryCatch({
+      fromJSON(rawToChar(res$content))
+    },
+    error = function(condition) {
+      return(NULL)
+    })
+    if (!is.null(results[[5]])) {
+      if (length(results[[5]]$results$bindings) == 0) {
+        results[[5]] <- NULL
+      } else {
+        results[[5]] <- results[[5]]$results$bindings
+        results[[5]] <- data.frame(item = paste0('http://www.wikidata.org/entity/', rep(entity[i], dim(results[[5]])[1])),
+                                   itemLabel = rep(entityLab[i], dim(results[[5]])[1]),
+                                   superClass = results[[5]]$Superclass$value,
+                                   superClassLabel = results[[5]]$SuperclassLabel$value,
+                                   relation = 'P279',
+                                   stringsAsFactors = F)
+      } 
     } else {
-      results[[5]] <- results[[5]]$results$bindings
-      results[[5]] <- data.frame(item = paste0('http://www.wikidata.org/entity/', rep(entity[i], dim(results[[5]])[1])),
-                                 itemLabel = rep(entityLab[i], dim(results[[5]])[1]),
-                                 superClass = results[[5]]$Superclass$value,
-                                 superClassLabel = results[[5]]$SuperclassLabel$value,
-                                 relation = 'P279',
-                                 stringsAsFactors = F)
+      results[[5]] <- NULL
     }
     
     # - query to fetch immediate P361 superclasses:
@@ -285,18 +335,28 @@ wd_Superclasses_Recurrently <- function(entity,
       if (class(res) != 'logical') {
         break
       }
-    }    # - fromJSON
-    results[[6]] <- fromJSON(rawToChar(res$content))
-    if (length(results[[6]]$results$bindings) == 0) {
-      results[[6]] <- NULL
+    }
+    # - fromJSON
+    results[[6]] <- tryCatch({
+      fromJSON(rawToChar(res$content))
+    },
+    error = function(condition) {
+      return(NULL)
+    })
+    if (!is.null(results[[6]])) {
+      if (length(results[[6]]$results$bindings) == 0) {
+        results[[6]] <- NULL
+      } else {
+        results[[6]] <- results[[6]]$results$bindings
+        results[[6]] <- data.frame(item = paste0('http://www.wikidata.org/entity/', rep(entity[i], dim(results[[6]])[1])),
+                                   itemLabel = rep(entityLab[i], dim(results[[6]])[1]),
+                                   superClass = results[[6]]$PartOf$value,
+                                   superClassLabel = results[[6]]$PartOfLabel$value,
+                                   relation = 'P361',
+                                   stringsAsFactors = F)
+      } 
     } else {
-      results[[6]] <- results[[6]]$results$bindings
-      results[[6]] <- data.frame(item = paste0('http://www.wikidata.org/entity/', rep(entity[i], dim(results[[6]])[1])),
-                                 itemLabel = rep(entityLab[i], dim(results[[6]])[1]),
-                                 superClass = results[[6]]$PartOf$value,
-                                 superClassLabel = results[[6]]$PartOfLabel$value,
-                                 relation = 'P361',
-                                 stringsAsFactors = F)
+      results[[6]] <- NULL
     }
     
     # - rbindlist results

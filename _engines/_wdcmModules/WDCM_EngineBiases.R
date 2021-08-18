@@ -47,6 +47,18 @@ print(paste0("WDCM Biases updated started at: ",
              )
       )
 
+# - fPath: where the scripts is run from?
+fPath <- as.character(commandArgs(trailingOnly = FALSE)[4])
+fPath <- gsub("--file=", "", fPath, fixed = T)
+fPath <- unlist(strsplit(fPath, split = "/", fixed = T))
+fPath <- paste(
+  paste(fPath[1:length(fPath) - 1], collapse = "/"),
+  "/",
+  sep = "")
+
+# - renv
+renv::load(project = fPath, quiet = FALSE)
+
 ### --- Setup
 library(stringr)
 library(data.table)
@@ -63,14 +75,6 @@ library(XML)
 ### --- Read WDCM paramereters: wdcmConfig.xml
 # - toLog
 print(paste0("Read WDCM params: ", Sys.time()))
-# - fPath: where the scripts is run from?
-fPath <- as.character(commandArgs(trailingOnly = FALSE)[4])
-fPath <- gsub("--file=", "", fPath, fixed = T)
-fPath <- unlist(strsplit(fPath, split = "/", fixed = T))
-fPath <- paste(
-  paste(fPath[1:length(fPath) - 1], collapse = "/"),
-  "/",
-  sep = "")
 params <- xmlParse(paste0(fPath, "wdcmConfig.xml"))
 params <- xmlToList(params)
 ### --- Directories

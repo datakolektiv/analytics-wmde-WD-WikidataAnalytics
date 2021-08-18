@@ -97,6 +97,10 @@ Sys.setenv(
   https_proxy = params$general$http_proxy)
 
 # - clear tempDataDir
+# - toLog
+print(paste0("WDCM Statements:clear etlDir", 
+             as.character(Sys.time()))
+      )
 lF <- list.files(etlDir)
 if (length(lF) > 0) {
   lapply(paste0(etlDir, lF), file.remove)
@@ -191,6 +195,10 @@ wd_api_fetch_labels <- function(items, language, fallback) {
 statistics <- list()
 
 ### --- determine current wmf.wikidata_entity snapshot
+# - toLog
+print(paste0("WDCM Statements: determine current WD json dump snapshot.", 
+             as.character(Sys.time()))
+)
 # - Kerberos init
 system(command = 'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls', 
        wait = T)
@@ -244,6 +252,7 @@ print(paste0("Run Apache Spark ETL (DONE): ", Sys.time()))
 ### ---------------------------------------------------------------------------
 ### --- Load Spark ETL results
 ### ---------------------------------------------------------------------------
+
 # - toLog
 print(paste0("Read Apache Spark ETL data: ", Sys.time()))
 
@@ -420,7 +429,7 @@ hiveQLquery <- 'SET hive.mapred.mode=unstrict;
   SELECT eu_entity_id AS entity, COUNT(*) AS c_reuse FROM goransm.wdcm_clients_wb_entity_usage 
   WHERE eu_aspect RLIKE \'C\' GROUP BY eu_entity_id ORDER BY c_reuse DESC;'
 # - write hql
-write(hiveQLquery, queryFile)
+write(hiveQLquery, paste0(fPath, queryFile))
 # - to Report
 print("Fetching C aspect reuse data from wdcm_clients_wb_entity_usage now: items.")
 # - Kerberos init
@@ -450,7 +459,7 @@ hiveQLquery <- 'SET hive.mapred.mode=unstrict;
   SELECT eu_aspect AS aspect, COUNT(*) AS c_reuse FROM goransm.wdcm_clients_wb_entity_usage 
   WHERE eu_aspect RLIKE \'C\' GROUP BY eu_aspect ORDER BY c_reuse DESC;'
 # - write hql
-write(hiveQLquery, queryFile)
+write(hiveQLquery, paste0(fPath, queryFile))
 # - to Report
 print("Fetching C aspect reuse data from wdcm_clients_wb_entity_usage now: properties.")
 # - Kerberos init
@@ -585,6 +594,7 @@ write.csv(timestamp,
 ### -----------------------------------
 ### --- copy to pubDataDir
 ### -----------------------------------
+
 # - toLog
 print(paste0("copy to pubDataDir: ", Sys.time()))
 # - archive:

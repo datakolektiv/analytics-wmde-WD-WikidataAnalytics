@@ -101,7 +101,7 @@ WD_items = sqlContext.sql('SELECT id, claims FROM wmf.wikidata_entity WHERE snap
 # - cache WD dump for items
 WD_items.cache()
 # - explode properties
-WD_items = WD_items.select('id', explode('claims').alias('claims'), ).select('id', 'claims.mainSnak', 'claims.qualifiers')
+WD_items = WD_items.select('id', explode('claims').alias('claims')).select('id', 'claims.mainSnak', 'claims.qualifiers')
 WD_items = WD_items.select('id', 'mainSnak.property', 'mainSnak.dataValue.value', 'qualifiers.property')
 # - create cols_new so that seen columns will have a suffix 'qualifier'
 cols_new = [] 
