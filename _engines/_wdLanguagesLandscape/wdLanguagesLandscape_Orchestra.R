@@ -82,7 +82,7 @@ hdfsPath <- params$general$hdfsPath
 print("Log: START")
 # - set log dir:
 setwd(logDir)
-# - write to WDCM main reporting file:
+# - write to main reporting file:
 lF <- list.files()
 if ("WLLP_MainReport.csv" %in% lF) {
   mainReport <- read.csv("WLLP_MainReport.csv",
@@ -147,7 +147,7 @@ system(command = paste0('sudo -u analytics-privatedata spark2-submit ',
 print("--- LOG: Pyspark: WD_LanguagesLandscape.py step completed.")
 # - set log dir:
 setwd(logDir)
-# - write to WDCM main reporting file:
+# - write to main reporting file:
 lF <- list.files()
 if ("WLLP_MainReport.csv" %in% lF) {
   mainReport <- read.csv("WLLP_MainReport.csv",
@@ -187,7 +187,7 @@ system(command = paste0('export USER=goransm && nice -10 Rscript ',
 print("--- LOG: wdll_mapReduce.R step completed.")
 # - set log dir:
 setwd(logDir)
-# - write to WDCM main reporting file:
+# - write to main reporting file:
 lF <- list.files()
 if ("WLLP_MainReport.csv" %in% lF) {
   mainReport <- read.csv("WLLP_MainReport.csv",
@@ -227,7 +227,7 @@ wait = TRUE)
 print("--- LOG: wdll_Similarity.R step completed.")
 # - set log dir:
 setwd(logDir)
-# - write to WDCM main reporting file:
+# - write to main reporting file:
 lF <- list.files()
 if ("WLLP_MainReport.csv" %in% lF) {
   mainReport <- read.csv("WLLP_MainReport.csv",
@@ -265,7 +265,7 @@ system(command = paste0('export USER=goransm && nice -10 Rscript ',
 print("--- LOG: wdll_DataModel.R step completed.")
 # - set log dir:
 setwd(logDir)
-# - write to WDCM main reporting file:
+# - write to main reporting file:
 lF <- list.files()
 if ("WLLP_MainReport.csv" %in% lF) {
   mainReport <- read.csv("WLLP_MainReport.csv",
@@ -305,7 +305,7 @@ system(command = paste0('export USER=goransm && nice -10 Rscript ',
 print("--- LOG: wdll_Analytics.R step completed.")
 # - set log dir:
 setwd(logDir)
-# - write to WDCM main reporting file:
+# - write to main reporting file:
 lF <- list.files()
 if ("WLLP_MainReport.csv" %in% lF) {
   mainReport <- read.csv("WLLP_MainReport.csv",
@@ -360,9 +360,9 @@ for (i in 1:length(cFiles)) {
 print("Log: END WLLP Orchestra")
 # - set log dir:
 setwd(logDir)
-# - write to WDCM main reporting file:
+# - write to main reporting file:
 lF <- list.files()
-if ("WDCM_MainReport.csv" %in% lF) {
+if ("WLLP_MainReport.csv" %in% lF) {
   mainReport <- read.csv("WLLP_MainReport.csv",
                          header = TRUE,
                          row.names = 1,
