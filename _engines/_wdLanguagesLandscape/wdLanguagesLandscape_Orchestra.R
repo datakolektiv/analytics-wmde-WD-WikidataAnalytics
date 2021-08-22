@@ -175,8 +175,8 @@ if ("WLLP_MainReport.csv" %in% lF) {
 print("Log: RUN wdll_mapReduce.R")
 
 system(command = paste0('export USER=goransm && nice -10 Rscript ',
-                        paste0(fPath, 'wdll_mapReduce.R '),
-                        paste0(logDir, '> wdll_mapReduce_LOG.log 2>&1')
+                        paste0(fPath, 'wdll_mapReduce.R > '),
+                        paste0(logDir, 'wdll_mapReduce_LOG.log 2>&1')
                         ),
        wait = TRUE)
 
@@ -215,8 +215,8 @@ if ("WLLP_MainReport.csv" %in% lF) {
 print("Log: RUN wdll_Similarity.R")
 
 system(command = paste0('export USER=goransm && nice -10 Rscript ',
-                        paste0(fPath, 'wdll_Similarity.R '),
-                        paste0(logDir, '> wdll_Similarity_LOG.log 2>&1')
+                        paste0(fPath, 'wdll_Similarity.R > '),
+                        paste0(logDir, 'wdll_Similarity_LOG.log 2>&1')
 ),
 wait = TRUE)
 
@@ -254,8 +254,8 @@ if ("WLLP_MainReport.csv" %in% lF) {
 # - toRuntime Log:
 print("Log: RUN wdll_DataModel.R")
 system(command = paste0('export USER=goransm && nice -10 Rscript ',
-                        paste0(fPath, 'wdll_DataModel.R '),
-                        paste0(logDir, '> wdll_DataModel_LOG.log 2>&1')),
+                        paste0(fPath, 'wdll_DataModel.R > '),
+                        paste0(logDir, 'wdll_DataModel_LOG.log 2>&1')),
        wait = TRUE)
 
 ### --------------------------------------------------
@@ -293,8 +293,8 @@ if ("WLLP_MainReport.csv" %in% lF) {
 print("Log: RUN wdll_Analytics.R")
 
 system(command = paste0('export USER=goransm && nice -10 Rscript ',
-                        paste0(fPath, 'wdll_Analytics.R '),
-                        paste0(logDir, '> wdll_Analytics_LOG.log 2>&1')
+                        paste0(fPath, 'wdll_Analytics.R > '),
+                        paste0(logDir, 'wdll_Analytics_LOG.log 2>&1')
                         ),
        wait = TRUE)
 

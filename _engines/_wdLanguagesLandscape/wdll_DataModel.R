@@ -65,6 +65,7 @@ library(httr)
 library(jsonlite)
 library(WikidataR)
 library(data.table)
+library(dplyr)
 
 # - params
 params <- XML::xmlParse(paste0(fPath, "WD_LanguagesLandscape_Config.xml"))

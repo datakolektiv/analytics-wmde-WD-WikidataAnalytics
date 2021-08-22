@@ -61,6 +61,9 @@ renv::load(project = fPath, quiet = FALSE)
 # - lib
 library(XML)
 library(dplyr)
+library(httr)
+library(jsonlite)
+library(data.table)
 
 # - pars
 params <- XML::xmlParse(paste0(fPath, "WD_LanguagesLandscape_Config.xml"))

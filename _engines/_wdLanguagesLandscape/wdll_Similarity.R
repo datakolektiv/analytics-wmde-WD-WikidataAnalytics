@@ -302,7 +302,7 @@ tsne2DMap <- dplyr::left_join(tsne2DMap,
                               by = "language")
 # - store tsne2DMap from Jaccard distance matrix
 # - to runtime Log:
-print(paste("--- wdll_Similarity.R. store WD_tsne2DMap_from_Jaccard_Distance.csv..", 
+print(paste("--- wdll_Similarity.R. store WD_tsne2DMap_from_Jaccard_Distance.csv.", 
             Sys.time(), sep = " "))
 write.csv(tsne2DMap, 
           paste0(outDir, "WD_tsne2DMap_from_Jaccard_Distance.csv"))
