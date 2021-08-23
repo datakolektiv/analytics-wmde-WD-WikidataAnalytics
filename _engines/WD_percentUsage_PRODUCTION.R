@@ -1,13 +1,13 @@
 #!/usr/bin/env Rscript
 
 ### ---------------------------------------------------------------------------
-### --- WD_percentUsage_PRODUCTION.R, v 0.0.1
+### --- WD_percentUsage_PRODUCTION.R, v 1.0.0
 ### --- script: WD_percentUsage_PRODUCTION.R
 ### --- Author: Goran S. Milovanovic, Data Scientist, WMDE
 ### --- Developed under the contract between Goran Milovanovic PR Data Kolektiv
 ### --- and WMDE.
 ### --- Contact: goran.milovanovic_ext@wikimedia.de
-### --- July 2020.
+### --- August 2021.
 ### ---------------------------------------------------------------------------
 ### --- DESCRIPTION:
 ### --- Datasets Production for the Wikidata Usage and Coverage (WDUC) Project
@@ -34,11 +34,6 @@
 # - toReport
 print(paste0("Initiate on: ", Sys.time()))
 
-### --- Setup
-library(XML)
-library(data.table)
-library(dplyr)
-
 ### --- Read paramereters
 # - fPath: where the scripts is run from?
 fPath <- as.character(commandArgs(trailingOnly = FALSE)[4])
@@ -48,25 +43,34 @@ fPath <- paste(
   paste(fPath[1:length(fPath) - 1], collapse = "/"),
   "/",
   sep = "")
-params <- xmlParse(paste0(fPath, "wd_percentUsage_Config.xml"))
-params <- xmlToList(params)
+
+# - renv
+renv::load(project = fPath, quiet = FALSE)
+
+# - libs
+library(dplyr)
+
+# - params
+params <- XML::xmlParse(paste0(fPath, "wd_percentUsage_Config.xml"))
+params <- XML::xmlToList(params)
 dataDir <- params$general$dataDir
 analyticsDir <- params$general$analyticsDir
 hdfsPath <- params$general$hdfsPath
 publicDir <- params$general$publicDir
 logDir <- params$general$logDir
 
-
 # - spark2-submit parameters:
-paramsDeploy <- xmlParse(paste0(fPath, "wd_percentUsage_Config_Deployment.xml"))
-paramsDeploy <- xmlToList(paramsDeploy)
+paramsDeploy <- XML::xmlParse(
+  paste0(fPath,
+         "wd_percentUsage_Config_Deployment.xml")
+  )
+paramsDeploy <- XML::xmlToList(paramsDeploy)
 sparkMaster <- paramsDeploy$spark$master
 sparkDeployMode <- paramsDeploy$spark$deploy_mode
 sparkNumExecutors <- paramsDeploy$spark$num_executors
 sparkDriverMemory <- paramsDeploy$spark$driver_memory
 sparkExecutorMemory <- paramsDeploy$spark$executor_memory
 sparkExecutorCores <- paramsDeploy$spark$executor_cores
-sparkConfigDynamic <- paramsDeploy$spark$config
 
 ### --- Functions
 # - projectType() to determine project type
@@ -100,21 +104,18 @@ print("Log: RUN WD_percentUsage_ETL.py")
 if (length(list.files(dataDir)) > 1) {
   file.remove(paste0(dataDir, list.files(dataDir)))
 }
+
 # - Kerberos init
-system(command = 'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls', 
-       wait = T)
-# - Run PySpark ETL
-system(command = paste0('sudo -u analytics-privatedata spark2-submit ', 
-                        sparkMaster, ' ',
-                        sparkDeployMode, ' ', 
-#                        sparkNumExecutors, ' ',
-                        sparkDriverMemory, ' ',
-                        sparkExecutorMemory, ' ',
-                        sparkExecutorCores, ' ',
-                        '--conf spark.dynamicAllocation.maxExecutors=100 --conf spark.executor.extraJavaOptions=-Dlog4j.configuration=/etc/spark2/defaults/log4j.properties --conf spark.driver.extraJavaOptions=-Dlog4j.configuration=/etc/spark2/defaults/log4j.properties ',
-                        paste0(fPath, 'WD_percentUsage_ETL.py')
-),
-wait = T)
+WMDEData::kerberos_init(kerberosUser = "analytics-privatedata")
+WMDEData::kerberos_runSpark(kerberosUser = "analytics-privatedata",
+                            pysparkPath = paste0(fPath, 'WD_percentUsage_ETL.py'),
+                            sparkMaster = sparkMaster,
+                            sparkDeployMode = sparkDeployMode,
+                            sparkNumExecutors = sparkNumExecutors,
+                            sparkDriverMemory = sparkDriverMemory,
+                            sparkExecutorMemory = sparkExecutorMemory,
+                            sparkConfigDynamic = "--conf spark.dynamicAllocation.maxExecutors=100")
+
 
 # - toRuntime Log:
 print("Log: RUN WD_percentUsage_ETL.py COMPLETED.")
@@ -124,60 +125,28 @@ print("Log: RUN WD_percentUsage_ETL.py COMPLETED.")
 ### ---------------------------------------------------------------------------
 
 ### --- datasets: wdUsage
-# - copy splits from hdfs to local dataDir
-system(paste0('sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls ', 
-              hdfsPath, 'wdUsage > ', 
-              dataDir, 'files.txt'), 
-       wait = T)
-files <- read.table(paste0(dataDir, 'files.txt'), skip = 1)
-files <- as.character(files$V8)[2:length(as.character(files$V8))]
-file.remove(paste0(dataDir, 'files.txt'))
-for (i in 1:length(files)) {
-  system(paste0('sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -text ', 
-                files[i], ' > ',  
-                paste0(dataDir, "wdUsage", i, ".csv")), wait = T)
-}
-# - read splits: dataSet
-# - load
-lF <- list.files(dataDir)
-lF <- lF[grepl("wdUsage", lF)]
-wdUsage <- lapply(paste0(dataDir, lF), function(x) {fread(x,
-                                                          header = F,
-                                                          sep = ",")})
-# - collect
-wdUsage <- rbindlist(wdUsage)
+wdUsage <- WMDEData::hdfs_read_from(kerberosUser =  "analytics-privatedata",
+                                    localPath = dataDir,
+                                    localFilenamePrefix = "wdUsage",
+                                    hdfsDir = hdfsPath,
+                                    hdfsFilenamePrefix = "wdUsage",
+                                    fr_header = F)
 # - schema
-colnames(wdUsage) <- c('eu_page_id', 'wiki_db')
+colnames(wdUsage) <- c("eu_page_id", "wiki_db")
 # - set key: wiki_db
-setkey(wdUsage, wiki_db)
+data.table::setkey(wdUsage, wiki_db)
 
 ### --- datasets: wdSitelinks
-# - copy splits from hdfs to local dataDir
-system(paste0('sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls ', 
-              hdfsPath, 'wdSitelinks > ', 
-              dataDir, 'files.txt'), 
-       wait = T)
-files <- read.table(paste0(dataDir, 'files.txt'), skip = 1)
-files <- as.character(files$V8)[2:length(as.character(files$V8))]
-file.remove(paste0(dataDir, 'files.txt'))
-for (i in 1:length(files)) {
-  system(paste0('sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -text ', 
-                files[i], ' > ',  
-                paste0(dataDir, "wdSitelinks", i, ".csv")), wait = T)
-}
-# - read splits: dataSet
-# - load
-lF <- list.files(dataDir)
-lF <- lF[grepl("wdSitelinks", lF)]
-wdSitelinks <- lapply(paste0(dataDir, lF), function(x) {fread(x,
-                                                              header = F,
-                                                              sep = ",")})
-# - collect
-wdSitelinks <- rbindlist(wdSitelinks)
+wdSitelinks <- WMDEData::hdfs_read_from(kerberosUser =  "analytics-privatedata",
+                                        localPath = dataDir,
+                                        localFilenamePrefix = "wdSitelinks",
+                                        hdfsDir = hdfsPath,
+                                        hdfsFilenamePrefix = "wdSitelinks",
+                                        fr_header = F)
 # - schema
-colnames(wdSitelinks) <- c('eu_page_id', 'wiki_db')
+colnames(wdSitelinks) <- c("eu_page_id", "wiki_db")
 # - set key: wiki_db
-setkey(wdSitelinks, wiki_db)
+data.table::setkey(wdSitelinks, wiki_db)
 
 # - toReport
 print("READY: usage data from goransm.wdcm_clients_wb_entity_usage: PySpark.")
@@ -204,10 +173,10 @@ for (i in 1:length(projectsTracking)) {
       mySqlInput <- paste0('"SELECT page_id FROM page WHERE (page_namespace = 0 AND page_is_redirect != 1);" > ',
                            dataDir, 'currentProject.tsv')
       # - command:
-      mySqlCommand <- paste0(mySqlArgs, " -e ", mySqlInput, collapse = "")
+      mySqlCommand <- paste0(mySqlArgs, ' -e ', mySqlInput, collapse = )
       print(paste0("Running the following query: ", mySqlCommand))
       system(command = mySqlCommand, wait = TRUE)
-      fread(paste0(dataDir, 'currentProject.tsv'), sep = "\t", quote = "")
+      data.table::fread(paste0(dataDir, "currentProject.tsv"), sep = "\t", quote = "")
     },
     error = function(condition) {
       return(paste0("Error in /usr/local/bin/analytics-mysql ", projectsTracking[i]))
@@ -221,7 +190,7 @@ for (i in 1:length(projectsTracking)) {
     localProject <- wdUsage %>%
       filter(wiki_db %in% projectsTracking[i])
     localProjectSitelinks <- wdSitelinks %>%
-      filter(wiki_db %in% projectsTracking[i])
+      dplyr::filter(wiki_db %in% projectsTracking[i])
     if (dim(localProjectSitelinks)[1] > 0) {
       c <- c + 1
       wdUsePages <- length(which(unique(pages$page_id) %in% localProject$eu_page_id))
@@ -256,7 +225,7 @@ for (i in 1:length(projectsTracking)) {
   Sys.sleep(2)
 }
 # - bind
-projectStats <- rbindlist(projectStats)
+projectStats <- data.table::rbindlist(projectStats)
 # - remove projects with no data:
 w <- which(projectStats$wdUsePages + projectStats$wdSitelinksPages == 0)
 if (length(w) > 0) {
@@ -283,7 +252,10 @@ file.remove(paste0(dataDir, list.files(dataDir)))
 # - toReport
 print("Copy to production.")
 # - migrate to /srv/published-datasets
-system(command = paste0('cp ', analyticsDir, 'wdUsage_ProjectStatistics.csv ', publicDir), 
+system(command = paste0('cp ', 
+                        analyticsDir, 
+                        'wdUsage_ProjectStatistics.csv ', 
+                        publicDir), 
        wait = T)
 # - toReport
 print(paste0("DONE: ", Sys.time()))
@@ -294,17 +266,11 @@ print("DONE. Exiting.")
 # - copy the main log file to published for timestamp
 # - archive:
 lF <- list.files(fPath)
-lF <- lF[grepl('\\.log$', lF)]
+lF <- lF[grepl("\\.log$", lF)]
 lapply(lF, function(x) {
   system(command = 
-           paste0('cp ', fPath, x, ' ', logDir),
+           paste0("cp ", fPath, x, ' ', logDir),
          wait = T)
 })
 # - clean up
 file.remove(paste0(fPath, lF))
-
-
-
-
-
-
