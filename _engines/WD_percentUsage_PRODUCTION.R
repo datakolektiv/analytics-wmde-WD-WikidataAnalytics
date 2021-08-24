@@ -51,7 +51,9 @@ renv::load(project = fPath, quiet = FALSE)
 library(dplyr)
 
 # - params
-params <- XML::xmlParse(paste0(fPath, "wd_percentUsage_Config.xml"))
+params <- XML::xmlParse(paste0(
+  fPath, "wd_percentUsage_Config.xml")
+  )
 params <- XML::xmlToList(params)
 dataDir <- params$general$dataDir
 analyticsDir <- params$general$analyticsDir
@@ -91,7 +93,7 @@ projectType <- function(projectName) {
 }
 
 # - toReport
-print("Fetch usage data from goransm.wdcm_clients_wb_entity_usage: PySpark")
+print("Fetch from goransm.wdcm_clients_wb_entity_usage.")
 
 ### ---------------------------------------------------------------------------
 ### --- 1: Run Pyspark ETL
@@ -114,7 +116,8 @@ WMDEData::kerberos_runSpark(kerberosUser = "analytics-privatedata",
                             sparkNumExecutors = sparkNumExecutors,
                             sparkDriverMemory = sparkDriverMemory,
                             sparkExecutorMemory = sparkExecutorMemory,
-                            sparkConfigDynamic = "--conf spark.dynamicAllocation.maxExecutors=100")
+                            sparkConfigDynamic = 
+                              "--conf spark.dynamicAllocation.maxExecutors=100")
 
 
 # - toRuntime Log:
@@ -149,7 +152,7 @@ colnames(wdSitelinks) <- c("eu_page_id", "wiki_db")
 data.table::setkey(wdSitelinks, wiki_db)
 
 # - toReport
-print("READY: usage data from goransm.wdcm_clients_wb_entity_usage: PySpark.")
+print("DONE goransm.wdcm_clients_wb_entity_usage: PySpark.")
 
 ### ---------------------------------------------------------------------------
 ### --- 3: Iterate across page tables per project, fetch namespace 0 pages
@@ -159,7 +162,7 @@ print("READY: usage data from goransm.wdcm_clients_wb_entity_usage: PySpark.")
 projectsTracking <- sort(unique(wdSitelinks$wiki_db))
 
 # - toReport
-print("SQL iterate across clients, fetch data, and produce the dataset.")
+print("SQL iterate across clients.")
 
 # - iterate
 projectStats <- list()
@@ -169,20 +172,28 @@ for (i in 1:length(projectsTracking)) {
   pages <- tryCatch(
     {
       mySqlArgs <- 
-        paste0('/usr/local/bin/analytics-mysql ', projectsTracking[i], ' ') 
-      mySqlInput <- paste0('"SELECT page_id FROM page WHERE (page_namespace = 0 AND page_is_redirect != 1);" > ',
+        paste0('/usr/local/bin/analytics-mysql ', 
+               projectsTracking[i], ' ') 
+      mySqlInput <- paste0('"SELECT page_id FROM page ', 
+                           'WHERE (page_namespace = 0 AND page_is_redirect != 1);" > ',
                            dataDir, 'currentProject.tsv')
       # - command:
       mySqlCommand <- paste0(mySqlArgs, ' -e ', mySqlInput, collapse = )
       print(paste0("Running the following query: ", mySqlCommand))
       system(command = mySqlCommand, wait = TRUE)
-      data.table::fread(paste0(dataDir, "currentProject.tsv"), sep = "\t", quote = "")
+      data.table::fread(
+        paste0(
+          dataDir, "currentProject.tsv"), 
+        sep = "\t", quote = ""
+        )
     },
     error = function(condition) {
-      return(paste0("Error in /usr/local/bin/analytics-mysql ", projectsTracking[i]))
+      return(paste0("Error in /usr/local/bin/analytics-mysql ", 
+                    projectsTracking[i]))
     },
     warning = function(condition) {
-      return(paste0("Error in /usr/local/bin/analytics-mysql ", projectsTracking[i]))
+      return(paste0("Error in /usr/local/bin/analytics-mysql ", 
+                    projectsTracking[i]))
     }
   )
   if (sum(class(pages) == "character") == 0) {
@@ -193,31 +204,49 @@ for (i in 1:length(projectsTracking)) {
       dplyr::filter(wiki_db %in% projectsTracking[i])
     if (dim(localProjectSitelinks)[1] > 0) {
       c <- c + 1
-      wdUsePages <- length(which(unique(pages$page_id) %in% localProject$eu_page_id))
-      wdSitelinksPages <- length(which(unique(pages$page_id) %in% localProjectSitelinks$eu_page_id))
+      wdUsePages <- length(which(
+        unique(pages$page_id) %in% localProject$eu_page_id)
+        )
+      wdSitelinksPages <- length(which(
+        unique(pages$page_id) %in% localProjectSitelinks$eu_page_id)
+        )
       projectStats[[c]] <- data.frame(project = projectsTracking[i], 
                                       numPages = numPages,
                                       wdUsePages = wdUsePages,
                                       wdSitelinksPages = wdSitelinksPages,
-                                      percentWDuse = round(wdUsePages/numPages*100, 2),
-                                      percentWDsitelinks = round(wdSitelinksPages/numPages*100, 2),
+                                      percentWDuse = 
+                                        round(wdUsePages/numPages*100, 2),
+                                      percentWDsitelinks = 
+                                        round(wdSitelinksPages/numPages*100, 2),
                                       stringsAsFactors = F)
       # - toReport
-      print("-------------------------------------------------------------------------------")
-      print(paste0("Scanned project ", i, " out of: ", length(projectsTracking)))
+      print("---------------------------------------")
+      print(paste0("Scanned project ", i, " out of: ", 
+                   length(projectsTracking)))
       print(paste0("Project ", projectStats[[c]]$project, 
-                   " has ", projectStats[[c]]$numPages, " pages, of which ", 
-                   projectStats[[c]]$wdUsePages, " make use of WD, excluding Sitelinks."))
+                   " has ", 
+                   projectStats[[c]]$numPages, " pages, of which ", 
+                   projectStats[[c]]$wdUsePages, 
+                   " make use of WD, excluding Sitelinks."))
       print(paste0("Project ", projectStats[[c]]$project, 
-                   " has ", projectStats[[c]]$numPages, " pages, of which ", 
-                   projectStats[[c]]$percentWDuse, "% make use of WD, excluding Sitelinks."))
+                   " has ", 
+                   projectStats[[c]]$numPages, " pages, of which ", 
+                   projectStats[[c]]$percentWDuse, 
+                   "% make use of WD, excluding Sitelinks."))
       print(paste0("Project ", projectStats[[c]]$project, 
-                   " has ", projectStats[[c]]$numPages, " pages, of which ", 
-                   projectStats[[c]]$wdSitelinksPages, " % make use of Sitelinks."))
+                   " has ", 
+                   projectStats[[c]]$numPages, " pages, of which ", 
+                   projectStats[[c]]$wdSitelinksPages, 
+                   " % make use of Sitelinks."))
       print(paste0("Project ", projectStats[[c]]$project, 
-                   " has ", projectStats[[c]]$numPages, " pages, of which ", 
-                   projectStats[[c]]$percentWDsitelinks, " % make use of Sitelinks."))
-      print(paste0("Collected ", c, " projects out of ", length(projectsTracking), " so far. NEXT."))
+                   " has ", 
+                   projectStats[[c]]$numPages, " pages, of which ", 
+                   projectStats[[c]]$percentWDsitelinks, 
+                   " % make use of Sitelinks."))
+      print(paste0(
+        "Collected ", c, " projects out of ", 
+        length(projectsTracking), " so far. NEXT.")
+        )
     }
   } else {
     print(pages)
@@ -227,7 +256,9 @@ for (i in 1:length(projectsTracking)) {
 # - bind
 projectStats <- data.table::rbindlist(projectStats)
 # - remove projects with no data:
-w <- which(projectStats$wdUsePages + projectStats$wdSitelinksPages == 0)
+w <- which(
+  projectStats$wdUsePages + projectStats$wdSitelinksPages == 0
+  )
 if (length(w) > 0) {
   projectStats <- projectStats[-w, ]
 }
