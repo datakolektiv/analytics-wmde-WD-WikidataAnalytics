@@ -1,5 +1,5 @@
 ### ---------------------------------------------------------------------------
-### --- WMDEdata::kerberos_runSQL.R
+### --- WMDEdata::rdbs_runSQL.R
 ### --- Author: Goran S. Milovanovic, Data Scientist, WMDE
 ### --- Developed under the contract between Goran Milovanovic PR Data Kolektiv
 ### --- and WMDE.
@@ -7,7 +7,7 @@
 ### --- June 2021.
 ### ---------------------------------------------------------------------------
 ### --- COMMENT:
-### --- WMDEData::kerberos_runSQL()
+### --- WMDEData::rdbs_runSQL()
 ### --- run SQL query from the Analytics Clients.
 ### ---------------------------------------------------------------------------
 ### ---------------------------------------------------------------------------
@@ -30,7 +30,7 @@
 ### --- along with WMDEData If not, see <http://www.gnu.org/licenses/>.
 ### ---------------------------------------------------------------------------
 
-#' kerberos_runSQL
+#' rdbs_runSQL
 #'
 #' Run SQL query from WMF Analytics Client(s)
 #'
@@ -42,11 +42,11 @@
 #' @return
 #' @export
 #'
-#' @examples kerberos_runSQL(query = "show tables;", database = "enwiki", localPath = "/home/goransm/", localFilename = "tables.tsv")
-kerberos_runSQL <- function(query,
-                            database,
-                            localPath,
-                            localFilename) {
+#' @examples rdbs_runSQL(query = "show tables;", database = "enwiki", localPath = "/home/goransm/", localFilename = "tables.tsv")
+rdbs_runSQL <- function(query,
+                        database,
+                        localPath,
+                        localFilename) {
 
 
   # - run SQL:
