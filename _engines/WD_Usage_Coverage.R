@@ -52,7 +52,7 @@ library(dplyr)
 
 # - params
 params <- XML::xmlParse(paste0(
-  fPath, "wd_percentUsage_Config.xml")
+  fPath, "WD_Usage_Coverage_Config.xml")
   )
 params <- XML::xmlToList(params)
 dataDir <- params$general$dataDir
@@ -64,7 +64,7 @@ logDir <- params$general$logDir
 # - spark2-submit parameters:
 paramsDeploy <- XML::xmlParse(
   paste0(fPath,
-         "wd_percentUsage_Config_Deployment.xml")
+         "WD_Usage_Coverage_Config_Deployment.xml")
   )
 paramsDeploy <- XML::xmlToList(paramsDeploy)
 sparkMaster <- paramsDeploy$spark$master
@@ -110,7 +110,7 @@ if (length(list.files(dataDir)) > 1) {
 # - Kerberos init
 WMDEData::kerberos_init(kerberosUser = "analytics-privatedata")
 WMDEData::kerberos_runSpark(kerberosUser = "analytics-privatedata",
-                            pysparkPath = paste0(fPath, 'WD_percentUsage_ETL.py'),
+                            pysparkPath = paste0(fPath, 'WD_Usage_Coverage_ETL.py'),
                             sparkMaster = sparkMaster,
                             sparkDeployMode = sparkDeployMode,
                             sparkNumExecutors = sparkNumExecutors,

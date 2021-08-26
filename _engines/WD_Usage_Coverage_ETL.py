@@ -42,7 +42,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 ### --- parse WDCM parameters
-parsFile = "/home/goransm/Analytics/Wikidata/WD_UsageCoverage/wd_percentUsage_Config.xml"
+parsFile = "/home/goransm/Analytics/Wikidata/WD_UsageCoverage/WD_Usage_Coverage_Config.xml"
 # - parse wdcmConfig.xml
 tree = ET.parse(parsFile)
 root = tree.getroot()
