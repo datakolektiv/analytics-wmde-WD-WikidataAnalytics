@@ -46,16 +46,29 @@ print(paste("--- wdcmModule_Compose.R UPDATE RUN STARTED ON:",
 # - GENERAL TIMING:
 generalT1 <- Sys.time()
 
-### --- Setup
-library(httr)
-library(XML)
-library(jsonlite)
-# - wrangling:
-library(dplyr)
-library(stringr)
-library(tidyr)
-library(readr)
-library(data.table)
+### --- Read WLP paramereters
+# - fPath: where the scripts is run from?
+fPath <- as.character(commandArgs(trailingOnly = FALSE)[4])
+fPath <- gsub("--file=", "", fPath, fixed = TRUE)
+fPath <- unlist(strsplit(fPath, split = "/", fixed = TRUE))
+fPath <- paste(
+  paste(fPath[1:length(fPath) - 1], collapse = "/"),
+  "/",
+  sep = "")
+
+# - renv
+renv::load(project = fPath, quiet = FALSE)
+
+# - lib
+library(WMDEData)
+
+# - pars
+params <- XML::xmlParse(paste0(fPath, "wdcmConfig.xml"))
+params <- XML::xmlToList(params)
+
+# - proxy
+WMDEData::set_proxy(http_proxy = params$general$http_proxy, 
+                    https_proxy = params$general$http_proxy)
 
 ### --- functions
 # - projectType() to determine project type
@@ -75,18 +88,6 @@ projectType <- function(projectName) {
   }))
 }
 
-### --- Read WDCM paramereters
-# - fPath: where the scripts is run from?
-fPath <- as.character(commandArgs(trailingOnly = FALSE)[4])
-fPath <- gsub("--file=", "", fPath, fixed = T)
-fPath <- unlist(strsplit(fPath, split = "/", fixed = T))
-fPath <- paste(
-  paste(fPath[1:length(fPath) - 1], collapse = "/"),
-  "/",
-  sep = "")
-params <- xmlParse(paste0(fPath, "wdcmConfig.xml"))
-params <- xmlToList(params)
-
 ### --- Directories
 # - fPath: where the scripts is run from?
 fPath <- params$general$fPath_R
@@ -101,9 +102,6 @@ mlInputDir <- params$general$mlInputDir
 # - production published-datasets:
 dataDir <- params$general$publicDir
 
-### --- functions
-source(paste0(fPath, 'wdcmFunctions.R'))
-
 ### ----------------------------------------------
 ### --- Production: Public Data Sets
 ### ----------------------------------------------
@@ -113,8 +111,8 @@ print("Produce wdcm_category.csv now...")
 setwd(etlDir)
 lF <- list.files()
 lF <- lF[grepl("^wdcm_category_sum_", lF)]
-wdcm_category <- lapply(lF, fread)
-wdcm_category <- rbindlist(wdcm_category)
+wdcm_category <- lapply(lF, data.table::fread)
+wdcm_category <- data.table::rbindlist(wdcm_category)
 write.csv(wdcm_category, "wdcm_category.csv")
 print("DONE.")
 
@@ -123,8 +121,13 @@ print("Produce wdcm_project_category_item_100.csv now...")
 setwd(etlDir)
 lF <- list.files()
 lF <- lF[grepl("^wdcm_project_category_item100", lF)]
-wdcm_project_category_item100 <- lapply(lF, fread)
-wdcm_project_category_item100 <- rbindlist(wdcm_project_category_item100)
+wdcm_project_category_item100 <- lapply(lF, function(x) {
+  d <- data.table::fread(x)
+  d$V1 <- NULL
+  return(d)
+  })
+wdcm_project_category_item100 <- 
+  data.table::rbindlist(wdcm_project_category_item100)
 wdcm_project_category_item100$eu_label <- 
   gsub('^""|""$', '', wdcm_project_category_item100$eu_label)
 wdcm_project_category_item100$eu_label <- 
@@ -146,11 +149,11 @@ catNames <- sapply(lF, function(x) {
 catNames <- unname(sapply(catNames, function(x) {
   strsplit(x, split = "_", fixed = T)[[1]][4]
 }))
-wdcm_category_item <- lapply(lF, fread)
+wdcm_category_item <- lapply(lF, data.table::fread)
 for (i in 1:length(wdcm_category_item)) {
   wdcm_category_item[[i]]$Category <- catNames[i]
 }
-wdcm_category_item <- rbindlist(wdcm_category_item)
+wdcm_category_item <- data.table::rbindlist(wdcm_category_item)
 wdcm_category_item$eu_label <- 
   gsub('^""|""$', '', wdcm_category_item$eu_label)
 wdcm_category_item$eu_label <- 
@@ -164,7 +167,7 @@ print("DONE.")
 ### --- fix labels for wdcm_project_item100.csv
 print("Fix labels for wdcm_project_item100.csv now...")
 setwd(etlDir)
-wdcm_project_item100 <- fread('wdcm_project_item100.csv')
+wdcm_project_item100 <- data.table::fread('wdcm_project_item100.csv')
 wdcm_project_item100$eu_label <- 
   gsub('^""|""$', '', wdcm_project_item100$eu_label)
 wdcm_project_item100$eu_label <- 
@@ -176,7 +179,6 @@ write.csv(wdcm_project_item100,
           "wdcm_project_item100_labels.csv")
 print("Fix labels for wdcm_project_item100.csv now...")
 
-
 ### --- fetch labels for itemtopic matrices
 ### --- USE: wd_api_fetch_labels() from wdcmModule_Compose.R
 lF <- list.files(mlDir)
@@ -186,14 +188,16 @@ for (i in 1:length(lF)) {
   itemtopicFrame <- read.csv(paste0(mlDir, lF[i]),
                              header = T,
                              stringsAsFactors = F)
-  labs <- wd_api_fetch_labels(items = itemtopicFrame$X,
-                              language = "en", 
-                              fallback = T, 
-                              proxy = c(params$general$http_proxy, 
-                                        params$general$https_proxy))
-  itemtopicFrame <- left_join(itemtopicFrame, 
-                              labs, 
-                              by = c("X" = "title"))
+  apiPF <- 'https://www.wikidata.org/w/api.php?action=wbgetentities&'
+  labs <- WMDEData::api_fetch_labels(items = itemtopicFrame$X,
+                                     language = "en",
+                                     fallback = TRUE,
+                                     APIprefix = apiPF)
+  itemtopicFrame <- dplyr::left_join(itemtopicFrame,
+                                     labs,
+                                     by = c("X" = "item"))
+  colnames(itemtopicFrame)[length(colnames(itemtopicFrame))] <- 
+    "en_label"
   itemtopicFrame$en_label[is.na(itemtopicFrame$en_label)] <- 
     itemtopicFrame$X
   itemtopicFrame$X <- paste0(itemtopicFrame$en_label, " (", 

@@ -37,7 +37,7 @@
 #'
 #' @param kerberosUser charecter, the Kerberos user to impersonate
 #' @param localPath character, the path to the directory where the intermediary files should be stored
-#' @param localFilenamePrefix charcter, how should be the local filenames be prefixed for data.table::fread() to pick them up
+#' @param localFilenamePrefix character, how should be the local filenames be prefixed for data.table::fread() to pick them up
 #' @param hdfsDir character, the hdfs directory where the files are found
 #' @param hdfsFilenamePrefix charecter,the prefix used for files in the hdfsDir
 #' @param fr_header boolean, whether or not to use "header = T" in data.table::fread()

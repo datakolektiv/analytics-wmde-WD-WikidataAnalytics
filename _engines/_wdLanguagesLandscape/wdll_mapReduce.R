@@ -56,12 +56,12 @@ fPath <- paste(
 renv::load(project = fPath, quiet = FALSE)
 
 # - lib
-library(XML)
-library(data.table)
-library(dplyr)
+library(WMDEData)
 
 # - params
-params <- XML::xmlParse(paste0(fPath, "WD_LanguagesLandscape_Config.xml"))
+params <- XML::xmlParse(
+  paste0(fPath, "WD_LanguagesLandscape_Config.xml")
+  )
 params <- XML::xmlToList(params)
 
 # - dirs
@@ -78,7 +78,7 @@ hdfsPath <- params$general$hdfsPath
 # - toReport
 print(paste("wdll_MapReduce: HiveQL from Beeline, ETL from goransm.wdcm_clients_wb_entity_usage init:", 
             Sys.time(), sep = " "))
-filename <- paste0(dataDir, "wd_entities_reuse.tsv")
+filename <- "wd_entities_reuse.tsv"
 queryFile <- paste0(fPath, "wd_reuse_HiveQL_Query.hql")
 kerberosPrefix <- 'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata '
 hiveQLquery <- 'SET hive.mapred.mode=unstrict; SELECT eu_entity_id, COUNT(*) AS eu_count FROM 
@@ -90,15 +90,12 @@ write(hiveQLquery, queryFile)
 print(paste("wdll_MapReduce: Fetching reuse data from goransm.wdcm_clients_wb_entity_usage STARTED ON:", 
             Sys.time(), sep = " "))
 # - Kerberos init
-system(command = paste0(kerberosPrefix, ' hdfs dfs -ls'), 
-       wait = TRUE)
-# - Run query
-query <- system(command = paste(kerberosPrefix, 
-                                '/usr/local/bin/beeline --incremental=true --silent -f "',
-                                paste0(queryFile),
-                                '" > ', filename,
-                                sep = ""),
-                wait = TRUE)
+WMDEData::kerberos_init(kerberosUser = "analytics-privatedata")
+# - Run HiveQL query
+kerberos_runHiveQL(kerberosUser = "analytics-privatedata",
+                   query = queryFile,
+                   localPath = dataDir,
+                   localFilename = filename)
 # - to Report
 print("wdll_MapReduce: DONE w. ETL from Hadoop: WD re-use dataset.")
 print("wdll_MapReduce: DONE w. fundamental dataset production.")
@@ -108,31 +105,15 @@ print("wdll_MapReduce: DONE w. fundamental dataset production.")
 # - to runtime Log:
 print(paste("wdll_MapReduce: Collect Final Labels Dataset STARTED ON:", 
             Sys.time(), sep = " "))
-# - copy splits from hdfs to local dataDir
-# - from statements:
-system(paste0('sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls ', 
-              hdfsPath, 'wd_dump_item_language > ', 
-              dataDir, 'files.txt'), 
-       wait = TRUE)
-files <- read.table(paste0(dataDir, 'files.txt'), skip = 1)
-files <- as.character(files$V8)[2:length(as.character(files$V8))]
-file.remove(paste0(dataDir, 'files.txt'))
-for (i in 1:length(files)) {
-  system(paste0('sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -text ', 
-                files[i], ' > ',  
-                paste0(dataDir, "wd_dump_item_language", i, ".csv")), wait = TRUE)
-}
-print("wdll_MapReduce: read splits - dataSet")
-# - read splits: dataSet
-# - load
-lF <- list.files(dataDir)
-lF <- lF[grepl("wd_dump_item_language", lF)]
-dataSet <- lapply(paste0(dataDir, lF), 
-                  function(x) {
-                    fread(x, header = FALSE)
-                    })
-# - collect
-dataSet <- data.table::rbindlist(dataSet)
+dataSet <- WMDEData::hdfs_read_from(kerberosUser = 
+                                      "analytics-privatedata",
+                                    localPath = dataDir,
+                                    localFilenamePrefix = 
+                                      "wd_dump_item_language",
+                                    hdfsDir = hdfsPath,
+                                    hdfsFilenamePrefix = 
+                                      "wd_dump_item_language",
+                                    fr_header = FALSE)
 # - schema
 colnames(dataSet) <- c("entity", "language")
 

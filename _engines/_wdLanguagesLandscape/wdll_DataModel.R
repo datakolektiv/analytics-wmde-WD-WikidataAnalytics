@@ -60,12 +60,7 @@ fPath <- paste(
 renv::load(project = fPath, quiet = FALSE)
 
 # - libs
-library(XML)
-library(httr)
-library(jsonlite)
-library(WikidataR)
-library(data.table)
-library(dplyr)
+library(WMDEData)
 
 # - params
 params <- XML::xmlParse(paste0(fPath, "WD_LanguagesLandscape_Config.xml"))
@@ -82,9 +77,8 @@ hdfsPath <- params$general$hdfsPath
 # - to runtime Log:
 print(paste("--- wdll_DataModel.R: set proxy.", 
             Sys.time(), sep = " "))
-Sys.setenv(
-  http_proxy = params$general$http_proxy,
-  https_proxy = params$general$http_proxy)
+WMDEData::set_proxy(http_proxy = params$general$http_proxy, 
+                    https_proxy = params$general$http_proxy)
 
 # - WDQS endpoint
 endPointURL <- params$general$wdqs_endpoint
@@ -95,8 +89,11 @@ publicDir <- params$general$pubDataDir
 ### --- used languages
 
 # - to runtime Log:
-print(paste("--- wdll_DataModel.R: read wd_languages_count.csv.", 
-            Sys.time(), sep = " "))
+print(paste(
+  "--- wdll_DataModel.R: read wd_languages_count.csv.",
+  Sys.time(), 
+  sep = " ")
+  )
 usedLanguages <- read.csv(paste0(outDir, "wd_languages_count.csv"),
                           header = TRUE, 
                           check.names = FALSE,
@@ -142,8 +139,11 @@ dmodelProps <- data.frame(dmodelProperties = dmodelProperties,
 ### --- dataModel basics: languages + labels + WikimediaLanguage Code 
 
 # - to runtime Log:
-print(paste("--- wdll_DataModel.R: WDQS dataModel basics: languages + labels + WikimediaLanguage Code.", 
-            Sys.time(), sep = " "))
+print(paste(
+  "--- wdll_DataModel.R: WDQS dataModel basics: languages + labels + WikimediaLanguage Code.",
+  Sys.time(), 
+  sep = " ")
+  )
 # - Construct Query: languages from Q1288568 Modern Languages class
 query <- 'SELECT ?language ?languageLabel ?WikimediaLanguageCode ?desc
             WHERE {
@@ -157,52 +157,11 @@ query <- 'SELECT ?language ?languageLabel ?WikimediaLanguageCode ?desc
 # - to runtime Log:
 print(paste("--- wdll_DataModel.R: Run SPARQL Query.", 
             Sys.time(), sep = " "))
-repeat {
-  res <- tryCatch({
-    httr::GET(url = paste0(endPointURL, URLencode(query)))
-  },
-  error = function(condition) {
-    print("Something's wrong on WDQS: wait 10 secs, try again.")
-    Sys.sleep(10)
-    httr::GET(url = paste0(endPointURL, URLencode(query)))
-  },
-  warning = function(condition) {
-    print("Something's wrong on WDQS: wait 10 secs, try again.")
-    Sys.sleep(10)
-    httr::GET(url = paste0(endPointURL, URLencode(query)))
-  }
-  )  
-  if (res$status_code == 200) {
-    print("Success.")
-    break
-  } else {
-    print("Failed; retry.")
-    Sys.sleep(10)
-  }
-}
-# - Extract result:
-if (res$status_code == 200) {
-  # - tryCatch rawToChar
-  # - NOTE: might fail for very long vectors
-  rc <- tryCatch(
-    {
-      rawToChar(res$content)
-    },
-    error = function(condition) {
-      return(FALSE)
-    }
-  )
-} else {
-  # - report
-  print("The response status code for the SPARQL query was not 200.")
-  print("Exiting.")
-}
-# - Parse JSON:
-if (class(rc) == "logical") {
-  print("rawToChar() conversion for the SPARQL query failed. Exiting.")
-} else  {
-  rc <- jsonlite::fromJSON(rc, simplifyDataFrame = TRUE)
-}
+rc <- WMDEData::wdqs_send_query(query = query,
+                                SPARQL_Endpoint = endPointURL,
+                                max_retry = 10)
+rc <- jsonlite::fromJSON(rc, simplifyDataFrame = TRUE)
+
 # - to runtime Log:
 print(paste("--- wdll_DataModel.R: form dataModel.", 
             Sys.time(), sep = " "))
@@ -211,14 +170,17 @@ dataModel <- data.frame(language = rc[[2]]$bindings$language$value,
                         wikimediaCode = rc[[2]]$bindings$WikimediaLanguageCode$value,
                         description = rc[[2]]$bindings$desc$value,
                         stringsAsFactors = FALSE)
-dataModel$language <- gsub("http://www.wikidata.org/entity/", "", dataModel$language)
+dataModel$language <- 
+  gsub("http://www.wikidata.org/entity/", "", dataModel$language)
 dataModel <- dataModel[!duplicated(dataModel), ]
 
 # - enter dataModel$wikimediaCode to usedLanguages
-usedLanguages <- dplyr::left_join(usedLanguages, 
-                                  dplyr::select(dataModel, 
-                                                language, wikimediaCode, description),
-                                  by = c("language" = "wikimediaCode"))
+usedLanguages <- 
+  dplyr::left_join(usedLanguages,
+                   dplyr::select(dataModel,
+                                 language, wikimediaCode, description),
+                   by = c("language" = "wikimediaCode")
+                   )
 colnames(usedLanguages)[5] <- "languageURI"
 
 ### --- Find duplicated languages (i.e. more than one Wikimedia language code)
@@ -226,8 +188,11 @@ colnames(usedLanguages)[5] <- "languageURI"
 # - languageUsage data.frame:
 
 # - to runtime Log:
-print(paste("--- wdll_DataModel.R: find and eliminate duplicated languages.", 
-            Sys.time(), sep = " "))
+print(paste(
+  "--- wdll_DataModel.R: find and eliminate duplicated languages.",
+  Sys.time(), 
+  sep = " ")
+  )
 dataModel$checkWMcode <- sapply(dataModel$wikimediaCode, function(x) {
   if(!is.na(x)) {
     if (x %in% unique(usedLanguages$language)) {
@@ -261,9 +226,12 @@ if (length(wnI) > 0) {
 }
 
 ### --- dataModel labels: ID + label
-
 dataModel$languageLabel <- 
-  paste0(dataModel$languageLabel, " (", dataModel$language, ")")
+  paste0(dataModel$languageLabel, 
+         " (", 
+         dataModel$language, 
+         ")"
+         )
 
 ### --- Collect Language Properties w. {WikidataR}
 
@@ -317,7 +285,7 @@ for (i in 1:length(lprops)) {
     if (length(gprops) > 0) {
       gprops <- lapply(gprops, function(x) {x$mainsnak})
       gprops <- lapply(gprops, function(x) {jsonlite::flatten(x, recursive = TRUE)})
-      gprops <- rbindlist(gprops, fill = TRUE, use.names = TRUE)
+      gprops <- data.table::rbindlist(gprops, fill = TRUE, use.names = TRUE)
       gprops$language <- x
       gprops$languageLabel <- dataModel$languageLabel[which(dataModel$language %in% x)][1]
       if ("property" %in% colnames(gprops)) {
@@ -345,7 +313,10 @@ w <- which(is.na(lprops))
 if (length(w) > 0) {
   lprops[w] <- NULL 
 }
-lprops <- data.table::rbindlist(lprops, fill = TRUE, use.names = TRUE)
+lprops <- 
+  data.table::rbindlist(lprops, 
+                        fill = TRUE, 
+                        use.names = TRUE)
 # - filter out P1098 (number of speakers)
 w <- which(lprops$propertyLabel %in% "numberOfSpeakers")
 if (length(w) > 0) {
@@ -379,31 +350,23 @@ write.csv(lprops,
 
 # - English labels for item values
 # - to runtime Log:
-print(paste("--- wdll_DataModel.R: English labels for item values.", 
-            Sys.time(), sep = " "))
-items <- unique(lprops$value[grepl("^Q[[:digit:]]+", lprops$value)])
+print(paste(
+  "--- wdll_DataModel.R: English labels for item values.",
+  Sys.time(), 
+  sep = " ")
+  )
+items <- unique(
+  lprops$value[grepl("^Q[[:digit:]]+", lprops$value)]
+  )
 # - wdqs: fetch English labels
-# - fetch occupation labels w. {WikidataR}
-labels <- sapply(items,
-                 function(x) {
-                   repeat {
-                     i <- tryCatch({
-                       WikidataR::get_item(x)
-                     },
-                     error = function(condition) {
-                       Sys.sleep(2)
-                       FALSE
-                     })
-                     if (class(i) == "wikidata") {
-                       break
-                     }
-                   }
-                   i[[1]]$labels$en$value
-                 })
-labNames <- names(labels) 
-labels <- as.character(labels)
-
+apiPF <- 'https://www.wikidata.org/w/api.php?action=wbgetentities&'
+labels <- WMDEData::api_fetch_labels(items,
+                                     language = "en",
+                                     fallback = TRUE,
+                                     APIprefix = apiPF)
 # - add labels for item values to lprops
+labNames <- labels$item
+labels <- labels$label
 lprops$value <- sapply(lprops$value, function(x) {
   if (grepl("^Q[[:digit:]]+", x)) {
     w <- which(labNames == x)
@@ -455,8 +418,11 @@ write.csv(usedLanguages,
 # - UNESCOThesaurusID (P3916), UNESCOLanguageStatus (P1999)
 # - add: EthnologueLanguageCode (P1627)
 # - to runtime Log:
-print(paste("--- wdll_DataModel.R: EthnologueLanguageCode.", 
-            Sys.time(), sep = " "))
+print(paste(
+  "--- wdll_DataModel.R: EthnologueLanguageCode.",
+  Sys.time(), 
+  sep = " ")
+  )
 EthnologueLanguageCode <- dplyr::filter(dataModel_properties,
                                         property == "EthnologueLanguageCode (P1627)") %>%
   dplyr::select(wikimediaCode, property, value) %>% 
@@ -469,8 +435,11 @@ colnames(usedLanguages)[7] <- "EthnologueLanguageCode"
 
 # - add: EthnologueLanguageStatus (P3823)
 # - to runtime Log:
-print(paste("--- wdll_DataModel.R: EthnologueLanguageStatus.", 
-            Sys.time(), sep = " "))
+print(paste(
+  "--- wdll_DataModel.R: EthnologueLanguageStatus.",
+  Sys.time(), 
+  sep = " ")
+  )
 EthnologueLanguageStatus <- dplyr::filter(dataModel_properties,
                                           property == "EthnologueLanguageStatus (P3823)") %>%
   dplyr::select(wikimediaCode, property, value) %>% 
@@ -483,8 +452,11 @@ colnames(usedLanguages)[8] <- "EthnologueLanguageStatus"
 
 # - add: UNESCOLanguageStatus (P1999)
 # - to runtime Log:
-print(paste("--- wdll_DataModel.R: UNESCOLanguageStatus.", 
-            Sys.time(), sep = " "))
+print(paste(
+  "--- wdll_DataModel.R: UNESCOLanguageStatus.",
+  Sys.time(), 
+  sep = " ")
+  )
 UNESCOLanguageStatus <- dplyr::filter(dataModel_properties,
                                       property == "UNESCOLanguageStatus (P1999)") %>%
   dplyr::select(wikimediaCode, property, value) %>% 
@@ -497,15 +469,21 @@ colnames(usedLanguages)[9] <- "UNESCOLanguageStatus"
 
 # - add: numSitelinks from dataModel_basic:
 # - to runtime Log:
-print(paste("--- wdll_DataModel.R: add: numSitelinks from dataModel_basic.", 
-            Sys.time(), sep = " "))
+print(paste(
+  "--- wdll_DataModel.R: add: numSitelinks from dataModel_basic.",
+  Sys.time(), 
+  sep = " ")
+  )
 usedLanguages <- dplyr::left_join(usedLanguages, 
                                   dplyr::select(dataModel_basic, 
                                                 language, numSitelinks),
                                   by = c("languageURI" = "language"))
 # - to runtime Log:
-print(paste("--- wdll_DataModel.R: store: WD_Languages_UsedLanguages.csv.", 
-            Sys.time(), sep = " "))
+print(paste(
+  "--- wdll_DataModel.R: store: WD_Languages_UsedLanguages.csv.",
+  Sys.time(), 
+  sep = " ")
+  )
 write.csv(usedLanguages, 
           paste0(outDir, "WD_Languages_UsedLanguages.csv"))
 

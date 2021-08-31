@@ -59,14 +59,12 @@ fPath <- paste(
 renv::load(project = fPath, quiet = FALSE)
 
 # - lib
-library(XML)
-library(dplyr)
-library(httr)
-library(jsonlite)
-library(data.table)
+library(WMDEData)
 
 # - pars
-params <- XML::xmlParse(paste0(fPath, "WD_LanguagesLandscape_Config.xml"))
+params <- XML::xmlParse(paste0(
+  fPath, "WD_LanguagesLandscape_Config.xml")
+  )
 params <- XML::xmlToList(params)
 
 ### --- dirs
@@ -76,16 +74,12 @@ outDir <- params$general$outDir
 publicDir <- params$general$pubDataDir
 hdfsPath <- params$general$hdfsPath
 
-# - funs
+# - Set proxy
 # - to runtime Log:
-print(paste("--- wdll_Analytics.R: source functions.", 
+print(paste("--- wdll_DataModel.R: set proxy.", 
             Sys.time(), sep = " "))
-source(paste0(fPath, "wdll_Functions.R"))
-
-#- set proxy
-Sys.setenv(
-  http_proxy = params$general$http_proxy,
-  https_proxy = params$general$http_proxy)
+WMDEData::set_proxy(http_proxy = params$general$http_proxy, 
+                    https_proxy = params$general$http_proxy)
 
 # - WDQS endpoint
 endPointURL <- params$general$wdqs_endpoint
@@ -186,21 +180,19 @@ colnames(pFrame) <- c("Language Code",
 write.csv(pFrame, 
           paste0(outDir, "WD_Vis_EthnologueLanguageStatus_ItemReuse.csv"))
 
-### --- wd_Superclasses_Recurrently() for Ontology Structure
-
+### --- Ontology Structure
 # - to runtime Log:
 print(paste("--- wdll_Analytics.R: wd_Superclasses_Recurrently() for Ontology Structure.", 
             Sys.time(), sep = " "))
 entity <- unique(usedLanguages$languageURI)
-myWD <- wd_Superclasses_Recurrently(entity = entity, 
-                                    language = "en", 
-                                    cleanup = TRUE,
-                                    fetchSubClasses = FALSE,
-                                    fetchCounts = FALSE,
-                                    SPARQL_Endpoint = endPointURL)
-
-saveRDS(myWD, 
-        paste0(outDir, "myWD.Rds"))
+myWD <- WMDEData::wdqs_superclasses_recurrently(entity,
+                                                language = 'en',
+                                                cleanup = TRUE,
+                                                fetchSubClasses = FALSE,
+                                                fetchCounts = FALSE,
+                                                SPARQL_Endpoint = endPointURL
+                                                )
+saveRDS(myWD, paste0(outDir, "myWD.Rds"))
 
 # - prepate dataSet for dashboard visualization
 # - to runtime Log:

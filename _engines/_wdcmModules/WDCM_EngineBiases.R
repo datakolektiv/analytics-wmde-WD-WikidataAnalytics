@@ -4,7 +4,7 @@
 ### --- WDCM EngineBiases
 ### --- Version 1.0.0
 ### --- Script: WDCM_EngineBiases.R
-### --- June 2020.
+### --- August 2021.
 ### --- Author: Goran S. Milovanovic, Data Analyst, WMDE
 ### --- Developed under the contract between Goran Milovanovic PR Data Kolektiv
 ### --- and WMDE.
@@ -59,42 +59,29 @@ fPath <- paste(
 # - renv
 renv::load(project = fPath, quiet = FALSE)
 
-### --- Setup
-library(stringr)
-library(data.table)
-library(dplyr)
-library(tidyr)
-library(WikidataR)
-library(ggplot2)
-library(scales)
-library(bayesAB)
-library(ineq)
-library(XML)
+# -lib
+library(WMDEData)
 
-### --- parameters
-### --- Read WDCM paramereters: wdcmConfig.xml
-# - toLog
+# - pars
 print(paste0("Read WDCM params: ", Sys.time()))
-params <- xmlParse(paste0(fPath, "wdcmConfig.xml"))
-params <- xmlToList(params)
+params <- XML::xmlParse(
+  paste0(fPath, "wdcmConfig.xml")
+  )
+params <- XML::xmlToList(params)
+
 ### --- Directories
 # - toLog
 print(paste0("Set directory params: ", Sys.time()))
-# - fPath: where the scripts is run from?
-fPath <- params$biases$biases_fPath
-# - log paths
 logDir <- params$general$logDir
-# - hdfs directory
 hdfsDir <- params$biases$biases_hdfsDir
-# - temporary ETL dir
 tempDataDir <- params$biases$biases_tempDataDir
-# - published-datasets dir, maps onto
-# - https://analytics.wikimedia.org/datasets/wdcm/
 pubDataDir <- params$biases$biases_pubDataDir
 
-# - spark2-submit parameters: wdcmConfig_Deployment.xml
-paramsDeployment <- xmlParse(paste0(fPath, "wdcmConfig_Deployment.xml"))
-paramsDeployment <- xmlToList(paramsDeployment)
+### --- spark2-submit parameters: wdcmConfig_Deployment.xml
+paramsDeployment <- XML::xmlParse(
+  paste0(fPath, "wdcmConfig_Deployment.xml")
+  )
+paramsDeployment <- XML::xmlToList(paramsDeployment)
 # - toLog
 print(paste0("Set Spark params: ", Sys.time()))
 sparkMaster <- paramsDeployment$biases$spark$biases_master
@@ -107,9 +94,8 @@ sparkConfigDynamic <- paramsDeployment$biases$spark$biases_config
 ### --- Set proxy
 # - toLog
 print(paste0("Set proxy params: ", Sys.time()))
-Sys.setenv(
-  http_proxy = params$general$http_proxy,
-  https_proxy = params$general$http_proxy)
+WMDEData::set_proxy(http_proxy = params$general$http_proxy, 
+                    https_proxy = params$general$http_proxy)
 
 # - clear tempDataDir
 lF <- list.files(tempDataDir)
@@ -149,32 +135,22 @@ gender$transM <- 'Q2449503'
 # - toLog
 print(paste0("Run Apache Spark ETL: ", Sys.time()))
 # - Kerberos init
-system(command = 
-         'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls', 
-       wait = T)
-# -  delete hdfsDir
-system(command = 
-         paste0(
-           'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -rm -r ',
-           hdfsDir),
-       wait = T)
+WMDEData::kerberos_init(kerberosUser = "analytics-privatedata")
+# - delete hdfsDir
+WMDEData::hdfs_rmdir(kerberosUser = "analytics-privatedata", 
+                     hdfsDir = hdfsDir)
 # -  make hdfsDir
-system(command = 
-         paste0(
-           'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -mkdir ',
-           hdfsDir),
-       wait = T)
-# - run Pyspark
-system(command = paste0('sudo -u analytics-privatedata spark2-submit ', 
-                        sparkMaster, ' ',
-                        sparkDeployMode, ' ', 
-                        sparkNumExecutors, ' ',
-                        sparkDriverMemory, ' ',
-                        sparkExecutorMemory, ' ',
-                        sparkConfigDynamic, ' ',
-                        paste0(fPath, 'wdcmModule_Biases_ETL.py')
-                        ),
-       wait = T)
+WMDEData::hdfs_mkdir(kerberosUser = "analytics-privatedata", 
+                     hdfsDir = hdfsDir)
+# - Run Spark ETL
+WMDEData::kerberos_runSpark(kerberosUser = "analytics-privatedata",
+                            pysparkPath = paste0(fPath, 'wdcmModule_Biases_ETL.py'),
+                            sparkMaster = sparkMaster,
+                            sparkDeployMode = sparkDeployMode,
+                            sparkNumExecutors = sparkNumExecutors,
+                            sparkDriverMemory = sparkDriverMemory,
+                            sparkExecutorMemory = sparkExecutorMemory,
+                            sparkConfigDynamic = sparkConfigDynamic)
 print(paste0("Run Apache Spark ETL (DONE): ", Sys.time()))
 
 ### ---------------------------------------------------------------------------
@@ -182,30 +158,20 @@ print(paste0("Run Apache Spark ETL (DONE): ", Sys.time()))
 ### ---------------------------------------------------------------------------
 # - toLog
 print(paste0("Read Apache Spark ETL data: ", Sys.time()))
-# - copy splits from hdfs to local dataDir
-# - from statements:
-system(paste0(
-  'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls ',
-  paste0(hdfsDir, 'WDCM_Biases_ETL'), ' > ', tempDataDir, 'files.txt'),
-  wait = T)
-files <- read.table(
-  paste0(tempDataDir, 'files.txt'), 
-  skip = 1)
-files <- as.character(files$V8)[2:length(files$V8)]
-file.remove(paste0(tempDataDir, 'files.txt'))
-for (i in 1:length(files)) {
-  system(paste0(
-    'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -text ',
-    files[i], ' > ',
-    paste0(tempDataDir, "wdcm_biases_etl_", i, ".csv")), wait = T)
-}
-lF <- list.files(tempDataDir)
-dataSet <- lapply(paste0(tempDataDir, lF), fread)
-dataSet <- rbindlist(dataSet)
-colnames(dataSet) <- c('item', 'placeOfBirth', 'gender',
-                       'occupation', 'lat', 'lon', 'project', 'usage')
-# - remove temporary files
-lapply(paste0(tempDataDir, lF), file.remove)
+dataSet <- WMDEData::hdfs_read_from(kerberosUser = "analytics-privatedata",
+                                    localPath = tempDataDir,
+                                    localFilenamePrefix = "wdcm_biases_etl_",
+                                    hdfsDir = hdfsDir,
+                                    hdfsFilenamePrefix = "WDCM_Biases_ETL",
+                                    fr_header = FALSE)
+colnames(dataSet) <- c('item', 
+                       'placeOfBirth', 
+                       'gender',
+                       'occupation', 
+                       'lat', 
+                       'lon', 
+                       'project', 
+                       'usage')
 
 ### ---------------------------------------------------------------------------
 ### --- Prepare Data Sets 
@@ -223,11 +189,16 @@ wikidataGender <- as.data.frame(table(items$gender))
 ### -----------------------------------
 ### --- indicators
 ### -----------------------------------
-nMaleItems <- wikidataGender$Freq[which(wikidataGender$Var1 == gender$male)]
-nFemaleItems <- wikidataGender$Freq[which(wikidataGender$Var1 == gender$female)]
-nIntersexItems <- wikidataGender$Freq[which(wikidataGender$Var1 == gender$intersex)]
-nTransFItems <- wikidataGender$Freq[which(wikidataGender$Var1 == gender$transF)]
-nTransMItems <- wikidataGender$Freq[which(wikidataGender$Var1 == gender$transM)]
+nMaleItems <- 
+  wikidataGender$Freq[which(wikidataGender$Var1 == gender$male)]
+nFemaleItems <- 
+  wikidataGender$Freq[which(wikidataGender$Var1 == gender$female)]
+nIntersexItems <- 
+  wikidataGender$Freq[which(wikidataGender$Var1 == gender$intersex)]
+nTransFItems <- 
+  wikidataGender$Freq[which(wikidataGender$Var1 == gender$transF)]
+nTransMItems <- 
+  wikidataGender$Freq[which(wikidataGender$Var1 == gender$transM)]
 
 ### -----------------------------------
 ### --- Gender x Projects
@@ -236,7 +207,8 @@ nTransMItems <- wikidataGender$Freq[which(wikidataGender$Var1 == gender$transM)]
 print(paste0("Gender x Projects: ", Sys.time()))
 genderProjectData <- dataSet %>% 
   dplyr::select(item, gender, project, usage)
-genderProjectData <- genderProjectData[!duplicated(genderProjectData), ]
+genderProjectData <- 
+  genderProjectData[!duplicated(genderProjectData), ]
 genderProjectData <- genderProjectData %>% 
   dplyr::select(gender, project, usage)
 w1 <- which(genderProjectData$gender == gender$male)
@@ -251,17 +223,21 @@ genderProjectData <- tidyr::spread(genderProjectData,
                                    key = gender,
                                    value = usage, 
                                    fill = 0)
-colnames(genderProjectData) <- c('project', 'usageF', 'usageM')
+colnames(genderProjectData) <- c("project", "usageF", "usageM")
 genderProjectData$propF <- 
   genderProjectData$usageF/(genderProjectData$usageF + genderProjectData$usageM)
 genderProjectData$propM <- 
   genderProjectData$usageM/(genderProjectData$usageF + genderProjectData$usageM)
-genderProjectData$percentF <- genderProjectData$propF * 100 
-genderProjectData$percentM <- genderProjectData$propM * 100
-genderProjectData$projectType <- projectType(genderProjectData$project)
+genderProjectData$percentF <- 
+  genderProjectData$propF * 100 
+genderProjectData$percentM <- 
+  genderProjectData$propM * 100
+genderProjectData$projectType <- 
+  projectType(genderProjectData$project)
 # - store
 write.csv(genderProjectData, 
-          paste0(tempDataDir, 'genderProjectDataSet.csv'))
+          paste0(tempDataDir, 
+                 "genderProjectDataSet.csv"))
 
 ### -----------------------------------
 ### --- Gender x Occupation
@@ -278,7 +254,7 @@ genderOccupationData <-
   genderOccupationData[w, ]
 genderOccupationData <- genderOccupationData %>% 
   dplyr::group_by(occupation, gender) %>% 
-  dplyr::summarise(usage = n())
+  dplyr::summarise(usage = dplyr::n())
 genderOccupationData <- tidyr::spread(genderOccupationData,
                                       key = gender,
                                       value = usage,
@@ -286,32 +262,23 @@ genderOccupationData <- tidyr::spread(genderOccupationData,
 colnames(genderOccupationData) <- c('occupation', 'usageF', 'usageM')
 genderOccupationData$totalUsage <- 
   genderOccupationData$usageF + genderOccupationData$usageM
-genderOccupationData <- dplyr::arrange(genderOccupationData, desc(totalUsage))
+genderOccupationData <- 
+  dplyr::arrange(genderOccupationData, desc(totalUsage))
 genderOccupationData <- genderOccupationData[1:1000, ]
 # - fetch occupation labels w. {WikidataR}
-labels <- sapply(genderOccupationData$occupation,
-                 function(x) {
-                   repeat {
-                     i <- tryCatch({
-                       get_item(x)
-                     },
-                     error = function(condition) {
-                       Sys.sleep(2)
-                       FALSE
-                     })
-                     if (class(i) == "wikidata") {
-                       break
-                     }
-                   }
-                   i[[1]]$labels$en$value
-                 })
-labNames <- names(labels)
-labels <- as.character(labels)
-genderOccupationData$label <- labels
+apiPF <- 'https://www.wikidata.org/w/api.php?action=wbgetentities&'
+labels <- WMDEData::api_fetch_labels(items = genderOccupationData$occupation,
+                                     language = "en",
+                                     fallback = TRUE,
+                                     APIprefix = apiPF)
+genderOccupationData <- 
+  dplyr::left_join(genderOccupationData,
+                   labels,
+                   by = c("occupation" = "item"))
 # - store
 write.csv(genderOccupationData, 
           paste0(tempDataDir, 'occUsage.csv'))
-rm(genderOccupationData); rm(labNames); rm(labels)
+rm(genderOccupationData); rm(labels)
 
 ### ---------------------------------------------------------------------------
 ### --- Analytics/Outputs
@@ -356,23 +323,26 @@ png(filename = paste0(tempDataDir, filename),
     res = 72,
     type = c("cairo-png")
 )
-ggplot(geo_M, aes(x = lon,
-                  y = lat)) +
-  geom_point(size = geo_M$usage/max(geo_M$usage)*5,
-             alpha = log(geo_M$usage)/max(log(geo_M$usage)),
-             color = "cadetblue3") +
-  xlim(-180, 180) + ylim(-90, 90) +
-  theme_bw() +
-  theme(axis.text.x = element_blank()) +
-  theme(axis.text.y = element_blank()) +
-  theme(axis.title.x = element_blank()) +
-  theme(axis.title.y = element_blank()) +
-  theme(axis.ticks = element_blank()) +
-  theme(panel.background = element_rect(color = "black", fill = "black")) +
-  theme(panel.border = element_blank()) +
-  theme(panel.grid = element_blank()) +
-  theme(legend.title = element_text(size = 11)) +
-  theme(legend.position = "bottom")
+ggplot2::ggplot(geo_M, 
+                ggplot2::aes(x = lon,
+                             y = lat)) +
+  ggplot2::geom_point(size = geo_M$usage/max(geo_M$usage)*5,
+                      alpha = log(geo_M$usage)/max(log(geo_M$usage)),
+                      color = "cadetblue3") +
+  ggplot2::xlim(-180, 180) + ggplot2::ylim(-90, 90) +
+  ggplot2::theme_bw() +
+  ggplot2::theme(axis.text.x = ggplot2::element_blank()) +
+  ggplot2::theme(axis.text.y = ggplot2::element_blank()) +
+  ggplot2::theme(axis.title.x = ggplot2::element_blank()) +
+  ggplot2::theme(axis.title.y = ggplot2::element_blank()) +
+  ggplot2::theme(axis.ticks = ggplot2::element_blank()) +
+  ggplot2::theme(panel.background = 
+                   ggplot2::element_rect(color = "black", 
+                                         fill = "black")) +
+  ggplot2::theme(panel.border = ggplot2::element_blank()) +
+  ggplot2::theme(panel.grid = ggplot2::element_blank()) +
+  ggplot2::theme(legend.title = ggplot2::element_text(size = 11)) +
+  ggplot2::theme(legend.position = "bottom")
 dev.off()
 
 # - {ggplot2} for F items
@@ -385,23 +355,26 @@ png(filename = paste0(tempDataDir, filename),
     res = 72,
     type = c("cairo-png")
 )
-ggplot(geo_F, aes(x = lon,
-                  y = lat)) +
-  geom_point(size = geo_F$usage/max(geo_F$usage)*5,
-             alpha = log(geo_F$usage)/max(log(geo_F$usage)),
-             color = "green") +
-  xlim(-180, 180) + ylim(-90, 90) +
-  theme_bw() +
-  theme(axis.text.x = element_blank()) +
-  theme(axis.text.y = element_blank()) +
-  theme(axis.title.x = element_blank()) +
-  theme(axis.title.y = element_blank()) +
-  theme(axis.ticks = element_blank()) +
-  theme(panel.background = element_rect(color = "black", fill = "black")) +
-  theme(panel.border = element_blank()) +
-  theme(panel.grid = element_blank()) +
-  theme(legend.title = element_text(size = 11)) +
-  theme(legend.position = "bottom")
+ggplot2::ggplot(geo_F, 
+                ggplot2::aes(x = lon,
+                             y = lat)) +
+  ggplot2::geom_point(size = geo_F$usage/max(geo_F$usage)*5,
+                      alpha = log(geo_F$usage)/max(log(geo_F$usage)),
+                      color = "green") +
+  ggplot2::xlim(-180, 180) + ggplot2::ylim(-90, 90) +
+  ggplot2::theme_bw() +
+  ggplot2::theme(axis.text.x = ggplot2::element_blank()) +
+  ggplot2::theme(axis.text.y = ggplot2::element_blank()) +
+  ggplot2::theme(axis.title.x = ggplot2::element_blank()) +
+  ggplot2::theme(axis.title.y = ggplot2::element_blank()) +
+  ggplot2::theme(axis.ticks = ggplot2::element_blank()) +
+  ggplot2::theme(panel.background = ggplot2::element_rect(
+    color = "black", 
+    fill = "black")) +
+  ggplot2::theme(panel.border = ggplot2::element_blank()) +
+  ggplot2::theme(panel.grid = ggplot2::element_blank()) +
+  ggplot2::theme(legend.title = ggplot2::element_text(size = 11)) +
+  ggplot2::theme(legend.position = "bottom")
 dev.off()
 
 ### -----------------------------------
@@ -429,13 +402,20 @@ rm(geoItems)
 ### --- Gender by Project Tab
 # - toLog
 print(paste0("Gender by Project Tab: ", Sys.time()))
-genderProject <- fread(paste0(tempDataDir, 'genderProjectDataSet.csv'), 
-                       header = T)
+genderProject <- data.table::fread(
+  paste0(tempDataDir, 'genderProjectDataSet.csv'),
+  header = T
+  )
 genderProject$V1 <- NULL
-genderProject <- genderProject[, c(
-  'project', 'usageM', 'usageF', 'propM', 'propF', 
-  'percentM', 'percentF', 'projectType')]
-# - Bayesian Binomial test w. Beta(1,1)
+genderProject <- genderProject[, c('project', 
+                                   'usageM', 
+                                   'usageF', 
+                                   'propM', 
+                                   'propF',
+                                   'percentM', 
+                                   'percentF', 
+                                   'projectType')]
+# - Bayesian Binomial test w. Beta(1,1) prior
 # - toLog
 print(paste0("Bayesian tests: ", Sys.time()))
 BBT <- apply(genderProject[, 2:3], 1, function(x) {
@@ -451,27 +431,33 @@ BBT <- apply(genderProject[, 2:3], 1, function(x) {
     fData <- rep(0, x[1] + x[2])
     fOnes <- sample(1:length(fData), size = x[2])
     fData[fOnes] <- 1
-    AB1 <- summary(bayesTest(mData, fData,
-                             priors = c('alpha' = 1, 'beta' = 1),
-                             distribution = 'bernoulli',
-                             n_samples = 1e6))
+    AB1 <- summary(
+      bayesAB::bayesTest(
+        mData, fData,
+        priors = c("alpha" = 1, "beta" = 1),
+        distribution = "bernoulli",
+        n_samples = 1e6))
     data.frame(pMF = unlist(AB1$probability),
                CI5 = AB1$interval$Probability[1],
                CI95 = AB1$interval$Probability[2])
   }
 })
-BBT <- rbindlist(BBT)
+BBT <- data.table::rbindlist(BBT)
 genderProject <- cbind(genderProject, BBT)
 write.csv(genderProject, 
-          paste0(tempDataDir, 'genderProjectDataSet.csv'))
+          paste0(
+            tempDataDir, 
+            "genderProjectDataSet.csv")
+          )
 
 # - MF proportion per project table
 # - toLog
 print(paste0("mfPropProject.csv table: ", Sys.time()))
 mfPropProject <- genderProject %>%
-  select(usageM, usageF, projectType) %>%
-  group_by(projectType) %>%
-  summarise(usageM = sum(usageM), usageF = sum(usageF))
+  dplyr::select(usageM, usageF, projectType) %>%
+  dplyr::group_by(projectType) %>%
+  dplyr::summarise(usageM = sum(usageM), 
+                   usageF = sum(usageF))
 # - add proportions and percents
 mfPropProject$propM <- 
   mfPropProject$usageM/(mfPropProject$usageM + mfPropProject$usageF)
@@ -497,20 +483,24 @@ BBT <- apply(mfPropProject[, 2:3], 1, function(x) {
     fData <- rep(0, x[1] + x[2])
     fOnes <- sample(1:length(fData), size = x[2])
     fData[fOnes] <- 1
-    AB1 <- summary(bayesTest(mData, fData,
-                             priors = c('alpha' = 1, 'beta' = 1),
-                             distribution = 'bernoulli',
-                             n_samples = 1e6))
+    AB1 <- summary(bayesAB::bayesTest(
+      mData, fData,
+      priors = c("alpha" = 1, "beta" = 1),
+      distribution = "bernoulli",
+      n_samples = 1e6)
+      )
     data.frame(pMF = unlist(AB1$probability),
                CI5 = AB1$interval$Probability[1],
                CI95 = AB1$interval$Probability[2])
   }
 })
-BBT <- rbindlist(BBT)
+BBT <- data.table::rbindlist(BBT)
 mfPropProject <- cbind(mfPropProject, BBT)
 write.csv(mfPropProject, 
-          paste0(tempDataDir, 'mfPropProject.csv'))
-
+          paste0(
+            tempDataDir, 
+            "mfPropProject.csv")
+          )
 
 # - global MF distribution
 # - toLog
@@ -535,9 +525,9 @@ fGenItems <- fGenItems %>%
 fGenItems <- fGenItems[complete.cases(fGenItems), ]
 fGenItems$gender <- 'F'
 # - combine M and F data sets
-fGenItems <- arrange(fGenItems, desc(usage))
+fGenItems <- dplyr::arrange(fGenItems, desc(usage))
 fGenItems$rank <- 1:dim(fGenItems)[1]
-mGenItems <- arrange(mGenItems, desc(usage))
+mGenItems <- dplyr::arrange(mGenItems, desc(usage))
 mGenItems$rank <- 1:dim(mGenItems)[1]
 genItems <- rbind(fGenItems, mGenItems)
 rm(mGenItems); rm(fGenItems); gc()
@@ -545,8 +535,10 @@ rm(mGenItems); rm(fGenItems); gc()
 ### -----------------------
 ### --- indicators
 ### -----------------------
-totalUsage_M <- sum(genItems$usage[genItems$gender == 'M'])
-totalUsage_F <- sum(genItems$usage[genItems$gender == 'F'])
+totalUsage_M <- 
+  sum(genItems$usage[genItems$gender == 'M'])
+totalUsage_F <- 
+  sum(genItems$usage[genItems$gender == 'F'])
 
 ### -----------------------
 ### --- Charts
@@ -561,25 +553,35 @@ png(filename = paste0(tempDataDir, filename),
     res = 72,
     type = c("cairo-png")
 )
-ggplot(genItems, aes(x = rank,
-                   y = log(usage),
-                   fill = gender,
-                   color = gender,
-                   group = gender)) +
-  geom_line(size = .25) +
-  scale_color_manual(values = c('green', 'cadetblue3')) +
-  scale_x_continuous(labels = comma) +
-  theme_minimal() +
-  ylab("log(Wikidata Usage)") + xlab("Rank") +
-  labs(y = "log(Wikidata Usage)",
-       x = "Item Usage Rank",
-       title = "Wikidata Usage: Items per Gender") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 90, size = 10, hjust = 1)) +
-  theme(axis.text.y = element_text(size = 10, hjust = 1)) +
-  theme(axis.title.x = element_text(size = 11)) +
-  theme(axis.title.y = element_text(size = 11)) +
-  theme(plot.title = element_text(size = 12))
+ggplot2::ggplot(genItems, 
+                ggplot2::aes(x = rank,
+                             y = log(usage),
+                             fill = gender,
+                             color = gender,
+                             group = gender)) +
+  ggplot2::geom_line(size = .25) +
+  ggplot2::scale_color_manual(values = c('green', 'cadetblue3')) +
+  ggplot2::scale_x_continuous(labels = scales::comma) +
+  ggplot2::theme_minimal() +
+  ggplot2::ylab("log(Wikidata Usage)") + 
+  ggplot2::xlab("Rank") +
+  ggplot2::labs(y = "log(Wikidata Usage)",
+                x = "Item Usage Rank",
+                title = "Wikidata Usage: Items per Gender") +
+  ggplot2::theme_minimal() +
+  ggplot2::theme(axis.text.x = 
+                   ggplot2::element_text(angle = 90, 
+                                         size = 10, 
+                                         hjust = 1)) +
+  ggplot2::theme(axis.text.y = 
+                   ggplot2::element_text(size = 10, 
+                                         hjust = 1)) +
+  ggplot2::theme(axis.title.x = 
+                   ggplot2::element_text(size = 11)) +
+  ggplot2::theme(axis.title.y = 
+                   ggplot2::element_text(size = 11)) +
+  ggplot2::theme(plot.title = 
+                   ggplot2::element_text(size = 12))
 dev.off()
 
 # - {ggplot2} M and F usage distributions
@@ -590,25 +592,33 @@ png(filename = paste0(tempDataDir, filename),
     res = 72,
     type = c("cairo-png")
 )
-ggplot(genItems, aes(x = gender,
-                     y = log(usage),
-                     fill = gender,
-                     color = gender,
-                     group = gender)) +
-  geom_jitter(aes(alpha = usage), size = .25, width = .1) +
-  scale_color_manual(values = c('lightgreen', 'cadetblue3')) +
-  scale_alpha(guide = 'none') +
-  theme_minimal() +
-  ylab("Wikidata Usage") + xlab("gender") +
-  labs(y = "log(Wikidata Usage)",
-       x = "Item Usage Rank",
-       title = "Wikidata Usage: Items per Gender") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(size = 10, hjust = 1)) +
-  theme(axis.text.y = element_text(size = 10, hjust = 1)) +
-  theme(axis.title.x = element_text(size = 11)) +
-  theme(axis.title.y = element_text(size = 11)) +
-  theme(plot.title = element_text(size = 12))
+ggplot2::ggplot(genItems, 
+                ggplot2::aes(x = gender,
+                             y = log(usage),
+                             fill = gender,
+                             color = gender,
+                             group = gender)) +
+  ggplot2::geom_jitter(ggplot2::aes(alpha = usage), 
+                       size = .25, 
+                       width = .1) +
+  ggplot2::scale_color_manual(values = c('lightgreen', 'cadetblue3')) +
+  ggplot2::scale_alpha(guide = 'none') +
+  ggplot2::theme_minimal() +
+  ggplot2::ylab("Wikidata Usage") + 
+  ggplot2::xlab("gender") +
+  ggplot2::labs(y = "log(Wikidata Usage)",
+                x = "Item Usage Rank",
+                title = "Wikidata Usage: Items per Gender") +
+  ggplot2::theme_minimal() +
+  ggplot2::theme(axis.text.x = 
+                   ggplot2::element_text(size = 10,
+                                         hjust = 1)) +
+  ggplot2::theme(axis.text.y = 
+                   ggplot2::element_text(size = 10, 
+                                         hjust = 1)) +
+  ggplot2::theme(axis.title.x = ggplot2::element_text(size = 11)) +
+  ggplot2::theme(axis.title.y = ggplot2::element_text(size = 11)) +
+  ggplot2::theme(plot.title = ggplot2::element_text(size = 12))
 dev.off()
 
 ### -----------------------
@@ -619,19 +629,19 @@ print(paste0("Diversity: ", Sys.time()))
 ### --- Gini coefficient and Lorentz curve 
 ### --- for M and F items Wikidata usage
 fItems <- genItems %>%
-  filter(gender == 'F')
+  dplyr::filter(gender == 'F')
 mItems <- genItems %>%
-  filter(gender == 'M')
+  dplyr::filter(gender == 'M')
 
 ### --- Gini
-giniF <- round(ineq(fItems$usage, type = "Gini"), 2)
-giniM <- round(ineq(mItems$usage, type = "Gini"), 2)
+giniF <- round(ineq::ineq(fItems$usage, type = "Gini"), 2)
+giniM <- round(ineq::ineq(mItems$usage, type = "Gini"), 2)
 
 ### --- Lorentz
 # - toLog
 print(paste0("Lorentz curve: ", Sys.time()))
-fLor <- Lc(fItems$usage)
-mLor <- Lc(mItems$usage)
+fLor <- ineq::Lc(fItems$usage)
+mLor <- ineq::Lc(mItems$usage)
 pFrame <- data.frame(p = c(fLor$p, mLor$p),
                      L = c(fLor$L, mLor$L),
                      gender = c(rep('F', length(fLor$p)), 
@@ -643,6 +653,7 @@ add01 <- data.frame(p = c(0,1, 0, 1),
                     L = c(0,1, 0, 1),
                     gender = c('F', 'F', 'M', 'M'))
 pFrame <- rbind(pFrame, add01)
+
 # - {ggplot2} Lorenz Curves M and F usage
 filename <- 'Gender_LorenzCurves.png'
 png(filename = paste0(tempDataDir, filename),
@@ -651,31 +662,39 @@ png(filename = paste0(tempDataDir, filename),
     res = 72,
     type = c("cairo-png")
 )
-ggplot(pFrame, aes(x = p, y = L, color = gender)) +
-  geom_segment(x = 0, y = 0, 
-               xend = 1, yend = 1, 
-               size = .02, 
-               color = "black", 
-               linetype = "dotted") +
-  geom_line(size = 1) +
-  geom_segment(x = 0, y = 0, xend = 1, 
-               yend = 1, size = .1, 
-               color = "black", 
-               linetype = "dashed") +
-  scale_color_manual(values = c("green", "cadetblue3")) +
-  ggtitle(paste0("Wikidata Usage Lorenz Curves\n",
-                 "Gini(F) = ", giniF, ", Gini(M) = ", giniM)) +
-  xlab("Proportion of Items") + ylab("Proportion of Wikidata Usage") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(size = 12)) +
-  theme(axis.text.y = element_text(size = 12)) +
-  theme(axis.title.x = element_text(size = 12)) +
-  theme(axis.title.y = element_text(size = 12)) +
-  theme(legend.position = "right") +
-  theme(legend.title = element_blank()) +
-  theme(strip.background = element_blank()) +
-  theme(strip.text = element_text(face = "bold")) +
-  theme(plot.title = element_text(hjust = 0.5, size = 13))
+ggplot2::ggplot(pFrame, 
+                ggplot2::aes(x = p, 
+                             y = L, 
+                             color = gender)) +
+  ggplot2::geom_segment(x = 0, y = 0,
+                        xend = 1, yend = 1,
+                        size = .02,
+                        color = "black",
+                        linetype = "dotted") +
+  ggplot2::geom_line(size = 1) +
+  ggplot2::geom_segment(x = 0, y = 0, xend = 1,
+                        yend = 1, size = .1,
+                        color = "black",
+                        linetype = "dashed") +
+  ggplot2::scale_color_manual(values = c("green", "cadetblue3")) +
+  ggplot2::ggtitle(paste0(
+    "Wikidata Usage Lorenz Curves\n",
+    "Gini(F) = ", 
+    giniF, 
+    ", Gini(M) = ", 
+    giniM)) +
+  ggplot2::xlab("Proportion of Items") + 
+  ggplot2::ylab("Proportion of Wikidata Usage") +
+  ggplot2::theme_minimal() +
+  ggplot2::theme(axis.text.x = ggplot2::element_text(size = 12)) +
+  ggplot2::theme(axis.text.y = ggplot2::element_text(size = 12)) +
+  ggplot2::theme(axis.title.x = ggplot2::element_text(size = 12)) +
+  ggplot2::theme(axis.title.y = ggplot2::element_text(size = 12)) +
+  ggplot2::theme(legend.position = "right") +
+  ggplot2::theme(legend.title = ggplot2::element_blank()) +
+  ggplot2::theme(strip.background = ggplot2::element_blank()) +
+  ggplot2::theme(strip.text = ggplot2::element_text(face = "bold")) +
+  ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5, size = 13))
 dev.off()
 
 ### -----------------------
@@ -690,7 +709,7 @@ occUsage <- read.csv(paste0(tempDataDir, 'occUsage.csv'),
                      check.names = F,
                      stringsAsFactors = F, 
                      row.names = 1)
-occUsage <- arrange(occUsage, desc(totalUsage))
+occUsage <- dplyr::arrange(occUsage, desc(totalUsage))
 # - re-arrange occUsage
 occUsage <- data.frame(occupation = occUsage$occupation,
                        usageM = occUsage$usageM,
@@ -714,16 +733,17 @@ BBT <- apply(occUsage[, 2:3], 1, function(x) {
     fData <- rep(0, x[1] + x[2])
     fOnes <- sample(1:length(fData), size = x[2])
     fData[fOnes] <- 1
-    AB1 <- summary(bayesTest(mData, fData,
-                             priors = c('alpha' = 1, 'beta' = 1),
-                             distribution = 'bernoulli',
-                             n_samples = 1e6))
+    AB1 <- summary(bayesAB::bayesTest(
+      mData, fData,
+      priors = c("alpha" = 1, "beta" = 1),
+      distribution = "bernoulli",
+      n_samples = 1e6))
     data.frame(pMF = unlist(AB1$probability),
                CI5 = AB1$interval$Probability[1],
                CI95 = AB1$interval$Probability[2])
   }
 })
-BBT <- rbindlist(BBT)
+BBT <- data.table::rbindlist(BBT)
 occUsage <- cbind(occUsage, BBT)
 # - re-arrange occUsage
 occUsage <- data.frame(occupation = occUsage$occupation,
@@ -736,21 +756,30 @@ occUsage <- data.frame(occupation = occUsage$occupation,
                        CI95 = occUsage$CI95,
                        stringsAsFactors = F)
 write.csv(occUsage, 
-          paste0(tempDataDir, 'occUsage.csv'))
+          paste0(tempDataDir, "occUsage.csv"))
 
 ### -----------------------------------
 ### --- write global indicators
 ### -----------------------------------
 # - toLog
 print(paste0("Write global indicators: ", Sys.time()))
-globalIndicators <- data.frame(nMaleItems, nFemaleItems, 
-                               nIntersexItems, nTransMItems, 
+globalIndicators <- data.frame(nMaleItems, 
+                               nFemaleItems, 
+                               nIntersexItems, 
+                               nTransMItems, 
                                nTransFItems,
-                               totalUsage_M, totalUsage_F, 
-                               globalGenderProportion_M, globalGenderProportion_F,
-                               globalGenderProportion_N, globalGenderProportion_S,
-                               genderPropotion_M_N, genderPropotion_M_S,
-                               genderPropotion_F_N, genderPropotion_F_S, giniM, giniF)
+                               totalUsage_M, 
+                               totalUsage_F, 
+                               globalGenderProportion_M, 
+                               globalGenderProportion_F,
+                               globalGenderProportion_N, 
+                               globalGenderProportion_S,
+                               genderPropotion_M_N, 
+                               genderPropotion_M_S,
+                               genderPropotion_F_N, 
+                               genderPropotion_F_S, 
+                               giniM, 
+                               giniF)
 write.csv(globalIndicators, 
           paste0(tempDataDir, "globalIndicators.csv"))
 
@@ -763,7 +792,11 @@ print(paste0("copy to pubDataDir: ", Sys.time()))
 lF <- list.files(tempDataDir)
 lapply(lF, function(x) {
   system(command = 
-           paste0('cp ', tempDataDir, x, ' ', pubDataDir),
+           paste0('cp ', 
+                  tempDataDir, 
+                  x, 
+                  ' ', 
+                  pubDataDir),
          wait = T)
 })
 
@@ -791,5 +824,3 @@ print("DONE. Exiting.")
 
 # - toLog
 print(paste0("WDCM Biases updated ended at: ", Sys.time()))
-
-

@@ -39,26 +39,31 @@
 ### --- Script 0: wdcmModule_Orchestra.R
 ### ---------------------------------------------------------------------------
 
-# - XML
-library(XML)
-
 # - to runtime Log:
 print(paste("--- wdcmModule_Orchestra.R RUN STARTED ON:", 
             Sys.time(), sep = " "))
 # - GENERAL TIMING:
 generalT1 <- Sys.time()
 
-### --- Read WDCM paramereters: wdcmConfig.xml
+### --- Read WLP paramereters
 # - fPath: where the scripts is run from?
 fPath <- as.character(commandArgs(trailingOnly = FALSE)[4])
-fPath <- gsub("--file=", "", fPath, fixed = T)
-fPath <- unlist(strsplit(fPath, split = "/", fixed = T))
+fPath <- gsub("--file=", "", fPath, fixed = TRUE)
+fPath <- unlist(strsplit(fPath, split = "/", fixed = TRUE))
 fPath <- paste(
   paste(fPath[1:length(fPath) - 1], collapse = "/"),
   "/",
   sep = "")
-params <- xmlParse(paste0(fPath, "wdcmConfig.xml"))
-params <- xmlToList(params)
+
+# - renv
+renv::load(project = fPath, quiet = FALSE)
+
+# - lib
+library(WMDEData)
+
+# - pars
+params <- XML::xmlParse(paste0(fPath, "wdcmConfig.xml"))
+params <- XML::xmlToList(params)
 
 ### --- Directories
 # - fPath: where the scripts is run from?
@@ -82,8 +87,8 @@ hdfsPATH_WDCM_ETL <- params$general$hdfsPATH_WDCM_ETL
 hdfsWDCM_ETL_GEODir <- params$general$hdfsPATH_WDCM_ETL_GEO
 
 ### --- Read WDCM paramereters: wdcmConfig_Deployment.xml
-paramsDeployment <- xmlParse(paste0(fPath, "wdcmConfig_Deployment.xml"))
-paramsDeployment <- xmlToList(paramsDeployment)
+paramsDeployment <- XML::xmlParse(paste0(fPath, "wdcmConfig_Deployment.xml"))
+paramsDeployment <- XML::xmlToList(paramsDeployment)
 # - spark2-submit parameters:
 sparkMaster <- paramsDeployment$spark$master
 sparkDeployMode <- paramsDeployment$spark$deploy_mode
@@ -101,22 +106,22 @@ print("Log: START")
 setwd(logDir)
 # - write to WDCM main reporting file:
 lF <- list.files()
-if ('WDCM_MainReport.csv' %in% lF) {
-  mainReport <- read.csv('WDCM_MainReport.csv',
-                         header = T,
+if ("WDCM_MainReport.csv" %in% lF) {
+  mainReport <- read.csv("WDCM_MainReport.csv",
+                         header = TRUE,
                          row.names = 1,
-                         check.names = F,
-                         stringsAsFactors = F)
+                         check.names = FALSE,
+                         stringsAsFactors = FALSE)
   newReport <- data.frame(Step = 'Orchestra START',
                           Time = as.character(Sys.time()),
-                          stringsAsFactors = F)
+                          stringsAsFactors = FALSE)
   mainReport <- rbind(mainReport, newReport)
-  write.csv(mainReport, 'WDCM_MainReport.csv')
+  write.csv(mainReport, "WDCM_MainReport.csv")
 } else {
   newReport <- data.frame(Step = 'Orchestra START',
                           Time = as.character(Sys.time()),
-                          stringsAsFactors = F)
-  write.csv(newReport, 'WDCM_MainReport.csv')
+                          stringsAsFactors = FALSE)
+  write.csv(newReport, "WDCM_MainReport.csv")
 }
 
 ### --------------------------------------------------
@@ -148,20 +153,16 @@ if (length(list.files(etlDirGeo)) > 1) {
 }
 
 # - Kerberos init
-system(command = 'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls', 
-       wait = T)
-
-# - Run PySpark ETL
-system(command = paste0('sudo -u analytics-privatedata spark2-submit ', 
-                        sparkMaster, ' ',
-                        sparkDeployMode, ' ',
-                        sparkNumExecutors, ' ',
-                        sparkDriverMemory, ' ',
-                        sparkExecutorMemory, ' ',
-                        sparkConfigDynamic, ' ',
-                        paste0(fPathPython, 'wdcmModule_ETL.py')
-                        ),
-       wait = T)
+WMDEData::kerberos_init(kerberosUser = "analytics-privatedata")
+# - Run Spark ETL
+WMDEData::kerberos_runSpark(kerberosUser = "analytics-privatedata",
+                            pysparkPath = paste0(fPath, "wdcmModule_ETL.py"),
+                            sparkMaster = sparkMaster,
+                            sparkDeployMode = sparkDeployMode,
+                            sparkNumExecutors = sparkNumExecutors,
+                            sparkDriverMemory = sparkDriverMemory,
+                            sparkExecutorMemory = sparkExecutorMemory,
+                            sparkConfigDynamic = sparkConfigDynamic)
 
 ### --------------------------------------------------
 ### --- log ETL:
@@ -172,22 +173,22 @@ print("--- LOG: ETL step completed.")
 setwd(logDir)
 # - write to WDCM main reporting file:
 lF <- list.files()
-if ('WDCM_MainReport.csv' %in% lF) {
-  mainReport <- read.csv('WDCM_MainReport.csv',
-                         header = T,
+if ("WDCM_MainReport.csv" %in% lF) {
+  mainReport <- read.csv("WDCM_MainReport.csv",
+                         header = TRUE,
                          row.names = 1,
-                         check.names = F,
-                         stringsAsFactors = F)
+                         check.names = FALSE,
+                         stringsAsFactors = FALSE)
   newReport <- data.frame(Step = 'ETL',
                           Time = as.character(Sys.time()),
-                          stringsAsFactors = F)
+                          stringsAsFactors = FALSE)
   mainReport <- rbind(mainReport, newReport)
-  write.csv(mainReport, 'WDCM_MainReport.csv')
+  write.csv(mainReport, "WDCM_MainReport.csv")
 } else {
   newReport <- data.frame(Step = 'ETL',
                           Time = as.character(Sys.time()),
-                          stringsAsFactors = F)
-  write.csv(newReport, 'WDCM_MainReport.csv')
+                          stringsAsFactors = FALSE)
+  write.csv(newReport, "WDCM_MainReport.csv")
 }
 
 ### --------------------------------------------------
@@ -212,22 +213,22 @@ print("--- LOG: ML step completed.")
 setwd(logDir)
 # - write to WDCM main reporting file:
 lF <- list.files()
-if ('WDCM_MainReport.csv' %in% lF) {
-  mainReport <- read.csv('WDCM_MainReport.csv',
-                         header = T,
+if ("WDCM_MainReport.csv" %in% lF) {
+  mainReport <- read.csv("WDCM_MainReport.csv",
+                         header = TRUE,
                          row.names = 1,
-                         check.names = F,
-                         stringsAsFactors = F)
+                         check.names = FALSE,
+                         stringsAsFactors = FALSE)
   newReport <- data.frame(Step = 'ML',
                           Time = as.character(Sys.time()),
-                          stringsAsFactors = F)
+                          stringsAsFactors = FALSE)
   mainReport <- rbind(mainReport, newReport)
-  write.csv(mainReport, 'WDCM_MainReport.csv')
+  write.csv(mainReport, "WDCM_MainReport.csv")
 } else {
   newReport <- data.frame(Step = 'ML',
                           Time = as.character(Sys.time()),
-                          stringsAsFactors = F)
-  write.csv(newReport, 'WDCM_MainReport.csv')
+                          stringsAsFactors = FALSE)
+  write.csv(newReport, "WDCM_MainReport.csv")
 }
 
 ### --------------------------------------------------
@@ -252,22 +253,22 @@ print("--- LOG: Compose step completed.")
 setwd(logDir)
 # - write to WDCM main reporting file:
 lF <- list.files()
-if ('WDCM_MainReport.csv' %in% lF) {
-  mainReport <- read.csv('WDCM_MainReport.csv',
-                         header = T,
+if ("WDCM_MainReport.csv" %in% lF) {
+  mainReport <- read.csv("WDCM_MainReport.csv",
+                         header = TRUE,
                          row.names = 1,
-                         check.names = F,
-                         stringsAsFactors = F)
+                         check.names = FALSE,
+                         stringsAsFactors = FALSE)
   newReport <- data.frame(Step = 'Compose',
                           Time = as.character(Sys.time()),
-                          stringsAsFactors = F)
+                          stringsAsFactors = FALSE)
   mainReport <- rbind(mainReport, newReport)
-  write.csv(mainReport, 'WDCM_MainReport.csv')
+  write.csv(mainReport, "WDCM_MainReport.csv")
 } else {
   newReport <- data.frame(Step = 'Compose',
                           Time = as.character(Sys.time()),
-                          stringsAsFactors = F)
-  write.csv(newReport, 'WDCM_MainReport.csv')
+                          stringsAsFactors = FALSE)
+  write.csv(newReport, "WDCM_MainReport.csv")
 }
 
 ### --------------------------------------------------
@@ -302,22 +303,22 @@ print("Log: END Orchestra")
 setwd(logDir)
 # - write to WDCM main reporting file:
 lF <- list.files()
-if ('WDCM_MainReport.csv' %in% lF) {
-  mainReport <- read.csv('WDCM_MainReport.csv',
-                         header = T,
+if ("WDCM_MainReport.csv" %in% lF) {
+  mainReport <- read.csv("WDCM_MainReport.csv",
+                         header = TRUE,
                          row.names = 1,
-                         check.names = F,
-                         stringsAsFactors = F)
+                         check.names = FALSE,
+                         stringsAsFactors = FALSE)
   newReport <- data.frame(Step = 'Orchestra END',
                           Time = as.character(Sys.time()),
-                          stringsAsFactors = F)
+                          stringsAsFactors = FALSE)
   mainReport <- rbind(mainReport, newReport)
-  write.csv(mainReport, 'WDCM_MainReport.csv')
+  write.csv(mainReport, "WDCM_MainReport.csv")
 } else {
   newReport <- data.frame(Step = 'Orchestra END',
                           Time = as.character(Sys.time()),
-                          stringsAsFactors = F)
-  write.csv(newReport, 'WDCM_MainReport.csv')
+                          stringsAsFactors = FALSE)
+  write.csv(newReport, "WDCM_MainReport.csv")
 }
 
 # - GENERAL TIMING:

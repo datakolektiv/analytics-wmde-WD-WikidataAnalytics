@@ -48,7 +48,6 @@ rdbs_runSQL <- function(query,
                         localPath,
                         localFilename) {
 
-
   # - run SQL:
   mySqlArgs <-
     paste0('/usr/local/bin/analytics-mysql')

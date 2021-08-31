@@ -48,7 +48,7 @@ fPath <- paste(
 renv::load(project = fPath, quiet = FALSE)
 
 # - libs
-library(dplyr)
+library(WMDEData)
 
 # - params
 params <- XML::xmlParse(paste0(
@@ -109,6 +109,7 @@ if (length(list.files(dataDir)) > 1) {
 
 # - Kerberos init
 WMDEData::kerberos_init(kerberosUser = "analytics-privatedata")
+# - Run Spark ETL
 WMDEData::kerberos_runSpark(kerberosUser = "analytics-privatedata",
                             pysparkPath = paste0(fPath, 'WD_Usage_Coverage_ETL.py'),
                             sparkMaster = sparkMaster,

@@ -51,25 +51,26 @@ print(paste("--- wdcmModule_ML.R UPDATE RUN STARTED ON:",
 # - GENERAL TIMING:
 generalT1 <- Sys.time()
 
-### --- Setup
-library(httr)
-library(XML)
-library(jsonlite)
-# - wrangling:
-library(dplyr)
-library(stringr)
-library(readr)
-library(data.table)
-library(tidyr)
-# - modeling:
+### --- Read WLP paramereters
+# - fPath: where the scripts is run from?
+fPath <- as.character(commandArgs(trailingOnly = FALSE)[4])
+fPath <- gsub("--file=", "", fPath, fixed = TRUE)
+fPath <- unlist(strsplit(fPath, split = "/", fixed = TRUE))
+fPath <- paste(
+  paste(fPath[1:length(fPath) - 1], collapse = "/"),
+  "/",
+  sep = "")
+
+# - renv
+renv::load(project = fPath, quiet = FALSE)
+
+# - lib
+library(WMDEData)
 library(snowfall)
-library(text2vec)
-library(Rtsne)
-### NOTE: replace proxy Hellinger Distrance
-library(proxy)
-library(topicmodels)
-# - matrix
-library(Matrix)
+
+# - pars
+params <- XML::xmlParse(paste0(fPath, "wdcmConfig.xml"))
+params <- XML::xmlToList(params)
 
 ### --- functions
 # - projectType() to determine project type
@@ -89,18 +90,6 @@ projectType <- function(projectName) {
   }))
 }
 
-### --- Read WDCM paramereters: wdcmConfig.xml
-# - fPath: where the scripts is run from?
-fPath <- as.character(commandArgs(trailingOnly = FALSE)[4])
-fPath <- gsub("--file=", "", fPath, fixed = T)
-fPath <- unlist(strsplit(fPath, split = "/", fixed = T))
-fPath <- paste(
-  paste(fPath[1:length(fPath) - 1], collapse = "/"),
-  "/",
-  sep = "")
-params <- xmlParse(paste0(fPath, "wdcmConfig.xml"))
-params <- xmlToList(params)
-
 ### --- Directories
 # - fPath: where the scripts is run from?
 fPath <- params$general$fPath_R
@@ -116,8 +105,11 @@ mlInputDir <- params$general$mlInputDir
 dataDir <- params$general$publicDir
 
 ### --- ML params: wdcmConfig_Deployment.xml
-paramsDeployment <- xmlParse(paste0(fPath, "wdcmConfig_Deployment.xml"))
-paramsDeployment <- xmlToList(paramsDeployment)
+paramsDeployment <- XML::xmlParse(paste0(
+  fPath, 
+  "wdcmConfig_Deployment.xml")
+  )
+paramsDeployment <- XML::xmlToList(paramsDeployment)
 lda_NItems <- as.numeric(paramsDeployment$ml$lda_NItems)
 tSNE_Perplexity <- as.numeric(paramsDeployment$ml$tSNE_Perplexity)
 tsne_theta <- as.numeric(paramsDeployment$ml$tSNE_Theta)
@@ -148,22 +140,28 @@ if (length(w) > 0) { itemFiles <- itemFiles[-w] }
 ### --- Reshape TF-matrices + Project Selection Criteria
 for (i in 1:length(itemFiles)) {
   # - to runtime Log:
-  print(paste("----------------------- Reshaping TDF matrix: category ", i, ".", sep = ""))
+  print(paste(
+    "----------------------- Reshaping TDF matrix: category ", 
+    i, 
+    ".", 
+    sep = "")
+    )
   # - load the most frequently used items
-  selFile <- fread(selItems[i])
+  selFile <- data.table::fread(selItems[i])
   nItems <- selFile$eu_entity_id[1:lda_NItems]
   rm(selFile)
   # - load i-th TFMatrix
-  categoryFile <- fread(itemFiles[i])
+  categoryFile <- data.table::fread(itemFiles[i])
   categoryFile$V1 <- NULL
-  # - filter for nItems in categoryFile (the top lda_NItems frequently used items)
+  # - filter for nItems in categoryFile 
+  # - (the top lda_NItems frequently used items)
   categoryFile <- categoryFile %>%
     dplyr::select(eu_entity_id, eu_project, eu_count) %>% 
     dplyr::filter(eu_entity_id %in% nItems)
-  categoryFile <- spread(categoryFile,
-                         key = eu_entity_id,
-                         value = eu_count,
-                         fill = 0)
+  categoryFile <- tidyr::spread(categoryFile,
+                                key = eu_entity_id,
+                                value = eu_count,
+                                fill = 0)
   rownames(categoryFile) <- categoryFile$eu_project
   categoryFile$eu_project <- NULL
   
@@ -220,7 +218,8 @@ for (i in 1:length(itemFiles)) {
   error = function(condition) {NULL}
   )
   # - convert itemCat to sparse matrix for {text2vec}
-  itemCat <- as(as.matrix(itemCat), "sparseMatrix")
+  itemCat <- Matrix::Matrix(as.matrix(itemCat), sparse = TRUE) 
+  
   
   if (!is.null(itemCat)) {
     
@@ -243,68 +242,68 @@ for (i in 1:length(itemFiles)) {
       nTops <- seq(2, 30, by = 1)
       
       # - initiate cluster:
-      sfInit(parallel = TRUE, 
-             cpus = 20,
-             type = "SOCK")
+      snowfall::sfInit(parallel = TRUE,
+                       cpus = 20,
+                       type = "SOCK")
       # - export
-      sfExport("nTops")
-      sfExport("trainTDM")
-      sfExport("testTDM")
-      sfLibrary(text2vec)
+      snowfall::sfExport("nTops")
+      snowfall::sfExport("trainTDM")
+      snowfall::sfExport("testTDM")
+      snowfall::sfLibrary(text2vec)
       
       # - train in parallel:
       # - train:
       print(paste0("---------------- Running CV step: ", j))
       t1 <- Sys.time()
       print(paste0("Training starts:", t1))
-      modelPerplexity <- sfClusterApplyLB(nTops,
-                                          function(x) {
-                                              # - define model:
-                                              # - alpha:
-                                              doc_topic_prior = 50/x
-                                              # - beta:
-                                              topic_word_prior = 1/x
-                                              # - lda_model:
-                                              lda_model <- text2vec:::LatentDirichletAllocation$new(n_topics = x,
-                                                                                                    doc_topic_prior,
-                                                                                                    topic_word_prior)
-                                              # - train:
-                                              doc_topic_distr <- tryCatch({
-                                                lda_model$fit_transform(trainTDM,
-                                                                        n_iter = 100,
-                                                                        convergence_tol = -1, 
-                                                                        n_check_convergence = 25,
-                                                                        progressbar = FALSE)
-                                              }, 
-                                              error = function(condition) {
-                                                NULL
-                                              })
-                                              
-                                              # - if !is.null(doc_topic_distr), compute perplexity:
-                                              if (!is.null(doc_topic_distr)) {
-                                                new_doc_topic_distr <- tryCatch({
-                                                  lda_model$transform(testTDM)
-                                                }, 
-                                                error = function(condition) {
-                                                  NULL
-                                                })
-                                                # - if !is.null(new_doc_topic_distr), compute perplexity:
-                                                if (!is.null(new_doc_topic_distr)) {
-                                                  text2vec:::perplexity(testTDM,
-                                                                        topic_word_distribution = lda_model$topic_word_distribution,
-                                                                        doc_topic_distribution = new_doc_topic_distr)                                                  
-                                                } else {
-                                                  return(NULL)
-                                                }
-                                                
-                                                } else {
-                                                  return(NULL)
-                                                  }
-                                          })
+      modelPerplexity <- 
+        snowfall::sfClusterApplyLB(nTops, function(x) {
+          # - define model:
+          # - alpha:
+          doc_topic_prior = 50/x
+          # - beta:
+          topic_word_prior = 1/x
+          # - lda_model:
+          lda_model <- text2vec:::LatentDirichletAllocation$new(n_topics = x,
+                                                                doc_topic_prior,
+                                                                topic_word_prior)
+          # - train:
+          doc_topic_distr <- tryCatch({
+            lda_model$fit_transform(trainTDM,
+                                    n_iter = 100,
+                                    convergence_tol = -1,
+                                    n_check_convergence = 25,
+                                    progressbar = FALSE)
+            },
+            error = function(condition) {
+              NULL
+              })
+          
+          # - if !is.null(doc_topic_distr), compute perplexity:
+          if (!is.null(doc_topic_distr)) {
+            new_doc_topic_distr <- tryCatch({
+              lda_model$transform(testTDM)
+              },
+              error = function(condition) {
+                NULL
+                })
+            # - if !is.null(new_doc_topic_distr), compute perplexity:
+            if (!is.null(new_doc_topic_distr)) {
+              text2vec:::perplexity(testTDM,
+                                    topic_word_distribution = lda_model$topic_word_distribution,
+                                    doc_topic_distribution = new_doc_topic_distr)
+              } else {
+                return(NULL)
+                }
+            } else {
+              return(NULL)
+              }
+          })
       
       # - stop cluster
-      sfStop()
+      snowfall::sfStop()
       
+      # - toReport
       print(paste0("Training ends:", Sys.time()))
       print(paste0("Training took: ", Sys.time() - t1))
       
@@ -321,13 +320,17 @@ for (i in 1:length(itemFiles)) {
   }
   
   # - mean perplexity from all folds
-  modelFrame <- rbindlist(repl_perplexity)
+  modelFrame <- data.table::rbindlist(repl_perplexity)
   modelFrame <- modelFrame %>% 
-    group_by(topics) %>% 
-    summarise(meanPerplexity = mean(perplexity))
-  selectedTopics <- modelFrame$topics[which.min(modelFrame$meanPerplexity)]
+    dplyr::group_by(topics) %>% 
+    dplyr::summarise(meanPerplexity = mean(perplexity))
+  selectedTopics <- 
+    modelFrame$topics[which.min(modelFrame$meanPerplexity)]
   # - toReport:
-  print(paste0("Selected model has ", selectedTopics, "topics; estimating now."))
+  print(paste0("Selected model has ", 
+               selectedTopics, 
+               " topics; estimating now.")
+        )
   
   # - fit optimal category LDA model 
   # - alpha:
@@ -336,15 +339,17 @@ for (i in 1:length(itemFiles)) {
   topic_word_prior = 1/selectedTopics
   t1 <- Sys.time()
   print(paste0("Optimal category model: Training starts: ", t1))
-  ldaModel <- text2vec:::LatentDirichletAllocation$new(n_topics = selectedTopics,
-                                                       doc_topic_prior,
-                                                       topic_word_prior)
+  ldaModel <- 
+    text2vec:::LatentDirichletAllocation$new(n_topics = selectedTopics,
+                                             doc_topic_prior,
+                                             topic_word_prior)
   # - train:
-  doc_topic_distr <- ldaModel$fit_transform(itemCat,
-                                            n_iter = 1000,
-                                            convergence_tol = -1,
-                                            n_check_convergence = 25,
-                                            progressbar = FALSE)
+  doc_topic_distr <- 
+    ldaModel$fit_transform(itemCat,
+                           n_iter = 1000,
+                           convergence_tol = -1,
+                           n_check_convergence = 25,
+                           progressbar = FALSE)
   
   print(paste0("Optimal category model: Training ends :", Sys.time()))
   print(paste0("Training took: ", Sys.time() - t1))
@@ -384,7 +389,8 @@ for (i in 1:length(itemFiles)) {
 print("STEP: Semantic Modeling Phase: t-SNE 2D MAPS")
 setwd(mlDir)
 projectFiles <- list.files()
-projectFiles <- projectFiles[grepl("^wdcm2_projecttopic", projectFiles)]
+projectFiles <- 
+  projectFiles[grepl("^wdcm2_projecttopic", projectFiles)]
 for (i in 1:length(projectFiles)) {
   # - toReport:
   print(paste0("tSNE reduction for: ", projectFiles[i], " happening now."))
@@ -402,19 +408,23 @@ for (i in 1:length(projectFiles)) {
   projectTopics$projecttype <- NULL
   
   # - Distance space, metric: Hellinger
-  projectDist <- topicmodels::distHellinger(as.matrix(projectTopics))
+  projectDist <- 
+    topicmodels::distHellinger(as.matrix(projectTopics))
   
   # - t-SNE 2D map
   tSNE_PerplexityInit <- tSNE_Perplexity
   tSNE_flag <- FALSE
   repeat {
-    print(paste0("-- Attempt tSNE reduction for: ", projectFiles[i], " happening now."))
+    print(paste0("-- Attempt tSNE reduction for: ", 
+                 projectFiles[i], 
+                 " happening now.")
+          )
     tsneProject <- tryCatch({
-      Rtsne(projectDist,
-            pca = FALSE,
-            theta = tsne_theta,
-            is_distance = T,
-            tsne_perplexity = tSNE_PerplexityInit)
+      Rtsne::Rtsne(projectDist,
+                   pca = FALSE,
+                   theta = tsne_theta,
+                   is_distance = TRUE,
+                   perplexity = tSNE_PerplexityInit)
     }, 
     error = function(condition) {
       return(NULL)
@@ -424,7 +434,10 @@ for (i in 1:length(projectFiles)) {
       break
     } else {
       tSNE_PerplexityInit <- tSNE_PerplexityInit - 1
-      print(paste0("-- Decrease perplexity to: ", tSNE_PerplexityInit, "; retry."))
+      print(paste0("-- Decrease perplexity to: ", 
+                   tSNE_PerplexityInit, 
+                   "; retry.")
+            )
     }
     if (tSNE_PerplexityInit == 0) {
       break
@@ -435,7 +448,8 @@ for (i in 1:length(projectFiles)) {
   if (tSNE_flag) {
     # - store:
     tsneProject <- as.data.frame(tsneProject$Y)
-    colnames(tsneProject) <- paste("D", seq(1:dim(tsneProject)[2]), sep = "")
+    colnames(tsneProject) <- 
+      paste("D", seq(1:dim(tsneProject)[2]), sep = "")
     tsneProject$project <- rownames(projectTopics)
     tsneProject$projecttype <- projectType(tsneProject$project)
     write.csv(tsneProject, fileName)
@@ -444,8 +458,12 @@ for (i in 1:length(projectFiles)) {
   } else {
     # - if tSNE did not work, fallback: PCA
     # - toReport:
-    print(paste0("tSNA FAILED: fallback to 2D PCA for: ", projectFiles[i]))
-    pcaSolution <- prcomp(projectDist, center = TRUE, scale = TRUE)
+    print(paste0("tSNA FAILED: fallback to 2D PCA for: ", 
+                 projectFiles[i])
+          )
+    pcaSolution <- stats::prcomp(projectDist, 
+                                 center = TRUE, 
+                                 scale = TRUE)
     pcaSolution <- as.data.frame(pcaSolution$x[, 1:2])
     colnames(pcaSolution) <- paste("D", seq(1:dim(pcaSolution)[2]), sep = "")
     pcaSolution$project <- rownames(projectTopics)
@@ -454,7 +472,8 @@ for (i in 1:length(projectFiles)) {
   }
 }
 
-### --- {visNetwork} graphs from wdcm2_projectttopic files: projects similarity structure
+### --- {visNetwork} graphs from wdcm2_projectttopic files: 
+### --- projects similarity structure
 # - to runtime Log:
 print("STEP: {visNetwork} graphs from wdcm2_projectttopic files")
 projectFiles <- list.files()
@@ -500,10 +519,18 @@ for (i in 1:length(projectFiles)) {
   })
   edges$arrows <- rep("to", length(edges$to))
   # filenames:
-  fileName <- strsplit(projectFiles[i], split = ".", fixed = T)[[1]][1]
-  fileName <- strsplit(fileName, split = "_", fixed = T)[[1]][3]
-  nodesFileName <- paste("wdcm2_visNetworkNodes_project_", fileName, ".csv", sep = "")
-  edgesFileName <- paste("wdcm2_visNetworkEdges_project_", fileName, ".csv", sep = "")
+  fileName <- 
+    strsplit(projectFiles[i], split = ".", fixed = T)[[1]][1]
+  fileName <- 
+    strsplit(fileName, split = "_", fixed = T)[[1]][3]
+  nodesFileName <- paste("wdcm2_visNetworkNodes_project_", 
+                         fileName, 
+                         ".csv", 
+                         sep = "")
+  edgesFileName <- paste("wdcm2_visNetworkEdges_project_", 
+                         fileName, 
+                         ".csv", 
+                         sep = "")
   # store:
   write.csv(nodes, nodesFileName)
   write.csv(edges, edgesFileName)
@@ -522,31 +549,35 @@ setwd(etlDir)
 lF <- list.files()
 lF <- lF[grepl("^wdcm_project_category_", lF)]
 lF <- lF[!grepl("^wdcm_project_category_item", lF)]
-wdcm_project_category <- lapply(lF, fread)
-wdcm_project_category <- rbindlist(wdcm_project_category)
-wdcm_project_category <- wdcm_project_category[, c('eu_project', 'category', 'eu_count')]
+wdcm_project_category <- lapply(lF, data.table::fread)
+wdcm_project_category <- 
+  data.table::rbindlist(wdcm_project_category)
+wdcm_project_category <- 
+  wdcm_project_category[, c('eu_project', 'category', 'eu_count')]
 wEmptyProject <- 
   which(is.na(wdcm_project_category$eu_project) | 
           (wdcm_project_category$eu_project=="") | 
           (wdcm_project_category$eu_project==" "))
 if (length(wEmptyProject) > 0) {
-  wdcm_project_category <- wdcm_project_category[-wEmptyProject, ]
+  wdcm_project_category <- 
+    wdcm_project_category[-wEmptyProject, ]
 }
-write.csv(wdcm_project_category, "wdcm_project_category.csv")
+write.csv(wdcm_project_category, 
+          "wdcm_project_category.csv")
 # - dimensionality reduction
-tsneData <- spread(wdcm_project_category,
-                   key = category,
-                   value = eu_count,
-                   fill = 0)
+tsneData <- tidyr::spread(wdcm_project_category,
+                          key = category,
+                          value = eu_count,
+                          fill = 0)
 rownames(tsneData) <- tsneData$eu_project
 tsneData$eu_project <- NULL
 projects <- rownames(tsneData)
-tsneData <- as.matrix(dist(tsneData, method = "euclidean"))
+tsneData <- as.matrix(stats::dist(tsneData, method = "euclidean"))
 # - t-SNE 2D reduction:
-tsneData <- Rtsne(tsneData, 
-                  theta = tsne_theta, 
-                  tsne_perplexity = tSNE_Perplexity, 
-                  is_distance = T)
+tsneData <- Rtsne::Rtsne(tsneData,
+                         theta = tsne_theta,
+                         perplexity = tSNE_Perplexity,
+                         is_distance = TRUE)
 tsneData <- as.data.frame(tsneData$Y)
 tsneData$projects <- projects
 tsneData$projecttype <- projectType(tsneData$projects)
@@ -566,16 +597,18 @@ pcaData <- read.csv('wdcm_project_category.csv',
                     check.names = F,
                     row.names = 1,
                     stringsAsFactors = F)
-pcaData <- spread(pcaData,
-                  key = eu_project,
-                  value = eu_count,
-                  fill = 0)
+pcaData <- tidyr::spread(pcaData,
+                         key = eu_project,
+                         value = eu_count,
+                         fill = 0)
 rownames(pcaData) <- pcaData$category
 pcaData$category <- NULL
 categories <- rownames(pcaData)
-pcaData <- as.matrix(dist(pcaData, method = "euclidean"))
+pcaData <- as.matrix(stats::dist(pcaData, method = "euclidean"))
 # - PCA 2D reduction:
-pcaSolution <- prcomp(pcaData, center = TRUE, scale = TRUE)
+pcaSolution <- stats::prcomp(pcaData, 
+                             center = TRUE, 
+                             scale = TRUE)
 pcaSolution <- as.data.frame(pcaSolution$x[, 1:2])
 pcaSolution <- as.data.frame(pcaSolution)
 pcaSolution$category <- categories

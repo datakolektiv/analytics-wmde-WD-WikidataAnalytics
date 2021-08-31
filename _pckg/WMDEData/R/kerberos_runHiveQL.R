@@ -36,9 +36,9 @@
 #' Run HiveQL script from the local filesystem on WMF Analytics Client(s)
 #'
 #' @param kerberosUser kerberosUser
-#' @param query query
-#' @param localPath localPath
-#' @param localFilename localFilename
+#' @param query full local path to the HiveQL query
+#' @param localPath the path to the directory where the files should be stored
+#' @param localFilename the result set local filename
 #'
 #' @return
 #' @export
@@ -51,7 +51,7 @@ kerberos_runHiveQL <- function(kerberosUser,
 
   # - arguments:
   # - kerberosUser - the Kerberos user to impersonate
-  # - full local path to the HiveQL query
+  # - query - full local path to the HiveQL query
   # - localPath - the path to the directory where
   # - the files should be stored
   # - localFilename - the local filename

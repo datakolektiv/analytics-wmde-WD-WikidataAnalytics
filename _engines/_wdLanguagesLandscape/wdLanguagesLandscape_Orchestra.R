@@ -62,7 +62,7 @@ fPath <- paste(
 renv::load(project = fPath, quiet = FALSE)
 
 # - lib
-library(XML)
+library(WMDEData)
 
 # - pars
 params <- XML::xmlParse(paste0(fPath, "WD_LanguagesLandscape_Config.xml"))
@@ -128,17 +128,16 @@ if (length(list.files(dataDir)) > 1) {
 print(paste("--- wd_processDump_Spark.py Pyspark ETL Procedures STARTED ON:", 
             Sys.time(), sep = " "))
 # - Kerberos init
-system(command = 'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls', 
-       wait = TRUE)
-system(command = paste0('sudo -u analytics-privatedata spark2-submit ', 
-                        sparkMaster, ' ',
-                        sparkDeployMode, ' ', 
-                        sparkDriverMemory, ' ',
-                        sparkExecutorMemory, ' ',
-                        sparkExecutorCores, ' ',
-                        sparkConfigDynamic, ' ',
-                        paste0(fPath, "wdll_PysparkETL.py")),
-       wait = TRUE)
+WMDEData::kerberos_init(kerberosUser = "analytics-privatedata")
+# - Run Spark ETL
+WMDEData::kerberos_runSpark(kerberosUser = "analytics-privatedata",
+                            pysparkPath = paste0(fPath, 'wdll_PysparkETL.py'),
+                            sparkMaster = sparkMaster,
+                            sparkDeployMode = sparkDeployMode,
+                            sparkNumExecutors = sparkNumExecutors,
+                            sparkDriverMemory = sparkDriverMemory,
+                            sparkExecutorMemory = sparkExecutorMemory,
+                            sparkConfigDynamic = sparkConfigDynamic)
 
 ### --------------------------------------------------
 ### --- log Pyspark: WD_LanguagesLandscape.py
