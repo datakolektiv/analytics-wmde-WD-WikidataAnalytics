@@ -1,18 +1,20 @@
 #!/usr/bin/env Rscript
 
 ### ---------------------------------------------------------------------------
-### --- WDCM Engine (S)itelinks
+### --- WDCM Engine (T)itles
 ### --- Version 1.0.0
-### --- Script: WDCM_Engine_Sitelinks.R
-### --- August 2021.
+### --- Script: WDCM_Engine_Titles.R
+### --- June 2020.
 ### --- Author: Goran S. Milovanovic, Data Scientist, WMDE
 ### --- Developed under the contract between Goran Milovanovic PR Data Kolektiv
 ### --- and WMDE.
 ### --- Description: The script represents the update engine 
-### --- for the WDCM (S)itelinks dashboard.
+### --- for the WDCM Wikipedia Semantics dashboard.
 ### --- NOTE: the execution of this WDCM script is always dependent upon the
-### --- previous WDCM_Sqoop_Clients.R run
+### --- previous WDCM_Sqoop_Clients.R run from stat1004 (currently)
 ### --- Contact: goran.milovanovic_ext@wikimedia.de
+### ---------------------------------------------------------------------------
+
 ### ---------------------------------------------------------------------------
 ### --- LICENSE:
 ### ---------------------------------------------------------------------------
@@ -40,53 +42,78 @@
 ### --- Constraints:
 ### --- 1. All 14 WDCM semantic categories
 ### --- 2. Only Wikipedia projects that make use of all 14 categories
-### --- 3. (S)itelinks (S entity usage aspects) only
+### --- 3. (T)itles (T entity usage aspects) only
 ### ---------------------------------------------------------------------------
 
 # - to runtime Log:
-print(paste(
-  "--- FULL WDCM Engine (S)itelinks update STARTED ON:", 
-  Sys.time(), 
-  sep = " ")
-  )
+print(paste("--- FULL WDCM Engine (T)itles update STARTED ON:", Sys.time(), sep = " "))
 # - GENERAL TIMING:
 generalT1 <- Sys.time()
 
+### --- setup
+library(data.table)
+library(tidyverse)
+library(RColorBrewer)
+library(plotrix)
+library(maptpx)
+library(snowfall)
+library(httr)
+library(jsonlite)
+library(htmltab)
+library(XML)
+library(parallelDist)
+library(mclust)
+library(networkD3)
+
+### --- directories
+### --- Read WDCM paramereters
 # - fPath: where the scripts is run from?
 fPath <- as.character(commandArgs(trailingOnly = FALSE)[4])
-fPath <- gsub("--file=", "", fPath, fixed = TRUE)
-fPath <- unlist(strsplit(fPath, split = "/", fixed = TRUE))
+fPath <- gsub("--file=", "", fPath, fixed = T)
+fPath <- unlist(strsplit(fPath, split = "/", fixed = T))
 fPath <- paste(
   paste(fPath[1:length(fPath) - 1], collapse = "/"),
   "/",
   sep = "")
-
-# - renv
-renv::load(project = fPath, quiet = FALSE)
-
-# - lib
-library(WMDEData)
-library(snowfall)
-library(mclust)
-
-# - pars
-params <- XML::xmlParse(paste0(fPath, "wdcmConfig.xml"))
-params <- XML::xmlToList(params)
+params <- xmlParse(paste0(fPath, "wdcmConfig.xml"))
+params <- xmlToList(params)
 
 ### --- Directories
-ontologyDir <- params$sitelinks$ontologyDir
-logDir <- params$sitelinks$logDir
-itemsDir <- params$sitelinks$itemsDir
+ontologyDir <- params$titles$ontologyDir
+logDir <- params$titles$logDir
+itemsDir <- params$titles$itemsDir
 structureDir <- params$general$structureDir
-publicDir <- params$sitelinks$publicDataDir
-localDataDir <- params$sitelinks$localDataDir
+publicDir <- params$titles$publicDataDir
+localDataDir <- params$titles$localDataDir
 
 ### --- Set proxy
-WMDEData::set_proxy(http_proxy = params$general$http_proxy,
-                    https_proxy = params$general$https_proxy)
+Sys.setenv(
+  http_proxy = params$general$http_proxy,
+  https_proxy = params$general$https_proxy)
 
-### --- functions
-# - projectType()
+### --- utilities
+wdcm_batchIndexes <- function(x, batchSize) {
+  if (class(batchSize) != "integer") {
+    message("Error: batchSize not integer.")
+    break()
+  } else if (!is.vector(x) | length(x) < 100) {
+    message("Error: x not vector or length(x) < 100.")
+    break()
+  } else {
+    batchNum <- ceiling(length(x)/batchSize)
+    startBatchIx <- c(1:batchNum) * batchSize - batchSize + 1
+    stopBatchIx <- c(1:batchNum) * batchSize
+    stopBatchIx[batchNum] <- length(x)
+    bIx <- vector(mode = "list", length = length(startBatchIx))
+    for (i in 1:length(bIx)) {
+      bIx[[i]]$start <- startBatchIx[i]
+      bIx[[i]]$stop <- stopBatchIx[i]
+    }
+    return(bIx)
+  }
+}
+
+# - projectType() to determine project type
 projectType <- function(projectName) {
   unname(sapply(projectName, function(x) {
     if (grepl("commons", x, fixed = T)) {"Commons"
@@ -103,8 +130,8 @@ projectType <- function(projectName) {
   }))
 }
 
-# - topicCoherence_tdm()
-# - compute topic coherence  for a full topic model
+# - topicCoherence_tdm() - compute topic coherence 
+# - for a full topic model
 topicCoherence_tdm <- function(tdm, theta, M, normalized = T) {
   
   # - tdm: a term-document matrix (columns = terms, rows = documents)
@@ -185,43 +212,47 @@ setwd(localDataDir)
 ### ---------------------------------------------------------------------------
 
 ### --- ETL from goransm.wdcm_clients_wb_entity_usage
-# - to Report
-print("Fetching (S)itelinks data from wdcm_clients_wb_entity_usage now.")
-# - Kerberos init
-WMDEData::kerberos_init(kerberosUser = "analytics-privatedata")
-# - Define query
-queryFile <- paste0(localDataDir, 
-                    "siteLinksData_HiveQL_Query.hql")
+### --- w. HiveQL from Beeline
+filename <- "siteLinksData.tsv"
+queryFile <- "siteLinksData_HiveQL_Query.hql"
+kerberosPrefix <- 'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata '
 hiveQLquery <- 'SET hive.mapred.mode=unstrict; 
   SELECT wiki_db, eu_entity_id, COUNT(*) AS eu_usage FROM goransm.wdcm_clients_wb_entity_usage 
-  WHERE ((eu_aspect = \'S\') AND (wiki_db RLIKE \'wiki$\') AND (wiki_db != \'commonswiki\')) 
+  WHERE ((eu_aspect = \'T\') AND (wiki_db RLIKE \'wiki$\') AND (wiki_db != \'commonswiki\')) 
   GROUP BY wiki_db, eu_entity_id ORDER BY wiki_db, eu_usage DESC;'
+# - write hql
 write(hiveQLquery, queryFile)
-# - Run HiveQL query
-filename <- "siteLinksData.tsv"
-WMDEData::kerberos_runHiveQL(kerberosUser = "analytics-privatedata",
-                             query = queryFile,
-                             localPath = localDataDir,
-                             localFilename = filename)
+# - to Report
+print("Fetching (T)itles data from wdcm_clients_wb_entity_usage now.")
+# - Kerberos init
+system(command = paste0(kerberosPrefix, ' hdfs dfs -ls'), 
+       wait = T)
+# - Run query
+query <- system(command = paste(kerberosPrefix, 
+                                '/usr/local/bin/beeline --incremental=true --silent -f "',
+                                paste0(localDataDir, queryFile),
+                                '" > ', localDataDir, filename,
+                                sep = ""),
+                wait = TRUE)
 # - to Report
 print("DONE w. ETL from Hadoop: wdcm_clients_wb_entity_usage.")
-print("DONE w. siteLinksData production.")
+print("DONE w. titles data production.")
 
-### --- clear localDataDir/siteLinksData.tsv
-lF <- list.files()
-lF <- setdiff(lF, 'siteLinksData.tsv')
-file.remove(lF)
+### --- clear localDataDir
+lfs <- list.files()
+lfs <- setdiff(lfs, 'siteLinksData.tsv')
+file.remove(lfs)
 
 ### --- load and annotate siteLinksData
-siteLinksData <- data.table::fread('siteLinksData.tsv',
-                                   sep = "\t",
-                                   quote = "")
+siteLinksData <- fread('siteLinksData.tsv', 
+                       sep = "\t",
+                       quote = "")
 
 ### --- filter siteLinksData for projects
 ### --- from List of Wikipedias Wiki page:
 ### --- scrape: https://en.wikipedia.org/wiki/List_of_Wikipedias
 url <- "https://en.wikipedia.org/wiki/List_of_Wikipedias"
-listWiki <- htmltab::htmltab(url, 3)
+listWiki <- htmltab(url, 3)
 # - extract all languages
 allLanguages <- listWiki$Wiki
 # - filter siteLinksData for these languages:
@@ -233,13 +264,13 @@ if (length(wL) > 0) {
 
 # - filter according to Wikidata usage
 wdUsage <- siteLinksData %>% 
-  dplyr::group_by(wiki_db) %>% 
-  dplyr::summarise(usage = sum(eu_usage)) %>% 
-  dplyr::arrange(dplyr::desc(usage))
+  group_by(wiki_db) %>% 
+  summarise(usage = sum(eu_usage)) %>% 
+  arrange(desc(usage))
 cutOff <- median(wdUsage$usage)
 wWDmed <- wdUsage$wiki_db[which(wdUsage$usage >= cutOff)]
 siteLinksData <- siteLinksData %>% 
-  dplyr::filter(wiki_db %in% wWDmed)
+  filter(wiki_db %in% wWDmed)
 
 ### --- anotate siteLinksData by WDCM semantic categories
 siteLinksData$category <- integer(dim(siteLinksData)[1])
@@ -249,17 +280,12 @@ lFitems <- list.files()
 # - iterate, annotate
 for (i in 1:length(lFitems)) {
   # to Report:
-  print(paste0(
-    "Annotating siteLinksData from: ", 
-    i, 
-    ": ", 
-    lFitems[i], 
-    "."))
+  print(paste0("Annotating siteLinksData from: ", i, ": ", lFitems[i], "."))
   items <- tryCatch({
-    data.table::fread(lFitems[i], header = T)
+    fread(lFitems[i], header = T)
     },
     error = function(condition) {
-      print("Note: can't read this category. Skipping.")
+      print("Ooops - can't read this category. Skipping.")
       break
       }
   )
@@ -267,29 +293,21 @@ for (i in 1:length(lFitems)) {
   colnames(items) <- c('items', 'category')
   items <- items$item
   # to Report:
-  print(paste0("Annotating ", 
-               length(items), 
-               " items."))
-  w <- which(siteLinksData$eu_entity_id %in% items)
-  siteLinksData$category[w] <- i
+  print(paste0("Annotating ", length(items), " items."))
+  siteLinksData$category[which(siteLinksData$eu_entity_id %in% items)] <- i
   # to Report:
-  print(paste0(
-    "Annotated ", 
-    sum(siteLinksData$category == i), 
-    " rows in siteLinksData."))
+  print(paste0("Annotated ", sum(siteLinksData$category == i), " rows in siteLinksData."))
   rm(items); gc()
 }
 # - to Report
 print("DONE w. siteLinksData annotation.")
-
 ### --- back to localDataDir
 setwd(localDataDir)
 
 ### --- drop non-WDCM terms
 # - to Report
 print("Drop non-WDCM entities.")
-siteLinksData <- 
-  siteLinksData[siteLinksData$category != 0, ]
+siteLinksData <- siteLinksData[siteLinksData$category != 0, ]
 print("DONE w. drop non-WDCM items.")
 
 ### --- Remove WDCM semantic class: Wikimedia Internals
@@ -306,60 +324,40 @@ print("DONE w. Remove WDCM semantic class: Wikimedia Internals.")
 ### --- what Wikipedia projects are present
 ### --- in at least 10 out of 12 (13 minus Wikimedia Internals) 
 ### --- WDCM semantic categories: a selection.
-wikiSelection <- 
-  table(siteLinksData$wiki_db, siteLinksData$category)
-wikiSelectionIx <- 
-  apply(wikiSelection, 1, function(x) {
-    sum(x > 0, na.rm = T)
-    })
-selectedWikies <- 
-  names(which(wikiSelectionIx >= 10))
-colnames(wikiSelection) <- 
-  unname(
-    sapply(lFitems, function(x) {
-      strsplit(x, split = "_")[[1]][1]
-      })
-    )
-wikiSelection <- 
-  wikiSelection[which(rownames(wikiSelection) %in% selectedWikies), ]
+wikiSelection <- table(siteLinksData$wiki_db, siteLinksData$category)
+wikiSelectionIx <- apply(wikiSelection, 1, function(x) {sum(x > 0, na.rm = T)})
+selectedWikies <- names(which(wikiSelectionIx >= 10))
+colnames(wikiSelection) <- unname(sapply(lFitems, function(x) {
+  strsplit(x, split = "_")[[1]][1]
+}))
+wikiSelection <- wikiSelection[which(rownames(wikiSelection) %in% selectedWikies), ]
 # - store wikiSelection: frequency of 'S' item usage
 # - across all Wikipedia projects
-write.csv(wikiSelection, 
-          'Wikipedia_wdcmSUsage_CategoryOverview.csv')
+write.csv(wikiSelection, 'Wikipedia_wdcmSUsage_CategoryOverview.csv')
 # - filter siteLinksData for selectedWikies
 siteLinksData <- siteLinksData %>% 
-  dplyr::filter(wiki_db %in% selectedWikies)
+  filter(wiki_db %in% selectedWikies)
 
 ### --- produce item frequency matrices
 # - keep track of siteLinks category size:
 lFitems <- gsub("-", " ", lFitems)
 siteLinksCategoryNum <- numeric()
-categoryCode <- 
-  sort(unique(siteLinksData$category))
+categoryCode <- sort(unique(siteLinksData$category))
 for (i in 1:length(lFitems)) {
   # - to Report
   print(paste0("Producing freqMatrix for: ", i, ": ", lFitems[i]))
   # - select category
-  fMatrix <- data.table::data.table(
-    siteLinksData[siteLinksData$category == categoryCode[i], 
-                  c('wiki_db', 'eu_entity_id', 'eu_usage')]
+  fMatrix <- data.table(
+    siteLinksData[siteLinksData$category == categoryCode[i], c('wiki_db', 'eu_entity_id', 'eu_usage')]
   )
   # - aggregate per item and arrange descending by frequency
-  fMatrix <- 
-    fMatrix[, .(eu_usage = sum(eu_usage)), by = eu_entity_id]
+  fMatrix <- fMatrix[, .(eu_usage = sum(eu_usage)), by = eu_entity_id]
   fMatrix <- fMatrix[order(-eu_usage)]
-  siteLinksCategoryNum <- 
-    append(siteLinksCategoryNum, dim(fMatrix)[1])
+  siteLinksCategoryNum <- append(siteLinksCategoryNum, dim(fMatrix)[1])
   # - to Report
-  print(paste0(
-    "There are ", 
-    dim(fMatrix)[1], 
-    " unique items. Saving...")
-    )
+  print(paste0("There are ", dim(fMatrix)[1], " unique items. Saving..."))
   # - save
-  filename <- paste0(
-    gsub("_ItemIDs.csv", "", lFitems[i]), "_freqMatrix.csv"
-    )
+  filename <- paste0(gsub("_ItemIDs.csv", "", lFitems[i]), "_freqMatrix.csv")
   write.csv(as.data.frame(fMatrix), filename)
   # - to Report
   print("DONE.")
@@ -369,29 +367,27 @@ for (i in 1:length(lFitems)) {
 print("DONE w. frequency matrices.")
 
 ### --- produce project-entity matrices
-# - NOTE: AN ARBITRARY DECISION TO SELECT 
-# - THE TOP 10,000 MOST FREQUENTLY USED ITEMS
-# - CRITERIA:
-# - (0) filter out any Wikipedia that does not
-# - make use of at least 10 out of 13 (14 minus Wikimedia Internals)
-# - WDCM semantic categories;
-# - (1) for each matrix, we pick the top 10,000 most
-# - frequently used items;
-# - (2) if a WDCM semantic category has less than
-# - 10,000 entities, we pick them all;
-# - (3) if a WDCM semantic category has less than
-# - 100 entities, drop the category from further analyses;
-# - (4) remove from the project-entity matrix
-# - any item that is not used in at least 50% of projects
+### --- NOTE: AN ARBITRARY DECISION TO SELECT TOP 10,000 MOST FREQUENTLY USED ITEMS
+### --- CRITERIA:
+### --- (0) filter out any Wikipedia that does not
+### --- make use of at least 10 out of 13 (14 minus Wikimedia Internals)
+### --- WDCM semantic categories;
+### --- (1) for each matrix, we pick the top 10,000 most
+### --- frequently used items;
+### --- (2) if a WDCM semantic category has less than
+### --- 10,000 entities, we pick them all;
+### --- (3) if a WDCM semantic category has less than
+### --- 100 entities, drop the category from further analyses;
+### --- (4) remove from the project-entity matrix
+### --- any item that is not used in at least 50% of projects
 
 # - iterate over WDCM semantic categories
 # - and apply criteria (1), (2), and (3)
 lFcategories <- list.files()
-lFcategories <- 
-  lFcategories[grepl("_freqMatrix", lFcategories)]
+lFcategories <- lFcategories[grepl("_freqMatrix", lFcategories)]
 for (i in 1:length(lFcategories)) {
   # - read semantic category frequency matrix
-  frMat <- data.table::fread(lFcategories[i])
+  frMat <- fread(lFcategories[i])
   # - to Report:
   print(paste0("Project-entity matrix for: ", lFcategories[i]))
   # - discard if there are less than 100 items
@@ -409,10 +405,10 @@ for (i in 1:length(lFcategories)) {
       # - reshape categoryFile
       # - to Report:
       print("Reshaping now.")
-      categoryFile <- tidyr::spread(categoryFile,
-                                    key = eu_entity_id,
-                                    value = eu_usage,
-                                    fill = 0)
+      categoryFile <- spread(categoryFile,
+                             key = eu_entity_id,
+                             value = eu_usage,
+                             fill = 0)
       rownames(categoryFile) <- categoryFile$wiki_db
       categoryFile$wiki_db <- NULL
       # - to Report:
@@ -433,8 +429,7 @@ for (i in 1:length(lFcategories)) {
       itemUse <- apply(categoryFile, 2, function(x) {
         sum(x > 0, na.rm = T)
       })
-      wItemUse <- 
-        which(itemUse >= round(dim(categoryFile)[1]/10))
+      wItemUse <- which(itemUse >= round(dim(categoryFile)[1]/10))
       categoryFile <- categoryFile[, wItemUse]
       # - to Report: Final matrix dimesionality
       print(paste0("Final matrix dimesionality: ", 
@@ -464,10 +459,10 @@ for (i in 1:length(lFcategories)) {
       # - reshape categoryFile
       # - to Report:
       print("Reshaping now.")
-      categoryFile <- tidyr::spread(categoryFile,
-                                    key = eu_entity_id,
-                                    value = eu_usage,
-                                    fill = 0)
+      categoryFile <- spread(categoryFile,
+                             key = eu_entity_id,
+                             value = eu_usage,
+                             fill = 0)
       rownames(categoryFile) <- categoryFile$wiki_db
       categoryFile$wiki_db <- NULL
       # - to Report:
@@ -488,8 +483,7 @@ for (i in 1:length(lFcategories)) {
       itemUse <- apply(categoryFile, 2, function(x) {
         sum(x > 0, na.rm = T)
       })
-      wItemUse <- 
-        which(itemUse >= round(dim(categoryFile)[1]/10))
+      wItemUse <- which(itemUse >= round(dim(categoryFile)[1]/10))
       categoryFile <- categoryFile[, wItemUse]
       # - to Report: Final matrix dimesionality
       print(paste0("Final matrix dimesionality: ", 
@@ -514,8 +508,7 @@ for (i in 1:length(lFcategories)) {
 }
 
 # - store siteLinksData as processed:
-write.csv(siteLinksData, 
-          "siteLinksData_Processed.csv")
+write.csv(siteLinksData, "siteLinksData_Processed.csv")
 # - clear: siteLinksData
 rm(siteLinksData); gc()
 
@@ -523,8 +516,7 @@ rm(siteLinksData); gc()
 ### --- Section 2. Latent Dirichlet Allocation w. project-entity matrices
 ### ---------------------------------------------------------------------------
 
-# - Note:- Working w. top 1,000 frequently 
-# - mentioned items SitelinksData only
+### --- Working w. top 1,000 frequently mentioned items SitelinksData only
 
 # - list project-entity matrices
 setwd(localDataDir)
@@ -541,27 +533,20 @@ for (i in 1:length(lFtmat)) {
   t1Category <- Sys.time()
   
   # - prepare project-entity matrix
-  itemCat <- data.table::fread(lFtmat[i])
+  itemCat <- fread(lFtmat[i])
   # - top 1,000 frequently mentioned items Sitelinks only:
   if (dim(itemCat)[2] > 1001) {
     iF <- colSums(itemCat %>% 
                     dplyr::select(dplyr::starts_with('Q')))
     iF <- names(sort(iF, decreasing = T)[1:1000])
-    itemCat <- 
-      as.data.frame(itemCat)[, c(1, which(colnames(itemCat) %in% iF))]
+    itemCat <- as.data.frame(itemCat)[, c(1, which(colnames(itemCat) %in% iF))]
   }
   
   # - check if there are less than 100 items to model:
   if (dim(itemCat)[2] >= 101) {
   
-    categoryName <- strsplit(
-      lFtmat[i], 
-      split = ".", 
-      fixed = T)[[1]][1]
-    categoryName <- strsplit(
-      categoryName, 
-      split = "_", 
-      fixed = T)[[1]][1]
+    categoryName <- strsplit(lFtmat[i], split = ".", fixed = T)[[1]][1]
+    categoryName <- strsplit(categoryName, split = "_", fixed = T)[[1]][1]
     
     wikis <- itemCat$V1
     itemCat$V1 <- NULL
@@ -573,40 +558,29 @@ for (i in 1:length(lFtmat)) {
     itemCat <- as.matrix(itemCat)
     
     # - to Report:
-    print(
-      paste(
-        "----------------------- {maptpx} LDA model: category ", 
-        i, 
-        ". ", 
-        categoryName, sep = "")
-      )
+    print(paste("----------------------- {maptpx} LDA model: category ", i, ". ", categoryName, sep = ""))
     
     ####### ----------- PARALLEL w. {snowfall} STARTS
     
     # - start cluster and export data + package
-    snowfall::sfInit(parallel = T, cpus = 20)
-    snowfall::sfExport("itemCat")
-    snowfall::sfLibrary(maptpx)
+    sfInit(parallel = T, cpus = 20)
+    sfExport("itemCat")
+    sfLibrary(maptpx)
 
     ## -- run 20 k = 10 topic models
     numTopics <- rep(c(2:20), times = 5)
-    topicModels <- 
-      snowfall::sfClusterApplyLB(numTopics,
-                                 function(x) {
-                                   maptpx::topics(counts = itemCat,
-                                                  K = x, 
-                                                  bf = T,
-                                                  shape = NULL, 
-                                                  initopics = NULL,
-                                                  tol = .01, 
-                                                  kill = 0,
-                                                  ord = TRUE, 
-                                                  verb = 0)
-                                   }
-                                 )
+    topicModels <- sfClusterApplyLB(numTopics,
+                                    function(x) {
+                                      maptpx::topics(counts = itemCat,
+                                                     K = x, bf = T,
+                                                     shape = NULL, initopics = NULL,
+                                                     tol = .01, kill = 0,
+                                                     ord = TRUE, verb = 0)
+                                      }
+                                    )
 
     # - stop cluster
-    snowfall::sfStop()
+    sfStop()
 
     ####### ----------- PARALLEL w. {snowfall} ENDS
     
@@ -615,14 +589,9 @@ for (i in 1:length(lFtmat)) {
     print("Topic coherence based model selection... ")
     # - define M = max. top terms for coherence computation
     M <- 15
-    thetas <- lapply(topicModels, function(x) {
-      x$theta
-      })
+    thetas <- lapply(topicModels, function(x) {x$theta})
     tC <- sapply(thetas, function(x) {
-      topicCoherence_tdm(itemCat, 
-                         x, 
-                         M, 
-                         normalized = T)
+      topicCoherence_tdm(itemCat, x, M, normalized = T)
     })
     wModel <- which.max(tC)[1]
     topicModel <- topicModels[[wModel]]
@@ -633,44 +602,27 @@ for (i in 1:length(lFtmat)) {
     # - collect matrices
     # - entities x topics
     wdcm_itemtopic <- as.data.frame(topicModel$theta)
-    colnames(wdcm_itemtopic) <- paste(
-      "topic", 
-      seq(1, dim(wdcm_itemtopic)[2]), 
-      sep = "")
-    itemTopicFileName <- paste0(
-      categoryName, 
-      "_sitelinks_itemtopic.csv")
+    colnames(wdcm_itemtopic) <- paste("topic", seq(1, dim(wdcm_itemtopic)[2]), sep = "")
+    itemTopicFileName <- paste0(categoryName, "_sitelinks_itemtopic.csv")
     write.csv(wdcm_itemtopic, itemTopicFileName)
     # - wikis x topics
     wdcm_projecttopic <- as.data.frame(topicModel$omega)
-    colnames(wdcm_projecttopic) <- paste(
-      "topic", 
-      seq(1, dim(wdcm_projecttopic)[2]), 
-      sep = "")
+    colnames(wdcm_projecttopic) <- paste("topic", seq(1, dim(wdcm_projecttopic)[2]), sep = "")
     rownames(wdcm_projecttopic) <- wikis
-    projectTopicFileName <- paste0(
-      categoryName, 
-      "_sitelinks_wikitopic.csv")
+    projectTopicFileName <- paste0(categoryName, "_sitelinks_wikitopic.csv")
     write.csv(wdcm_projecttopic, projectTopicFileName)
     
     # - toReport
-    print(paste0(
-      "Selected model has: ", 
-      topicModel$K, 
-      " topics."))
+    print(paste0("Selected model has: ", topicModel$K, " topics."))
     
     # - clear:
-    rm(topicModel); rm(wdcm_projecttopic); 
-    rm(wdcm_itemtopic); gc()
+    rm(topicModel); rm(wdcm_projecttopic); rm(wdcm_itemtopic); gc()
     
     # - to Report:
     print("DONE.")
     # - to Report
     print("--- Category LDA completed --- ")
-    print(paste0(
-      "Category LDA time: ", 
-      Sys.time() - t1Category)
-      )
+    print(paste0("Category LDA time: ", Sys.time() - t1Category))
   
   }
   
@@ -687,14 +639,12 @@ print(paste0("Total LDA time: ", Sys.time() - t1General))
 ### --- Annotate topic models
 lFtmod <- list.files()
 lFtmod <- lFtmod[grepl("itemtopic", lFtmod)]
-# - Wikidata MediaWiki API prefix/params
+# - Wikidata MediaWiki API prefix
 APIprefix <- 'https://www.wikidata.org/w/api.php?action=wbgetentities&'
-APIparams <- 
-  'props=labels&languages=en&sitefilter=wikidatawiki&languagefallback=true&format=json'
 # - get item labels for item-topic matrixes
 for (i in 1:length(lFtmod)) {
   # load item-topic matrix
-  itMatrix <- data.table::fread(lFtmod[i])
+  itMatrix <- fread(lFtmod[i])
   # - compose API call
   items <- itMatrix$V1
   # - perform API calls for item labels
@@ -708,28 +658,26 @@ for (i in 1:length(lFtmod)) {
     ixEnd <- ixStart + 50 - 1
     searchItems <- items[ixStart:ixEnd]
     w <- which(is.na(searchItems))
-    if (length(w) > 0) {
-      searchItems <- searchItems[-w]
-      }
+    if (length(w) > 0) {searchItems <- searchItems[-w]}
     ids <- paste(searchItems, collapse = "|")
     query <- paste0(APIprefix, 
                     'ids=', ids, '&',
-                    APIparams)
+                    'props=labels&languages=en&sitefilter=wikidatawiki&languagefallback=true&format=json')
     res <- tryCatch(
       {
-        httr::GET(url = URLencode(query))
+        GET(url = URLencode(query))
       },
       error = function(condition) {
         Sys.sleep(10)
-        httr::GET(url = URLencode(query))
+        GET(url = URLencode(query))
       },
       warning = function(condition) {
         Sys.sleep(10)
-        httr::GET(url = URLencode(query))
+        GET(url = URLencode(query))
       }
     )
     rc <- rawToChar(res$content)
-    rc <- jsonlite::fromJSON(rc)
+    rc <- fromJSON(rc)
     itemLabels <- unlist(lapply(rc$entities, function(x) {
       x$labels$en$value
     }))
@@ -748,10 +696,9 @@ for (i in 1:length(lFtmod)) {
     }
   }
   rm(res); rm(rc); gc()
-  iLabs <- data.table::rbindlist(iLabs)
+  iLabs <- rbindlist(iLabs)
   # - enter item labels to itMatrix
-  itMatrix <- dplyr::left_join(itMatrix, 
-                               iLabs, 
+  itMatrix <- dplyr::left_join(itMatrix, iLabs, 
                                by = c("V1" = "eu_entity_id"))
   colnames(itMatrix)[1] <- "eu_entity_id"
   wNALabel <- which(is.na(itMatrix$eu_label))
@@ -774,17 +721,14 @@ for (i in 1:length(lFtmod)) {
 lFtmod <- list.files()
 lFtmod <- lFtmod[grepl("itemtopic", lFtmod)]
 
-# - Wikidata MediaWiki API prefix/params
+# - Wikidata MediaWiki API prefix
 APIprefix <- 'https://www.wikidata.org/w/api.php?action=wbgetentities&'
-APIparams <- 
-  '&props=claims&languages=en&sitefilter=wikidatawiki&languagefallback=true&format=json'
-APIparams2 <- 'props=labels&languages=en&sitefilter=wikidatawiki&languagefallback=true&format=json'
 
 ### --- (P31) onto topic models
 for (i in 1:length(lFtmod)) {
   
   # - load item-topic matrix
-  itMatrix <- data.table::fread(lFtmod[i])
+  itMatrix <- fread(lFtmod[i])
   itMatrix$V1 <- NULL
 
   # - extract top M most imporant items
@@ -793,7 +737,7 @@ for (i in 1:length(lFtmod)) {
   M <- 15
   # - from each topic in the itemTopic matrix
   cutOffItems <- 
-    dplyr::select(itMatrix, dplyr::starts_with('topic')) %>% 
+    select(itMatrix, dplyr::starts_with('topic')) %>% 
     apply(2, function(x) {
       x <- as.numeric(x)
       itMatrix$eu_entity_id[which(x %in% sort(x, decreasing = T)[1:M])]
@@ -815,74 +759,59 @@ for (i in 1:length(lFtmod)) {
   repeat {
     ixEnd <- ixStart + 20 - 1
     searchItems <- items[ixStart:ixEnd]
-    print(paste0("Processing now: ", 
-                 ixStart, 
-                 "-", 
-                 ixEnd, 
-                 " of: ", 
-                 length(items), 
-                 " items in: ", 
-                 lFtmod[i])
-          )
+    print(paste0("Processing now: ", ixStart, "-", ixEnd, " of: ", length(items), " items in: ", lFtmod[i]))
     w <- which(is.na(searchItems))
-    if (length(w) > 0) {
-      searchItems <- searchItems[-w]
-      }
+    if (length(w) > 0) {searchItems <- searchItems[-w]}
     ids <- paste(searchItems, collapse = "|")
     query <- paste0(APIprefix, 
                     'ids=', ids, '&',
-                    APIparams)
+                    '&props=claims&languages=en&sitefilter=wikidatawiki&languagefallback=true&format=json')
     repeat {
       res <- tryCatch(
         {
-          httr::GET(url = URLencode(query))
+          GET(url = URLencode(query))
         },
         error = function(condition) {
           Sys.sleep(10)
-          httr::GET(url = URLencode(query))
+          GET(url = URLencode(query))
         },
         warning = function(condition) {
           Sys.sleep(10)
-          httr::GET(url = URLencode(query))
+          GET(url = URLencode(query))
         }
       )
       if (res$status_code == 200) {
         break
       } else {
-        print(paste0(
-          "Repeating API call; current server status response is: ", 
-          res$status_code, ".")
-          )
+        print(paste0("Repeating API call; current server status response is: ", res$status_code, "."))
       }
     }
      
     rc <- rawToChar(res$content)
-    rc <- jsonlite::fromJSON(rc)
+    rc <- fromJSON(rc)
     rc <- rc$entities
     propsP31 <- lapply(rc, function(x) {
       
       tryCatch({
         unique(
           c(x$claims$P31$mainsnak$datavalue$value$id)
-          )
-        },
-        error = function(condition) {NULL},
-        warning = function(condition) {NULL}
         )
-      })
+      },
+      error = function(condition) {NULL},
+      warning = function(condition) {NULL}
+      )
+    })
     wNull <- which(sapply(propsP31, is.null))
     if (length(wNull) > 0) {
       propsP31[wNull] <- "NoP31Class"
     }
     p31list <- vector(mode = "list", length = length(propsP31))
     for (j in 1:length(propsP31)) {
-      p31list[[j]] <- data.frame(
-        eu_entity_id = rep(names(propsP31[j]),
-                           length(propsP31[[j]])),
-        eu_p31 = propsP31[[j]],
-        stringsAsFactors = F)
+      p31list[[j]] <- data.frame(eu_entity_id = rep(names(propsP31[j]), length(propsP31[[j]])),
+                                 eu_p31 = propsP31[[j]],
+                                 stringsAsFactors = F)
     }
-    p31list <- data.table::rbindlist(p31list)
+    p31list <- rbindlist(p31list)
     c <- c + 1
     iProps[[c]] <- p31list
     # - exit condition
@@ -895,14 +824,12 @@ for (i in 1:length(lFtmod)) {
     }
   }
   rm(res); rm(rc); gc()
-  iProps <- data.table::rbindlist(iProps)
+  iProps <- rbindlist(iProps)
   # - reshape:
   iProps <- table(iProps)
   # - remove "NoP31Class" tag if any:
   wNoP31Class <- which(colnames(iProps) == "NoP31Class")
-  if (length(wNoP31Class) > 0) {
-    iProps <- iProps[, -wNoP31Class]
-    }
+  if (length(wNoP31Class) > 0) {iProps <- iProps[, -wNoP31Class]}
   iProps <- as.data.frame(iProps)
   iProps <- iProps %>% 
     tidyr::spread(key = eu_p31,
@@ -916,8 +843,7 @@ for (i in 1:length(lFtmod)) {
   items <- iProps %>% 
     dplyr::select(dplyr::starts_with('Q')) %>%
                   colnames()
-  # - fetch item labels in batches 
-  # - (max values = 50, MediaWiki API constraint)
+  # - fetch item labels in batches (max values = 50, MediaWiki API constraint)
   c <- 0
   ixStart <- 1
   p31Labs <- list()
@@ -925,37 +851,28 @@ for (i in 1:length(lFtmod)) {
     ixEnd <- ixStart + 20 - 1
     searchItems <- items[ixStart:ixEnd]
     # - to Report
-    print(paste0(
-      "Processing now: ", 
-      ixStart, 
-      "-", 
-      ixEnd, 
-      " of: ", 
-      length(items), 
-      " item labels in: ", 
-      lFtmod[i])
-      )  
+    print(paste0("Processing now: ", ixStart, "-", ixEnd, " of: ", length(items), " item labels in: ", lFtmod[i]))  
     w <- which(is.na(searchItems))
     if (length(w) > 0) {searchItems <- searchItems[-w]}
     ids <- paste(searchItems, collapse = "|")
     query <- paste0(APIprefix, 
                     'ids=', ids, '&',
-                    APIparams2)
+                    'props=labels&languages=en&sitefilter=wikidatawiki&languagefallback=true&format=json')
     res <- tryCatch(
       {
-        httr::GET(url = URLencode(query))
+        GET(url = URLencode(query))
       },
       error = function(condition) {
         Sys.sleep(10)
-        httr::GET(url = URLencode(query))
+        GET(url = URLencode(query))
       },
       warning = function(condition) {
         Sys.sleep(10)
-        httr::GET(url = URLencode(query))
+        GET(url = URLencode(query))
       }
     )
     rc <- rawToChar(res$content)
-    rc <- jsonlite::fromJSON(rc)
+    rc <- fromJSON(rc)
     itemLabels <- lapply(rc$entities, function(x) {
       x$labels
     })
@@ -981,7 +898,7 @@ for (i in 1:length(lFtmod)) {
     }
   }
   rm(res); rm(rc); gc()
-  p31Labs <- data.table::rbindlist(p31Labs)
+  p31Labs <- rbindlist(p31Labs)
   p31Labs$eu_label[which(p31Labs$eu_label == 'No Label')] <- 
     p31Labs$eu_entity_id[which(p31Labs$eu_label == 'No Label')]
   # - paste p31 labels into colnames(iProps):
@@ -1003,35 +920,25 @@ for (i in 1:length(lFtmod)) {
 
 ### --- project properties onto entity x topics matrices
 lFitemtopic <- list.files()
-lFitemtopic <- lFitemtopic[grepl(
-  "itemtopic", 
-  lFitemtopic)]
+lFitemtopic <- lFitemtopic[grepl("itemtopic", lFitemtopic)]
 lFannotatetopic <- list.files()
-lFannotatetopic <- lFannotatetopic[grepl(
-  "_topicAnnotationMatrix", 
-  lFannotatetopic)]
+lFannotatetopic <- lFannotatetopic[grepl("_topicAnnotationMatrix", lFannotatetopic)]
 lFwikitopic <- list.files()
-lFwikitopic <- lFwikitopic[grepl(
-  "wikitopic", 
-  lFwikitopic)]
+lFwikitopic <- lFwikitopic[grepl("wikitopic", lFwikitopic)]
 for (i in 1:length(lFitemtopic)) {
   # - to Report
-  print(paste0(
-    "Projecting P31 on item-topic matrix for: ",
-    lFitemtopic[i])
-    )
+  print(paste0("Projecting P31 on item-topic matrix for: ", lFitemtopic[i]))
   # - right matrix
-  itemTopic <- data.table::fread(lFitemtopic[i])
+  itemTopic <- fread(lFitemtopic[i])
   itemTopic$V1 <- NULL
   itemTopic$eu_label <- NULL
   # - left matrix
-  topicAnnotation <- data.table::fread(lFannotatetopic[i])
+  topicAnnotation <- fread(lFannotatetopic[i])
   topicAnnotation$V1 <- NULL
   # - comfort itemTopic to topicAnnotation
   # - i.e. select only those items from itemTopic
   # - whose classes are used for annotation
-  wTAItems <- 
-    which(itemTopic$eu_entity_id %in% topicAnnotation$eu_entity_id)
+  wTAItems <- which(itemTopic$eu_entity_id %in% topicAnnotation$eu_entity_id)
   itemTopic <- itemTopic[wTAItems, ]
   itemTopic$eu_entity_id <- NULL
   # - transpose topicAnnotation
@@ -1055,7 +962,7 @@ for (i in 1:length(lFitemtopic)) {
   write.csv(as.data.frame(classTopic), filename)
   # - Annotate wikipedias now:
   # - right matrix:
-  topicWiki <- data.table::fread(lFwikitopic[i])
+  topicWiki <- fread(lFwikitopic[i])
   wikis <- topicWiki$V1
   topicWiki$V1 <- NULL
   topicWiki <- t(topicWiki)
@@ -1085,11 +992,11 @@ for (i in 1:length(lF)) {
   print(paste0("Producing Theme Description in Category: ", lF[i]))
   
   # - read classTopic
-  classTopic <- data.table::fread(lF[i])
+  classTopic <- fread(lF[i])
   # - read itemTopic as themeItems
-  themeItems <- data.table::fread(lFitemtopic[i])
+  themeItems <- fread(lFitemtopic[i])
   # - read topicAnnotation
-  topicAnnotation <- data.table::fread(lFannotatetopic[i])
+  topicAnnotation <- fread(lFannotatetopic[i])
   topicAnnotation$V1 <- NULL
   
   # - extract top M most imporant items
@@ -1098,7 +1005,7 @@ for (i in 1:length(lF)) {
   M <- 15
   # - from each topic in the itemTopic matrix
   cutOffItems <- 
-    dplyr::select(themeItems, dplyr::starts_with('topic')) %>% 
+    select(themeItems, dplyr::starts_with('topic')) %>% 
     apply(2, function(x) {
       x <- as.numeric(unlist(unclass(x)))
       themeItems$eu_entity_id[order(x, decreasing = T)[1:M]]
@@ -1121,22 +1028,18 @@ for (i in 1:length(lF)) {
   
   theme <- paste0("Theme ", 1:length(topClassesTopic))
   # - theme description in terms of distinctive classes
-  themeDescriptions <- 
-    lapply(topClassesTopic,
-           function(x) {
-             items <- unlist(stringr::str_extract_all(
-               names(x), 
-               "Q[[:digit:]]+")
-               )
-             links <- paste0("https://www.wikidata.org/wiki/", items)
-             links <- paste0('<a href = "',
-                             links,
-                             '" target = "_blank">',
-                             paste0(names(x), paste0("[", x, "%]")),
-                             "</a>")
-             links <- paste(links, sep = "", collapse = ", ")
-             return(links)
-             })
+  themeDescriptions <- lapply(topClassesTopic,
+                              function(x) {
+                                items <- unlist(str_extract_all(names(x), "Q[[:digit:]]+"))
+                                links <- paste0("https://www.wikidata.org/wiki/", items)
+                                links <- paste0('<a href = "',
+                                                links,
+                                                '" target = "_blank">',
+                                                paste0(names(x), paste0("[", x, "%]")),
+                                                "</a>")
+                                links <- paste(links, sep = "", collapse = ", ")
+                                return(links)
+                              })
   themeDescriptions <- unlist(themeDescriptions)
   
   # - theme description in terms of items
@@ -1145,57 +1048,50 @@ for (i in 1:length(lF)) {
   # - define M = max. top terms for coherence computation
   M <- 15
   themeItems$V1 <- NULL
-  themeItems$item <- paste0(
-    themeItems$eu_label, 
-    " (", 
-    themeItems$eu_entity_id, ")"
-    )
-  themeItemsDescriptions <-
-    apply(themeItems[, 2:(dim(themeItems)[2] - 2)],
-          2,
-          function(x) {
-            items <- themeItems$item[order(-x)][1:M]
-            links <- unlist(stringr::str_extract_all(items, "Q[[:digit:]]+"))
-            links <- paste0("https://www.wikidata.org/wiki/", links)
-            links <- paste0('<a href = "',
-                            links,
-                            '" target = "_blank">',
-                            items,
-                            "</a>")
-            links <- paste(links, sep = "", collapse = ", ")
-            return(links)
-            })
+  themeItems$item <- paste0(themeItems$eu_label, " (", themeItems$eu_entity_id, ")")
+  themeItemsDescriptions <- apply(themeItems[, 2:(dim(themeItems)[2] - 2)], 
+                                  2, 
+                                  function(x) {
+                                    items <- themeItems$item[order(-x)][1:M]
+                                    links <- unlist(str_extract_all(items, "Q[[:digit:]]+"))
+                                    links <- paste0("https://www.wikidata.org/wiki/", links)
+                                    links <- paste0('<a href = "', 
+                                                    links, 
+                                                    '" target = "_blank">', 
+                                                    items,
+                                                    "</a>")
+                                    links <- paste(links, sep = "", collapse = ", ")
+                                    return(links)                             
+                                  })
   # - theme diveristy
-  themeDiversity <- 
-    apply(classTopic[, 2:dim(classTopic)[2]], 2, function(x) {
-      N = length(x)
-      if (N == 1) {
-        surN <- 1
-        } else {
-          surN <- log(length(x))
-        }
-      paste0(round(-sum(x*log(x))/surN*100, 2), 
+  themeDiversity <- apply(classTopic[, 2:dim(classTopic)[2]], 2, function(x) {
+    
+    N = length(x)
+    if (N == 1) {
+      surN <- 1
+    } else {
+      surN <- log(length(x))
+    }
+    
+    paste0(round(-sum(x*log(x))/surN*100, 2), 
            "%")
   })
-  themeDiversityQualification <- 
-    sapply(themeDiversity,
-           function(x) {
-             diversity <- as.numeric(gsub("%", "", x))
-             if (diversity <= 25) {
-               return("Very focused")
-               } else if (diversity > 25 & diversity <= 50) {
-                 return("Focused")
-                 } else if (diversity > 50 & diversity <= 75) {
-                   return("Diversified")
-                   } else {
-                     return("Very diversified")
-                     }
-             })
+  themeDiversityQualification <- sapply(themeDiversity, 
+                                        function(x) {
+                                          diversity <- as.numeric(gsub("%", "", x))
+                                          if (diversity <= 25) {
+                                            return("Very focused") 
+                                          } else if (diversity > 25 & diversity <= 50) {
+                                            return("Focused")
+                                          } else if (diversity > 50 & diversity <= 75) {
+                                            return("Diversified")
+                                          } else {
+                                            return("Very diversified")
+                                          } 
+                                        })
   # - compose themeDescription and store:
   filename <- gsub("_.+", "", lF[i])
-  filename <- paste0("wdcmdo_", 
-                     filename, 
-                     "_themeDescription.csv")
+  filename <- paste0("wdcmdo_",filename, "_themeDescription.csv")
   themeDescription <- data.frame(Theme = theme, 
                                  `Distinctive Classes` = themeDescriptions, 
                                  Items = themeItemsDescriptions,
@@ -1209,23 +1105,15 @@ for (i in 1:length(lF)) {
 lF <- list.files()
 lF <- lF[grepl("wikitopic", lF)]
 for (i in 1:length(lF)) {
-  print(paste0(
-    "Producing Theme Distributions across Wikipedias for: ", 
-    lF[i])
-    )
+  print(paste0("Producing Theme Distributions across Wikipedias for: ", lF[i]))
   # - read classWiki
   topicWiki <- fread(lF[i])
   colnames(topicWiki)[1] <- 'Wikipedia'
-  topicWiki$Wikipedia <- gsub(
-    "wiki", 
-    "", 
-    topicWiki$Wikipedia
-    )
+  topicWiki$Wikipedia <- gsub("wiki", "", topicWiki$Wikipedia)
   colnames(topicWiki)[2:dim(topicWiki)[2]] <- 
     paste0("Theme ", 
-          stringr::str_extract(
-            colnames(topicWiki)[2:dim(topicWiki)[2]],
-            "[[:digit:]]+")
+          str_extract(colnames(topicWiki)[2:dim(topicWiki)[2]], 
+                      "[[:digit:]]+")
           )
   # - produce {ggplot2} chart tables:
   topicWiki <- tidyr::gather(data = topicWiki, 
@@ -1246,10 +1134,10 @@ for (i in 1:length(lF)) {
 lF <- list.files()
 lF <- lF[grepl("itemtopic", lF)]
 for (i in 1:length(lF)) {
-  itemtopic <- data.table::fread(lF[i])
+  itemtopic <- fread(lF[i])
   itemtopic$V1 <- NULL
   category <- gsub("_sitelinks_itemtopic.csv", "", lF[i])
-  iFreq <- data.table::fread(paste0(category, "_freqMatrix.csv"))
+  iFreq <- fread(paste0(category, "_freqMatrix.csv"))
   iFreq$V1 <- NULL
   w100 <- iFreq$eu_entity_id[1:100]
   w100 <- which(itemtopic$eu_entity_id %in% w100)
@@ -1257,10 +1145,7 @@ for (i in 1:length(lF)) {
   rm(iFreq)
   itemSim <- itemtopic %>% 
     dplyr::select(starts_with('topic'))
-  itemSim <- as.matrix(
-    parallelDist::parDist(as.matrix(itemSim), 
-                          method = "euclid")
-    )
+  itemSim <- as.matrix(parDist(as.matrix(itemSim), method = "euclid"))
   itemSim <- itemSim[w100, w100]
   colnames(itemSim) <- w100names
   rownames(itemSim) <- w100names
@@ -1304,7 +1189,7 @@ for (i in 1:length(lF)) {
   write.csv(edges, filename)
   
   # - {networkD3} radial represenations of hiearchical clusters
-  hcItemSim <- stats::hclust(dist(itemSim), method = "ward.D")
+  hcItemSim <- hclust(dist(itemSim), method = "ward.D")
   filename <- paste0(category, "_itemClusters.Rds")
   saveRDS(hcItemSim, filename)
 }
@@ -1313,15 +1198,11 @@ for (i in 1:length(lF)) {
 lF <- list.files()
 lF <- lF[grepl("wikitopic", lF)]
 for (i in 1:length(lF)) {
-  wikitopic <- data.table::fread(lF[i])
+  wikitopic <- fread(lF[i])
   rownames(wikitopic) <- wikitopic$V1
   wikitopic$V1 <- NULL
   category <- gsub("_sitelinks_wikitopic.csv", "", lF[i])
-  wikiSim <- as.matrix(
-    parallelDist::parDist(
-      as.matrix(wikitopic), 
-      method = "hellinger")
-    )
+  wikiSim <- as.matrix(parDist(as.matrix(wikitopic), method = "hellinger"))
   colnames(wikiSim) <- gsub("wiki", "", rownames(wikitopic))
   rownames(wikiSim) <- gsub("wiki", "", rownames(wikitopic))
   
@@ -1330,21 +1211,15 @@ for (i in 1:length(lF)) {
   rownames(cP) <- rownames(wikiSim)
   colnames(cP) <- rownames(wikiSim)
   # - {mclust}
-  bic <- mclust::mclustBIC(cP)
-  model <- mclust::Mclust(cP, x = bic)
+  bic <- mclustBIC(cP)
+  model <- Mclust(cP, x = bic)
   # - clusters membership
   projectMembership <- model$classification
   projectMembership <- data.frame(Wiki = (projectMembership), 
                                   Cluster = projectMembership, 
                                   stringsAsFactors = F)
-  nodeColors <- RColorBrewer::brewer.pal(
-    length(unique(projectMembership$Cluster)), 
-    "Set3")
-  nodeColors <- 
-    unname(sapply(nodeColors, function(x) {
-      plotrix ::color.id(x)[1]
-      }
-      ))
+  nodeColors <- brewer.pal(length(unique(projectMembership$Cluster)), "Set3")
+  nodeColors <- unname(sapply(nodeColors, function(x) color.id(x)[1]))
   nodeColors <- sapply(projectMembership$Cluster, function(x) {
     nodeColors[x]
   })
@@ -1386,7 +1261,7 @@ for (i in 1:length(lF)) {
   write.csv(edges, filename)
   
   # - {networkD3} radial represenations of hiearchical clusters
-  hcWikiSim <- stats::hclust(dist(wikiSim), method = "ward.D")
+  hcWikiSim <- hclust(dist(wikiSim), method = "ward.D")
   filename <- paste0(category, "_projectClusters.Rds")
   saveRDS(hcWikiSim, filename)
 }
@@ -1400,7 +1275,7 @@ lF <- list.files()
 lF <- lF[grepl("_tfMatrix", lF)]
 tfMatrices <- vector(mode = "list", length = length(lF))
 for (i in 1:length(tfMatrices)) {
-  tfMatrices[[i]] <- data.table::fread(lF[i], data.table = F)
+  tfMatrices[[i]] <- fread(lF[i], data.table = F)
   projects <- tfMatrices[[i]]$V1
   tfMatrices[[i]]$V1 <- NULL
   tfMatrices[[i]] <- t(tfMatrices[[i]])
@@ -1442,25 +1317,18 @@ for (i in 1:length(selectedWikies)) {
     simMat[[j]] <- simMat[[j]][, sProjects]
   }
   # - merge:
-  simMat <- data.table::rbindlist(lapply(simMat, as.data.frame))
+  simMat <- rbindlist(lapply(simMat, as.data.frame))
   # - compute projects x projects Jaccard similarity matrix:
   simMat <- as.matrix(simMat)
   simMat <- apply(simMat, 1, function(x) {
     ifelse(x > 0, 1, 0)
   })
   prNames <- rownames(simMat)
-  simMat <- as.matrix(
-    parallelDist::parDist(simMat, method = "binary")
-    )
+  simMat <- as.matrix(parDist(simMat, method = "binary"))
   rownames(simMat) <- prNames
   colnames(simMat) <- prNames
-  write.csv(simMat, 
-            file = paste0(
-              selectedWikies[i], 
-              "_localSimilarity.csv")
-            )
+  write.csv(simMat, file = paste0(selectedWikies[i], "_localSimilarity.csv"))
 }
-
 # - correct wikiSelection: what categories have remained in the analysis?
 wikiSelection <- read.csv('Wikipedia_wdcmSUsage_CategoryOverview.csv', 
                           header = T,
@@ -1469,8 +1337,7 @@ wikiSelection <- read.csv('Wikipedia_wdcmSUsage_CategoryOverview.csv',
                           stringsAsFactors = F)
 wCR <- which(colnames(wikiSelection) %in% names(tfMatrices))
 wikiSelection <- wikiSelection[, wCR]
-write.csv(wikiSelection, 
-          'Wikipedia_wdcmSUsage_CategoryOverview.csv')
+write.csv(wikiSelection, 'Wikipedia_wdcmSUsage_CategoryOverview.csv')
 
 # - produce _wikiSimilarityNetwork.Rds files for {visNetwork}
 lF <- list.files()
@@ -1484,17 +1351,15 @@ for (i in 1:length(lF)) {
                      stringsAsFactors = F)
   simData$wiki <- rownames(simData)
   simData <- simData %>% 
-    tidyr::gather(key = neighbour,
-                  value = similarity,
-                  -wiki) %>% 
-    dplyr::filter(wiki != neighbour) %>% 
-    dplyr::group_by(wiki) %>% 
-    dplyr::arrange(wiki, similarity) %>% 
-    dplyr::top_n(-3)
+    gather(key = neighbour, 
+           value = similarity, 
+           -wiki) %>% 
+    filter(wiki != neighbour) %>% 
+    group_by(wiki) %>% 
+    arrange(wiki, similarity) %>% 
+    top_n(-3)
   # - {visNetwork} objects:
-  nodeColors <- ifelse(unique(simData$wiki) %in% wiki, 
-                       "red", 
-                       "grey40")
+  nodeColors <- ifelse(unique(simData$wiki) %in% wiki, "red", "grey40")
   # - create {visNetwork} nodes for wikies
   nodes <- data.frame(id = 1:length(unique(simData$wiki)), 
                       label = unique(simData$wiki), 
@@ -1522,32 +1387,20 @@ for (i in 1:length(lF)) {
   write.csv(edges, filenameEdges)
 }
 
-# - COPY to publicDir
+### --- COPY to publicDir
 # - toReport
-system(command = paste0('cp ', 
-                        localDataDir, 
-                        '* ', 
-                        publicDir), 
+system(command = paste0('cp ', localDataDir, '* ', publicDir), 
        wait = T)
 
+localDataDir
+
 # - update string
-write(paste0(
-  "Last updated on: ", 
-  Sys.time()), 
-  "wikipediaSitelinksUpdateString.txt")
+write(paste0("Last updated on: ", Sys.time()), "wikipediaTitlesUpdateString.txt")
 # - copy update string to: publicDir
-system(command = paste0(
-  'cp ', 
-  localDataDir, 
-  'wikipediaSitelinksUpdateString.txt ', 
-  publicDir),
-  wait = T)
+system(command = paste0('cp ', localDataDir, 'wikipediaTitlesUpdateString.txt ', publicDir), 
+       wait = T)
 
 # - GENERAL TIMING:
 generalT2 <- Sys.time()
 # - GENERAL TIMING REPORT:
-print(paste0(
-  "FULL WDCM Engine (S)itelinks update DONE IN: ", 
-  generalT2 - generalT1, 
-  ".")
-  )
+print(paste0("FULL WDCM Engine (T)itles update DONE IN: ", generalT2 - generalT1, "."))
