@@ -1,13 +1,13 @@
 #!/usr/bin/env Rscript
 
 ### ---------------------------------------------------------------------------
-### --- WD_HumanEditsPerClass, v 0.0.1
+### --- WD_HumanEditsPerClass, v 1.0.0
 ### --- script: WD_HumanEditsPerClass.R
 ### --- Author: Goran S. Milovanovic, Data Scientist, WMDE
 ### --- Developed under the contract between Goran Milovanovic PR Data Kolektiv
 ### --- and WMDE.
 ### --- Contact: goran.milovanovic_ext@wikimedia.de
-### --- June 2020.
+### --- September 2021.
 ### ---------------------------------------------------------------------------
 ### --- DESCRIPTION:
 ### --- ETL and Analytics for the Wikidata Human Edits Per Class Project
@@ -47,7 +47,6 @@ print(paste("--- WD_HumanEditsPerClass.R RUN STARTED ON:",
 # - GENERAL TIMING:
 generalT1 <- Sys.time()
 
-### --- Read paramereters
 # - fPath: where the scripts is run from?
 fPath <- as.character(commandArgs(trailingOnly = FALSE)[4])
 fPath <- gsub("--file=", "", fPath, fixed = T)
@@ -56,18 +55,31 @@ fPath <- paste(
   paste(fPath[1:length(fPath) - 1], collapse = "/"),
   "/",
   sep = "")
-params <- xmlParse(paste0(fPath, "wdHumanEditsPerClass_Config.xml"))
-params <- xmlToList(params)
 
-### --- dirTree
+# - renv
+renv::load(project = fPath, quiet = FALSE)
+
+# - lib
+library(WMDEData)
+
+# - pars
+params <- XML::xmlParse(
+  paste0(
+    fPath, "wdHumanEditsPerClass_Config.xml")
+  )
+params <- XML::xmlToList(params)
+
+# - dirTree
 dataDir <- params$general$dataDir
 analyticsDir <- params$general$analyticsDir
 hdfsPath <- params$general$hdfsPath
 publicDir <- params$general$publicDir
 
-params <- xmlParse(paste0(fPath, "wdHumanEditsPerClass_Config_Deploy.xml"))
-params <- xmlToList(params)
 # - spark2-submit parameters:
+params <- XML::xmlParse(
+  paste0(fPath, "wdHumanEditsPerClass_Config_Deploy.xml")
+  )
+params <- XML::xmlToList(params)
 sparkMaster <- params$spark$master
 sparkDeployMode <- params$spark$deploy_mode
 sparkNumExecutors <- params$spark$num_executors
@@ -87,19 +99,18 @@ print("Log: RUN WD_HumanEditsPerClass_ETL.py")
 if (length(list.files(dataDir)) > 1) {
   file.remove(paste0(dataDir, list.files(dataDir)))
 }
+
 # - Kerberos init
-system(command = 'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls', 
-       wait = T)
-# - Run PySpark ETL
-system(command = paste0('sudo -u analytics-privatedata spark2-submit ', 
-                        sparkMaster, ' ',
-                        sparkDeployMode, ' ', 
-                        sparkDriverMemory, ' ',
-                        sparkExecutorMemory, ' ',
-                        sparkExecutorCores, ' ',
-                        sparkConfigDynamic, ' ',
-                        paste0(fPath, 'WD_HumanEditsPerClass_ETL.py')),
-       wait = T)
+WMDEData::kerberos_init(kerberosUser = "analytics-privatedata")
+# - Run Spark ETL
+WMDEData::kerberos_runSpark(kerberosUser = "analytics-privatedata",
+                            pysparkPath = paste0(fPath, "WD_HumanEditsPerClass_ETL.py"),
+                            sparkMaster = sparkMaster,
+                            sparkDeployMode = sparkDeployMode,
+                            sparkNumExecutors = sparkNumExecutors,
+                            sparkDriverMemory = sparkDriverMemory,
+                            sparkExecutorMemory = sparkExecutorMemory,
+                            sparkConfigDynamic = sparkConfigDynamic)
 
 # - toRuntime Log:
 print("Log: RUN WD_HumanEditsPerClass_ETL.py COMPLETED.")
@@ -108,31 +119,17 @@ print("Log: RUN WD_HumanEditsPerClass_ETL.py COMPLETED.")
 ### --- 2: Compose final datasets from hdfs
 ### ---------------------------------------------------------------------------
 
-### --- dataset: humanTouchClass
-# - copy splits from hdfs to local dataDir
-system(paste0('sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls ', 
-              hdfsPath, 'humanTouchClass.csv > ', 
-              dataDir, 'files.txt'), 
-       wait = T)
-files <- read.table(paste0(dataDir, 'files.txt'), skip = 1)
-files <- as.character(files$V8)[2:length(as.character(files$V8))]
-file.remove(paste0(dataDir, 'files.txt'))
-for (i in 1:length(files)) {
-  system(paste0('sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -text ', 
-                files[i], ' > ',  
-                paste0(dataDir, "humanTouchClass", i, ".csv")), wait = T)
-}
-# - read splits: dataSet
-# - load
-lF <- list.files(dataDir)
-lF <- lF[grepl("humanTouchClass", lF)]
-dataSet <- lapply(paste0(dataDir, lF), function(x) {fread(x, 
-                                                          header = F, 
-                                                          sep = ",")})
-# - collect
-dataSet <- rbindlist(dataSet)
-# - clean up
-file.remove(paste0(dataDir, list.files(dataDir)))
+### --- compose: humanTouchClass.csv
+print(paste(
+  "--- Log: Load ETL datasets.",
+  "Compose: humanTouchClass.csv. ",
+  Sys.time(), sep = " "))
+dataSet <- WMDEData::hdfs_read_from(kerberosUser = "analytics-privatedata",
+                                    localPath = dataDir,
+                                    localFilenamePrefix = "humanTouchClass",
+                                    hdfsDir = hdfsPath,
+                                    hdfsFilenamePrefix = "humanTouchClass.csv",
+                                    fr_header = FALSE)
 # - schema
 colnames(dataSet) <- c('wd_class', 'human_edited_items', 'num_items', 
                        'proportion_items_touched', 'percent_items_touched', 'label')
@@ -149,29 +146,17 @@ write.csv(dataSet,
           paste0(analyticsDir, "humanTouchClass.csv"))
 rm(dataSet); gc()
 
-### --- dataSet: humanBotClasses
-# - copy splits from hdfs to local dataDir
-system(paste0('sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls ', 
-              hdfsPath, 'humanBotClasses.csv > ', 
-              dataDir, 'files.txt'), 
-       wait = T)
-files <- read.table(paste0(dataDir, 'files.txt'), skip = 1)
-files <- as.character(files$V8)[2:length(as.character(files$V8))]
-file.remove(paste0(dataDir, 'files.txt'))
-for (i in 1:length(files)) {
-  system(paste0('sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -text ', 
-                files[i], ' > ',  
-                paste0(dataDir, "humanBotClasses", i, ".csv")), wait = T)
-}
-# - read splits: dataSet
-# - load
-lF <- list.files(dataDir)
-lF <- lF[grepl("humanBotClasses", lF)]
-dataSet <- lapply(paste0(dataDir, lF), function(x) {fread(x, header = F)})
-# - collect
-dataSet <- rbindlist(dataSet)
-# - clean up
-file.remove(paste0(dataDir, list.files(dataDir)))
+### --- compose: humanBotClasses.csv
+print(paste(
+  "--- Log: Load ETL datasets.",
+  "Compose: humanBotClasses.csv ",
+  Sys.time(), sep = " "))
+dataSet <- WMDEData::hdfs_read_from(kerberosUser = "analytics-privatedata",
+                                    localPath = dataDir,
+                                    localFilenamePrefix = "humanBotClasses",
+                                    hdfsDir = hdfsPath,
+                                    hdfsFilenamePrefix = "humanBotClasses.csv",
+                                    fr_header = FALSE)
 # - schema
 colnames(dataSet) <- c('wd_class', 'human_edits', 'bot_edits', 
                        'total_edits', 'human_to_bot_ratio', 'human_ratio', 
@@ -189,31 +174,21 @@ write.csv(dataSet,
           paste0(analyticsDir, "humanBotClasses.csv"))
 rm(dataSet); gc()
 
-### --- dataSet: classMedianEditors
-# - copy splits from hdfs to local dataDir
-system(paste0('sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls ', 
-              hdfsPath, 'classMedianEditors.csv > ', 
-              dataDir, 'files.txt'), 
-       wait = T)
-files <- read.table(paste0(dataDir, 'files.txt'), skip = 1)
-files <- as.character(files$V8)[2:length(as.character(files$V8))]
-file.remove(paste0(dataDir, 'files.txt'))
-for (i in 1:length(files)) {
-  system(paste0('sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -text ', 
-                files[i], ' > ',  
-                paste0(dataDir, "classMedianEditors", i, ".csv")), wait = T)
-}
-# - read splits: dataSet
-# - load
-lF <- list.files(dataDir)
-lF <- lF[grepl("classMedianEditors", lF)]
-dataSet <- lapply(paste0(dataDir, lF), function(x) {fread(x, header = F)})
-# - collect
-dataSet <- rbindlist(dataSet)
-# - clean up
-file.remove(paste0(dataDir, list.files(dataDir)))
+
+### --- compose: classMedianEditors
+print(paste(
+  "--- Log: Load ETL datasets.",
+  "Compose: classMedianEditors ",
+  Sys.time(), sep = " "))
+dataSet <- WMDEData::hdfs_read_from(kerberosUser = "analytics-privatedata",
+                                    localPath = dataDir,
+                                    localFilenamePrefix = "classMedianEditors",
+                                    hdfsDir = hdfsPath,
+                                    hdfsFilenamePrefix = "classMedianEditors.csv",
+                                    fr_header = FALSE)
 # - schema
-colnames(dataSet) <- c('wd_class', 'median_unique_editors', 'num_items', 'label')
+colnames(dataSet) <- c('wd_class', 'median_unique_editors', 
+                       'num_items', 'label')
 # - sanitize
 # - find empty classes, if any
 wEmpty <- which(!grepl("^Q", dataSet$wd_class))
@@ -232,37 +207,51 @@ rm(dataSet); gc()
 ### ---------------------------------------------------------------------------
 
 ### --- classMedianEditors
-classMedianEditors <- fread(paste0(analyticsDir, "classMedianEditors.csv"))
+classMedianEditors <- data.table::fread(
+  paste0(analyticsDir, "classMedianEditors.csv")
+  )
 classMedianEditors$V1 <- NULL
-classMedianEditors <- arrange(classMedianEditors, 
-                              desc(num_items))
+classMedianEditors <- dplyr::arrange(
+  classMedianEditors,
+  dplyr::desc(num_items)
+  )
 
 ### --- humanTouchClass
-humanTouchClass <- fread(paste0(analyticsDir, "humanTouchClass.csv"))
+humanTouchClass <- data.table::fread(
+  paste0(analyticsDir, "humanTouchClass.csv")
+  )
 humanTouchClass$V1 <- NULL
 head(humanTouchClass)
-humanTouchClass <- select(humanTouchClass, 
-                          wd_class, num_items,
-                          human_edited_items, percent_items_touched)
-classMedianEditors <- select(classMedianEditors, 
-                             wd_class, median_unique_editors, label)
-humanTouchClass <- left_join(humanTouchClass, 
-                             classMedianEditors,
-                             by = "wd_class")
+humanTouchClass <- dplyr::select(humanTouchClass,
+                                 wd_class, 
+                                 num_items,
+                                 human_edited_items, 
+                                 percent_items_touched)
+classMedianEditors <- dplyr::select(classMedianEditors,
+                                    wd_class, 
+                                    median_unique_editors, 
+                                    label)
+humanTouchClass <- dplyr::left_join(humanTouchClass,
+                                    classMedianEditors,
+                                    by = "wd_class")
 rm(classMedianEditors)
 
 ### --- humanBotClasses
-humanBotClasses <- fread(paste0(analyticsDir, "humanBotClasses.csv"))
+humanBotClasses <- data.table::fread(
+  paste0(analyticsDir, "humanBotClasses.csv")
+  )
 humanBotClasses$V1 <- NULL
 humanBotClasses$label <- NULL
-humanBotClasses <- select(humanBotClasses,
-                          wd_class,
-                          human_edits, bot_edits, total_edits,
-                          human_to_bot_ratio,
-                          human_percent, bot_percent)
-humanTouchClass <- left_join(humanTouchClass,
-                             humanBotClasses,
-                             by = "wd_class")
+humanBotClasses <- dplyr::select(humanBotClasses,
+                                 wd_class,
+                                 human_edits, 
+                                 bot_edits, 
+                                 total_edits,
+                                 human_to_bot_ratio,
+                                 human_percent, bot_percent)
+humanTouchClass <- dplyr::left_join(humanTouchClass,
+                                    humanBotClasses,
+                                    by = "wd_class")
 rm(humanBotClasses)
 humanTouchClass <- humanTouchClass[, c('wd_class',
                                        'label',
@@ -276,16 +265,28 @@ humanTouchClass <- humanTouchClass[, c('wd_class',
                                        'human_to_bot_ratio',
                                        'human_percent',
                                        'bot_percent')]
-humanTouchClass$percent_items_touched <- round(humanTouchClass$percent_items_touched, 2)
-humanTouchClass$human_to_bot_ratio <- round(humanTouchClass$human_to_bot_ratio, 2)
-humanTouchClass$human_percent <- round(humanTouchClass$human_percent, 2)
-humanTouchClass$bot_percent <- round(humanTouchClass$bot_percent, 2)
-humanTouchClass <- arrange(humanTouchClass, desc(num_items))
+
+# - compute indicators
+humanTouchClass$percent_items_touched <- 
+  round(humanTouchClass$percent_items_touched, 2)
+humanTouchClass$human_to_bot_ratio <- 
+  round(humanTouchClass$human_to_bot_ratio, 2)
+humanTouchClass$human_percent <- 
+  round(humanTouchClass$human_percent, 2)
+humanTouchClass$bot_percent <- 
+  round(humanTouchClass$bot_percent, 2)
+humanTouchClass <- dplyr::arrange(humanTouchClass, 
+                                  dplyr::desc(num_items))
 class <- humanTouchClass$wd_class
-humanTouchClass$wd_class <- paste0("https://www.wikidata.org/wiki/", humanTouchClass$wd_class)
-humanTouchClass$wd_class <- paste0('<a href = "', humanTouchClass$wd_class, '" target = "_blank">',
-                                   class,
-                                   "</a>")
+humanTouchClass$wd_class <- 
+  paste0("https://www.wikidata.org/wiki/", 
+         humanTouchClass$wd_class)
+humanTouchClass$wd_class <- 
+  paste0('<a href = "', 
+         humanTouchClass$wd_class, 
+         '" target = "_blank">',
+         class,
+         "</a>")
 write.csv(humanTouchClass, 
           paste0(analyticsDir, 'WD_HumanEdits.csv'))
 
@@ -297,7 +298,11 @@ write.csv(humanTouchClass,
 print("Copy outputs to public directory.")
 # - copy ETL outputs
 system(command = 
-         paste0('cp ', analyticsDir, 'WD_HumanEdits.csv ' , publicDir, 'WD_HumanEdits.csv'),
+         paste0('cp ', 
+                analyticsDir, 
+                'WD_HumanEdits.csv ', 
+                publicDir, 
+                'WD_HumanEdits.csv'),
        wait = T)
 # - toRuntime log:
 print("Copy output: COMPLETED.")
@@ -305,10 +310,6 @@ print("Copy output: COMPLETED.")
 # - GENERAL TIMING:
 generalT2 <- Sys.time()
 # - GENERAL TIMING REPORT:
-print(paste0("--- WD_HumanEditsPerClass.R RUN COMPLETED IN: ", 
-             generalT2 - generalT1, "."))
-
-
-
-
-
+print(
+  paste0("--- WD_HumanEditsPerClass.R RUN COMPLETED IN: ",
+         generalT2 - generalT1, "."))
