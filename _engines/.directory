@@ -1,6 +1,6 @@
 [Dolphin]
 SortRole=type
-Timestamp=2021,8,29,13,52,30
+Timestamp=2021,9,7,11,30,47
 Version=4
-ViewMode=1
+ViewMode=2
 VisibleRoles=Details_text,Details_size,Details_modificationtime,Details_type,CustomizedDetails
