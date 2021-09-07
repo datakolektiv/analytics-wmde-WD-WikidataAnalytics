@@ -49,11 +49,7 @@ library(XML)
 library(httr)
 library(jsonlite)
 
-### --- parameters
-### --- Read WDCM paramereters: wdcmConfig.xml
-# - toLog
-print(paste0("Read WDCM params: ", Sys.time()))
-# - fPath: where the scripts is run from?
+# - fPath
 fPath <- as.character(commandArgs(trailingOnly = FALSE)[4])
 fPath <- gsub("--file=", "", fPath, fixed = T)
 fPath <- unlist(strsplit(fPath, split = "/", fixed = T))
@@ -61,8 +57,17 @@ fPath <- paste(
   paste(fPath[1:length(fPath) - 1], collapse = "/"),
   "/",
   sep = "")
-params <- xmlParse(paste0(fPath, "wdcmConfig.xml"))
-params <- xmlToList(params)
+
+# - renv
+renv::load(project = fPath, quiet = FALSE)
+
+# - lib
+library(WMDEData)
+
+# - pars
+print(paste0("Read WDCM params: ", Sys.time()))
+params <- XML::xmlParse(paste0(fPath, "wdcmConfig.xml"))
+params <- XML::xmlToList(params)
 
 ### --- Directories
 # - toLog
@@ -78,8 +83,10 @@ etlDir <- params$statements$statements_etlDir
 pubDataDir <- params$statements$publicDir
 
 # - spark2-submit parameters: wdcmConfig_Deployment.xml
-paramsDeployment <- xmlParse(paste0(fPath, "wdcmConfig_Deployment.xml"))
-paramsDeployment <- xmlToList(paramsDeployment)
+paramsDeployment <- XML::xmlParse(
+  paste0(fPath, "wdcmConfig_Deployment.xml")
+  )
+paramsDeployment <- XML::xmlToList(paramsDeployment)
 # - toLog
 print(paste0("Set Spark params: ", Sys.time()))
 sparkMaster <- paramsDeployment$biases$spark$biases_master
@@ -92,9 +99,9 @@ sparkConfigDynamic <- paramsDeployment$biases$spark$biases_config
 ### --- Set proxy
 # - toLog
 print(paste0("Set proxy params: ", Sys.time()))
-Sys.setenv(
-  http_proxy = params$general$http_proxy,
-  https_proxy = params$general$http_proxy)
+# - Set proxy
+WMDEData::set_proxy(http_proxy = params$general$http_proxy,
+                    https_proxy = params$general$https_proxy)
 
 # - clear tempDataDir
 # - toLog
@@ -106,114 +113,34 @@ if (length(lF) > 0) {
   lapply(paste0(etlDir, lF), file.remove)
 }
 
-### --- Functions
-### --- Function: wd_api_fetch_labels()
-# - fetch item labels in batches 
-# - (max values = 50, MediaWiki API constraint)
-wd_api_fetch_labels <- function(items, language, fallback) {
-  
-  # - params:
-  # - items - character vector of Wikidata identifiers
-  # - language - character, ISO 639-1 two-letter language code
-  # - fallback - to use or not to use the Wikidata language fallback 
-  
-  # - API prefix    
-  APIprefix <- 'https://www.wikidata.org/w/api.php?action=wbgetentities&'
-  
-  # - enforce item uniqueness
-  items <- unique(items)
-  # - iLabs: store batches
-  iLabs <- list()
-  
-  # fetch items
-  # - counter
-  c <- 0
-  # - batch start
-  ixStart <- 1
-  repeat {
-    ixEnd <- ixStart + 50 - 1
-    searchItems <- items[ixStart:ixEnd]
-    w <- which(is.na(searchItems))
-    if (length(w) > 0) {searchItems <- searchItems[-w]}
-    ids <- paste(searchItems, collapse = "|")
-    if (fallback == T) {
-      query <- paste0(APIprefix, 
-                      'ids=', ids, '&',
-                      'props=labels&languages=', 
-                      language, 
-                      '&languagefallback=&sitefilter=wikidatawiki&format=json')
-    } else {
-      query <- paste0(APIprefix, 
-                      'ids=', ids, '&',
-                      'props=labels&languages=', 
-                      language, 
-                      '&sitefilter=wikidatawiki&format=json')
-    }
-    res <- tryCatch(
-      {
-        GET(url = URLencode(query))
-      },
-      error = function(condition) {
-        Sys.sleep(10)
-        GET(url = URLencode(query))
-      },
-      warning = function(condition) {
-        Sys.sleep(10)
-        GET(url = URLencode(query))
-      }
-    )
-    rclabs <- rawToChar(res$content)
-    rclabs <- fromJSON(rclabs)
-    itemLabels <- unlist(lapply(rclabs$entities, function(x) {
-      if (length(x$labels) > 0) {
-        return(x$labels[[1]]$value) 
-      } else {
-        return("")
-      }
-    }))
-    itemLabels <- data.frame(title = names(itemLabels), 
-                             en_label = itemLabels, 
-                             stringsAsFactors = F, 
-                             row.names = c())
-    c <- c + 1
-    iLabs[[c]] <- itemLabels
-    if (length(searchItems) < 50) {
-      break
-    } else {
-      ixStart <- ixStart + 50
-      # - pause here 1 sec
-      Sys.sleep(1)
-    }
-  }
-  iLabs <- rbindlist(iLabs)
-  iLabs <- as.data.frame(iLabs)
-  iLabs$en_label[nchar(iLabs$en_label) == 0] <- 'No label defined'
-  return(iLabs)
-}
-
 ### --- statistics
 statistics <- list()
 
 ### --- determine current wmf.wikidata_entity snapshot
 # - toLog
-print(paste0("WDCM Statements: determine current WD json dump snapshot.", 
-             as.character(Sys.time()))
-)
+print(paste0(
+  "WDCM Statements: determine current WD json dump snapshot.",
+  as.character(Sys.time()))
+  )
 # - Kerberos init
-system(command = 'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls', 
-       wait = T)
+WMDEData::kerberos_init(kerberosUser = "analytics-privatedata")
+# - Define query
 query <- 'SHOW PARTITIONS wmf.wikidata_entity;'
-write(query, paste0(etlDir, 'snapshot_query.hql'))
-system(command = paste0(
-  'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata /usr/local/bin/beeline --incremental=true --silent -f "', 
-  paste0(etlDir, 'snapshot_query.hql'), '" > ',
-  paste0(etlDir, "wdsnaps.csv")),
-  wait = T)
-snaps <- read.csv(paste0(etlDir, 'wdsnaps.csv'), 
+queryFile <- paste0(etlDir, 
+                    "snapshot_query.hql")
+write(query, queryFile)
+# - Run HiveQL query
+filename <- "wdsnaps.csv"
+WMDEData::kerberos_runHiveQL(kerberosUser = "analytics-privatedata",
+                             query = queryFile,
+                             localPath = etlDir,
+                             localFilename = filename)
+snaps <- read.csv(paste0(etlDir, "wdsnaps.csv"), 
                   stringsAsFactors = F)
 currentSnap <- tail(snaps$partition, 1)
 currentSnap <- substr(currentSnap, 10, 19)
-write.csv(currentSnap, paste0(etlDir, 'currentSnap.csv'))
+write.csv(currentSnap, 
+          paste0(etlDir, "currentSnap.csv"))
 
 ### ---------------------------------------------------------------------------
 ### --- Apache Spark ETL 
@@ -221,70 +148,45 @@ write.csv(currentSnap, paste0(etlDir, 'currentSnap.csv'))
 # - toLog
 print(paste0("Run Apache Spark ETL: ", Sys.time()))
 # - Kerberos init
-system(command = 
-         'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls', 
-       wait = T)
-# -  delete hdfsDir
-system(command = 
-         paste0(
-           'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -rm -r ',
-           hdfsDir),
-       wait = T)
+WMDEData::kerberos_init(kerberosUser = "analytics-privatedata")
+# - delete hdfsDir
+WMDEData::hdfs_rmdir(kerberosUser = "analytics-privatedata", 
+                     hdfsDir = hdfsDir)
 # -  make hdfsDir
-system(command = 
-         paste0(
-           'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -mkdir ',
-           hdfsDir),
-       wait = T)
-# - run Pyspark
-system(command = paste0('sudo -u analytics-privatedata spark2-submit ', 
-                        sparkMaster, ' ',
-                        sparkDeployMode, ' ', 
-                        sparkNumExecutors, ' ',
-                        sparkDriverMemory, ' ',
-                        sparkExecutorMemory, ' ',
-                        sparkConfigDynamic, ' ',
-                        paste0(fPath, 'wdcmModule_Statements_ETL.py')
-                        ),
-       wait = T)
+WMDEData::hdfs_mkdir(kerberosUser = "analytics-privatedata", 
+                     hdfsDir = hdfsDir)
+# - Run Spark ETL
+WMDEData::kerberos_runSpark(kerberosUser = "analytics-privatedata",
+                            pysparkPath = paste0(fPath, 'wdcmModule_Statements_ETL.py'),
+                            sparkMaster = sparkMaster,
+                            sparkDeployMode = sparkDeployMode,
+                            sparkNumExecutors = sparkNumExecutors,
+                            sparkDriverMemory = sparkDriverMemory,
+                            sparkExecutorMemory = sparkExecutorMemory,
+                            sparkConfigDynamic = sparkConfigDynamic)
 print(paste0("Run Apache Spark ETL (DONE): ", Sys.time()))
 
 ### ---------------------------------------------------------------------------
 ### --- Load Spark ETL results
 ### ---------------------------------------------------------------------------
 
+### --- Copy splits from hdfs to local dataDir
+
 # - toLog
 print(paste0("Read Apache Spark ETL data: ", Sys.time()))
 
-### --- Copy splits from hdfs to local dataDir
-
 ### --- Item usage in Wikidata properties
-system(paste0(
-  'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls ',
-  paste0(hdfsDir, 'wd_statements_item_usage'), ' > ', etlDir, 'files.txt'),
-  wait = T)
-files <- read.table(
-  paste0(etlDir, 'files.txt'), 
-  skip = 1)
-files <- as.character(files$V8)[2:length(files$V8)]
-file.remove(paste0(etlDir, 'files.txt'))
-for (i in 1:length(files)) {
-  system(paste0(
-    'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -text ',
-    files[i], ' > ',
-    paste0(etlDir, "wd_statements_item_usage", i, ".csv")), wait = T)
-}
-lF <- list.files(etlDir)
-lF <- lF[grepl("wd_statements_item_usage", lF)]
-dataSet <- lapply(paste0(etlDir, lF), fread)
-dataSet <- rbindlist(dataSet)
+dataSet <- WMDEData::hdfs_read_from(kerberosUser = "analytics-privatedata",
+                                    localPath = etlDir,
+                                    localFilenamePrefix = "wd_statements_item_usage",
+                                    hdfsDir = hdfsDir,
+                                    hdfsFilenamePrefix = "wd_statements_item_usage",
+                                    fr_header = FALSE)
+# - schema
 colnames(dataSet) <- c('item', 'propertyCount')
 
 # - statistics
 statistics$items_used_in_wd_properties <- dim(dataSet)[1]
-
-# - remove temporary files
-lapply(paste0(etlDir, lF), file.remove)
 
 # - store
 write.csv(dataSet, 
@@ -292,32 +194,17 @@ write.csv(dataSet,
 rm(dataSet); gc()
 
 ### --- Property usage in Wikidata: from claims
-system(paste0(
-  'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls ',
-  paste0(hdfsDir, 'wd_statements_property_usage'), ' > ', etlDir, 'files.txt'),
-  wait = T)
-files <- read.table(
-  paste0(etlDir, 'files.txt'), 
-  skip = 1)
-files <- as.character(files$V8)[2:length(files$V8)]
-file.remove(paste0(etlDir, 'files.txt'))
-for (i in 1:length(files)) {
-  system(paste0(
-    'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -text ',
-    files[i], ' > ',
-    paste0(etlDir, "wd_statements_property_usage", i, ".csv")), wait = T)
-}
-lF <- list.files(etlDir)
-lF <- lF[grepl("wd_statements_property_usage", lF)]
-dataSet <- lapply(paste0(etlDir, lF), fread)
-dataSet <- rbindlist(dataSet)
+dataSet <- WMDEData::hdfs_read_from(kerberosUser = "analytics-privatedata",
+                                    localPath = etlDir,
+                                    localFilenamePrefix = "wd_statements_property_usage",
+                                    hdfsDir = hdfsDir,
+                                    hdfsFilenamePrefix = "wd_statements_property_usage",
+                                    fr_header = FALSE)
+# - schema
 colnames(dataSet) <- c('property', 'usage')
 
 # - statistics
 statistics$property_use_in_wd_properties <- dim(dataSet)[1]
-
-# - remove temporary files
-lapply(paste0(etlDir, lF), file.remove)
 
 # - store
 write.csv(dataSet, 
@@ -325,59 +212,32 @@ write.csv(dataSet,
 rm(dataSet); gc()
 
 ### --- Property usage in Wikidata: references
-system(paste0(
-  'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls ',
-  paste0(hdfsDir, 'wd_statements_properties_used_in_references'), ' > ', etlDir, 'files.txt'),
-  wait = T)
-files <- read.table(
-  paste0(etlDir, 'files.txt'), 
-  skip = 1)
-files <- as.character(files$V8)[2:length(files$V8)]
-file.remove(paste0(etlDir, 'files.txt'))
-for (i in 1:length(files)) {
-  system(paste0(
-    'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -text ',
-    files[i], ' > ',
-    paste0(etlDir, "wd_statements_properties_used_in_references", i, ".csv")), wait = T)
-}
-lF <- list.files(etlDir)
-lF <- lF[grepl("wd_statements_properties_used_in_references", lF)]
-dataSet <- lapply(paste0(etlDir, lF), fread)
-dataSet <- rbindlist(dataSet)
+dataSet <- WMDEData::hdfs_read_from(kerberosUser = "analytics-privatedata",
+                                    localPath = etlDir,
+                                    localFilenamePrefix = "wd_statements_properties_used_in_references",
+                                    hdfsDir = hdfsDir,
+                                    hdfsFilenamePrefix = "wd_statements_properties_used_in_references",
+                                    fr_header = FALSE)
+# - schema
 colnames(dataSet) <- c('property', 'used_in_references')
-
-# - remove temporary files
-lapply(paste0(etlDir, lF), file.remove)
 
 # - store
 write.csv(dataSet, 
-          paste0(etlDir, "wd_statements_properties_used_in_references.csv"))
+          paste0(
+            etlDir, 
+            "wd_statements_properties_used_in_references.csv")
+          )
 rm(dataSet); gc()
 
 ### --- Property usage in Wikidata: qualifiers
-system(paste0(
-  'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls ',
-  paste0(hdfsDir, 'wd_statements_properties_used_in_qualifiers'), ' > ', etlDir, 'files.txt'),
-  wait = T)
-files <- read.table(
-  paste0(etlDir, 'files.txt'), 
-  skip = 1)
-files <- as.character(files$V8)[2:length(files$V8)]
-file.remove(paste0(etlDir, 'files.txt'))
-for (i in 1:length(files)) {
-  system(paste0(
-    'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -text ',
-    files[i], ' > ',
-    paste0(etlDir, "wd_statements_properties_used_in_qualifiers", i, ".csv")), wait = T)
-}
-lF <- list.files(etlDir)
-lF <- lF[grepl("wd_statements_properties_used_in_qualifiers", lF)]
-dataSet <- lapply(paste0(etlDir, lF), fread)
-dataSet <- rbindlist(dataSet)
+dataSet <- WMDEData::hdfs_read_from(kerberosUser = "analytics-privatedata",
+                                    localPath = etlDir,
+                                    localFilenamePrefix = "wd_statements_properties_used_in_qualifiers",
+                                    hdfsDir = hdfsDir,
+                                    hdfsFilenamePrefix = "wd_statements_properties_used_in_qualifiers",
+                                    fr_header = FALSE)
+# - schema
 colnames(dataSet) <- c('property', 'used_in_qualifiers')
-
-# - remove temporary files
-lapply(paste0(etlDir, lF), file.remove)
 
 # - store
 write.csv(dataSet, 
@@ -385,29 +245,14 @@ write.csv(dataSet,
 rm(dataSet); gc()
 
 ### --- Number of references per Wikidata property
-system(paste0(
-  'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls ',
-  paste0(hdfsDir, 'wd_statements_num_ref_per_property'), ' > ', etlDir, 'files.txt'),
-  wait = T)
-files <- read.table(
-  paste0(etlDir, 'files.txt'), 
-  skip = 1)
-files <- as.character(files$V8)[2:length(files$V8)]
-file.remove(paste0(etlDir, 'files.txt'))
-for (i in 1:length(files)) {
-  system(paste0(
-    'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -text ',
-    files[i], ' > ',
-    paste0(etlDir, "wd_statements_num_ref_per_property", i, ".csv")), wait = T)
-}
-lF <- list.files(etlDir)
-lF <- lF[grepl("wd_statements_num_ref_per_property", lF)]
-dataSet <- lapply(paste0(etlDir, lF), fread)
-dataSet <- rbindlist(dataSet)
+dataSet <- WMDEData::hdfs_read_from(kerberosUser = "analytics-privatedata",
+                                    localPath = etlDir,
+                                    localFilenamePrefix = "wd_statements_num_ref_per_property",
+                                    hdfsDir = hdfsDir,
+                                    hdfsFilenamePrefix = "wd_statements_num_ref_per_property",
+                                    fr_header = FALSE)
+# - schema
 colnames(dataSet) <- c('property', 'num_references')
-
-# - remove temporary files
-lapply(paste0(etlDir, lF), file.remove)
 
 # - store
 write.csv(dataSet, 
@@ -421,65 +266,45 @@ rm(dataSet); gc()
 ### --- Items whose properties are reused in C.xx usage aspects
 
 ### --- ETL from goransm.wdcm_clients_wb_entity_usage
-### --- w. HiveQL from Beeline
-filename <- "wd_statements_C_aspect_reuse_items.tsv"
-queryFile <- "wd_statements_HiveQL_Query.hql"
-kerberosPrefix <- 'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata '
+# - Kerberos init
+WMDEData::kerberos_init(kerberosUser = "analytics-privatedata")
+# - Define query
+queryFile <- paste0(etlDir, 
+                    "wd_statements_HiveQL_Query.hql")
 hiveQLquery <- 'SET hive.mapred.mode=unstrict; 
   SELECT eu_entity_id AS entity, COUNT(*) AS c_reuse FROM goransm.wdcm_clients_wb_entity_usage 
   WHERE eu_aspect RLIKE \'C\' GROUP BY eu_entity_id ORDER BY c_reuse DESC;'
-# - write hql
-write(hiveQLquery, paste0(fPath, queryFile))
-# - to Report
-print("Fetching C aspect reuse data from wdcm_clients_wb_entity_usage now: items.")
-# - Kerberos init
-system(command = paste0(kerberosPrefix, ' hdfs dfs -ls'), 
-       wait = T)
-# - Run query
-query <- system(command = paste(kerberosPrefix, 
-                                '/usr/local/bin/beeline --incremental=true --silent -f "',
-                                paste0(fPath, queryFile),
-                                '" > ', etlDir, filename,
-                                sep = ""),
-                wait = TRUE)
-# - remove query file
-file.remove(paste0(fPath, queryFile))
+write(hiveQLquery, queryFile)
+filename <- "wd_statements_C_aspect_reuse_items.tsv"
+# - Run HiveQL query
+WMDEData::kerberos_runHiveQL(kerberosUser = "analytics-privatedata",
+                             query = queryFile,
+                             localPath = etlDir,
+                             localFilename = filename)
 # - to Report
 print("DONE w. ETL from Hadoop: wdcm_clients_wb_entity_usage.")
-print("DONE w. Statements C aspect reuse for items in the C.xx usage aspect.")
 
 ### --- Properties as reused in C.xx usage aspects
-
-### --- ETL from goransm.wdcm_clients_wb_entity_usage
-### --- w. HiveQL from Beeline
-filename <- "wd_statements_C_aspect_reuse_properties.tsv"
-queryFile <- "wd_statements_HiveQL_Query.hql"
-kerberosPrefix <- 'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata '
+# - Kerberos init
+WMDEData::kerberos_init(kerberosUser = "analytics-privatedata")
+# - Define query
+queryFile <- paste0(etlDir, 
+                    "wd_statements_HiveQL_Query.hql")
 hiveQLquery <- 'SET hive.mapred.mode=unstrict; 
   SELECT eu_aspect AS aspect, COUNT(*) AS c_reuse FROM goransm.wdcm_clients_wb_entity_usage 
   WHERE eu_aspect RLIKE \'C\' GROUP BY eu_aspect ORDER BY c_reuse DESC;'
-# - write hql
-write(hiveQLquery, paste0(fPath, queryFile))
-# - to Report
-print("Fetching C aspect reuse data from wdcm_clients_wb_entity_usage now: properties.")
-# - Kerberos init
-system(command = paste0(kerberosPrefix, ' hdfs dfs -ls'), 
-       wait = T)
-# - Run query
-query <- system(command = paste(kerberosPrefix, 
-                                '/usr/local/bin/beeline --incremental=true --silent -f "',
-                                paste0(fPath, queryFile),
-                                '" > ', etlDir, filename,
-                                sep = ""),
-                wait = TRUE)
-# - remove query file
-file.remove(paste0(fPath, queryFile))
+write(hiveQLquery, queryFile)
+filename <- "wd_statements_C_aspect_reuse_properties.tsv"
+# - Run HiveQL query
+WMDEData::kerberos_runHiveQL(kerberosUser = "analytics-privatedata",
+                             query = queryFile,
+                             localPath = etlDir,
+                             localFilename = filename)
 # - to Report
 print("DONE w. ETL from Hadoop: wdcm_clients_wb_entity_usage.")
-print("DONE w. Statements C aspect reuse for properties in the C.xx usage aspect.")
 
 ### --- Fix/Wrangle C aspect reuse datasets:
-dataSet <- fread(paste0(
+dataSet <- data.table::fread(paste0(
   etlDir, "wd_statements_C_aspect_reuse_properties.tsv"),
   header = T)
 dataSet$aspect <- gsub("C.", "", dataSet$aspect, fixed = T)
@@ -487,19 +312,35 @@ w <- which(dataSet$aspect == "C")
 dataSet$aspect[w] <- 'Other'
 colnames(dataSet) <- c('property', 'C_reuse')
 write.csv(dataSet, 
-          paste0(etlDir, "wd_statements_C_aspect_reuse_properties.csv"))
-file.remove(paste0(etlDir, "wd_statements_C_aspect_reuse_properties.tsv"))
-dataSet <- fread(paste0(
-  etlDir, "wd_statements_C_aspect_reuse_items.tsv"),
+          paste0(
+            etlDir, 
+            "wd_statements_C_aspect_reuse_properties.csv")
+          )
+file.remove(paste0(
+  etlDir, 
+  "wd_statements_C_aspect_reuse_properties.tsv")
+  )
+dataSet <- data.table::fread(paste0(
+  etlDir, 
+  "wd_statements_C_aspect_reuse_items.tsv"),
   header = T)
 dataSet_10000 <- head(dataSet, 10000)
 colnames(dataSet_10000) <- c('item', 'C_reuse')
 write.csv(dataSet_10000, 
-          paste0(etlDir, "wd_statements_C_aspect_reuse_items_top10000.csv"))
+          paste0(
+            etlDir, 
+            "wd_statements_C_aspect_reuse_items_top10000.csv")
+          )
 colnames(dataSet) <- c('item', 'C_reuse')
 write.csv(dataSet, 
-          paste0(etlDir, "wd_statements_C_aspect_reuse_items.csv"))
-file.remove(paste0(etlDir, "wd_statements_C_aspect_reuse_items.tsv"))
+          paste0(
+            etlDir, 
+            "wd_statements_C_aspect_reuse_items.csv")
+          )
+file.remove(paste0(
+  etlDir, 
+  "wd_statements_C_aspect_reuse_items.tsv")
+  )
 rm(dataSet); rm(dataSet_10000); gc()
 
 ### ---------------------------------------------------------------------------
@@ -507,18 +348,28 @@ rm(dataSet); rm(dataSet_10000); gc()
 ### ---------------------------------------------------------------------------
 
 ### --- properties
-prop_usage <- read.csv(paste0(etlDir, "wd_statements_property_usage.csv"),
-                       header = T, 
-                       row.names = 1)
-prop_in_references <- read.csv(paste0(etlDir, "wd_statements_properties_used_in_references.csv"), 
-                               header = T,
-                               row.names = 1)
-prop_in_qualifiers <- read.csv(paste0(etlDir, "wd_statements_properties_used_in_qualifiers.csv"),
-                               header = T,
-                               row.names = 1)
-num_ref_in_properties <- read.csv(paste0(etlDir, "wd_statements_num_ref_per_property.csv"),
-                                  header = T,
-                                  row.names = 1)
+prop_usage <- 
+  read.csv(paste0(etlDir,
+                  "wd_statements_property_usage.csv"),
+           header = T,
+           row.names = 1)
+prop_in_references <- 
+  read.csv(paste0(etlDir,
+                  "wd_statements_properties_used_in_references.csv"),
+           header = T,
+           row.names = 1)
+prop_in_qualifiers <- 
+  read.csv(paste0(etlDir, 
+                  "wd_statements_properties_used_in_qualifiers.csv"),
+           header = T,
+           row.names = 1)
+num_ref_in_properties <- 
+  read.csv(paste0(etlDir,
+                  "wd_statements_num_ref_per_property.csv"),
+           header = T,
+           row.names = 1)
+
+# - wrangle
 propertiesSet <- dplyr::full_join(prop_usage, 
                                   prop_in_references, 
                                   by = "property")
@@ -528,60 +379,78 @@ propertiesSet <- dplyr::full_join(propertiesSet,
 propertiesSet <- dplyr::full_join(propertiesSet, 
                                   num_ref_in_properties, 
                                   by = "property")
-prop_labs <- wd_api_fetch_labels(propertiesSet$property, 
-                                 language = "en", 
-                                 fallback  = T)
+apiPF <- 'https://www.wikidata.org/w/api.php?action=wbgetentities&'
+prop_labs <- WMDEData::api_fetch_labels(items = propertiesSet$property,
+                                        language = "en",
+                                        fallback = TRUE,
+                                        APIprefix = apiPF)
 propertiesSet <- dplyr::left_join(propertiesSet, 
                                   prop_labs, 
-                                  by = c("property" = "title"))
+                                  by = c("property" = "item"))
+colnames(propertiesSet)[length(colnames(propertiesSet))] <- 
+  "en_label"
 propertiesSet <- dplyr::select(propertiesSet, 
                                property, en_label, 
                                usage, used_in_references, 
                                used_in_qualifiers,
                                num_references)
 propertiesSet[is.na(propertiesSet)] <- 0
-colnames(propertiesSet) <- c('property', 
-                             'en_label',
-                             'used_in_claims', 
-                             'used_in_references',
-                             'used_in_qualifiers',
-                             'num_references')
+colnames(propertiesSet) <- c("property", 
+                             "en_label",
+                             "used_in_claims", 
+                             "used_in_references",
+                             "used_in_qualifiers",
+                             "num_references")
 write.csv(propertiesSet, 
           paste0(etlDir, "wd_statements_propertiesSet.csv"))
 
 ### --- items
-items_usage <- fread(paste0(etlDir, 'wd_statements_item_usage.csv'),
-                     header = T)
+items_usage <- data.table::fread(
+  paste0(etlDir, 'wd_statements_item_usage.csv'),
+  header = T)
 items_usage$V1 <- NULL
 items_usage <- head(items_usage, 10000)
-item_labs <- wd_api_fetch_labels(items_usage$item,
-                                 language = "en",
-                                 fallback  = T)
+apiPF <- 'https://www.wikidata.org/w/api.php?action=wbgetentities&'
+item_labs <- WMDEData::api_fetch_labels(items = items_usage$item,
+                                        language = "en",
+                                        fallback = TRUE,
+                                        APIprefix = apiPF)
 items_usage <- dplyr::left_join(items_usage,
                                 item_labs,
-                                by = c("item" = "title"))
-colnames(items_usage) <- c('item',
-                           'used_in_properties', 
-                           'en_label')
+                                by = "item")
+colnames(items_usage)[length(colnames(items_usage))] <- 
+  "en_label"
+colnames(items_usage) <- c("item",
+                           "used_in_properties", 
+                           "en_label")
 write.csv(items_usage, 
-          paste0(etlDir, "wd_statements_items_usage_top10000.csv"))
+          paste0(
+            etlDir, 
+            "wd_statements_items_usage_top10000.csv"))
 rm(items_usage); gc()
 
 ### --- items C aspect reuse
 items_reuse <- 
-  read.csv(paste0(etlDir, 
-                  "wd_statements_C_aspect_reuse_items_top10000.csv"), 
-           header = T, 
-           row.names = 1)
-item_labs <- wd_api_fetch_labels(items_reuse$item,
-                                 language = "en",
-                                 fallback  = T)
+  read.csv(paste0(
+    etlDir,
+    "wd_statements_C_aspect_reuse_items_top10000.csv"),
+    header = T,
+    row.names = 1)
+item_labs <- WMDEData::api_fetch_labels(items = items_reuse$item,
+                                        language = "en",
+                                        fallback = TRUE,
+                                        APIprefix = apiPF)
 items_reuse <- dplyr::left_join(items_reuse,
                                 item_labs,
-                                by = c("item" = "title"))
+                                by = "item")
+colnames(items_reuse)[length(colnames(items_reuse))] <- 
+  "en_label"
 items_reuse <- items_reuse[, c('item', 'en_label', 'C_reuse')]
 write.csv(items_reuse, 
-          paste0(etlDir, "wd_statements_C_aspect_reuse_items_top10000.csv"))
+          paste0(
+            etlDir, 
+            "wd_statements_C_aspect_reuse_items_top10000.csv")
+          )
 
 ### --- update timestamp
 timestamp <- as.character(Sys.time())
@@ -634,5 +503,3 @@ print("DONE. Exiting.")
 
 # - toLog
 print(paste0("WDCM Statements updated ended at: ", Sys.time()))
-
-

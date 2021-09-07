@@ -168,7 +168,6 @@ if (currentSnap != stopSnap) {
   WMDEData::hdfs_mkdir(kerberosUser = "analytics-privatedata", 
                        hdfsDir = hdfsPath)
   
-  
   # -  copy to hdfsPath
   print("---- Move to hdfs.")
   hdfs_copy_to(kerberosUser = "analytics-privatedata",
