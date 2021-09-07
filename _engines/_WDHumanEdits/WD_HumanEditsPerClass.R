@@ -36,11 +36,6 @@
 ### --- 0: Init
 ### ---------------------------------------------------------------------------
 
-### --- library
-library(XML)
-library(data.table)
-library(tidyverse)
-
 # - to runtime Log:
 print(paste("--- WD_HumanEditsPerClass.R RUN STARTED ON:", 
             Sys.time(), sep = " "))
