@@ -31,13 +31,6 @@
 ### --- along with WLP. If not, see <http://www.gnu.org/licenses/>.
 ### ---------------------------------------------------------------------------
 
-# - setup
-library(XML)
-library(httr)
-library(jsonlite)
-library(data.table)
-library(tidyverse)
-
 # - to runtime Log:
 print(paste("--- WD_Datamodel_Terms.R RUN STARTED ON:", 
             Sys.time(), sep = " "))
