@@ -76,6 +76,7 @@ params <- XML::xmlToList(params)
 ### --- Directories
 ontologyDir <- params$sitelinks$ontologyDir
 logDir <- params$sitelinks$logDir
+logArchiveDir <- paste0(logDir, "archive/")
 itemsDir <- params$sitelinks$itemsDir
 structureDir <- params$general$structureDir
 publicDir <- params$sitelinks$publicDataDir
@@ -1551,3 +1552,12 @@ print(paste0(
   generalT2 - generalT1, 
   ".")
   )
+
+### --- copy log logArchiveDir
+print("Copy log to logArchiveDir directory.")
+system(command =
+         paste0('mv ',
+                logDir,
+                'WDCM_Engine_Sitelinks_RuntimeLog.txt ',
+                logArchiveDir),
+       wait = T)
