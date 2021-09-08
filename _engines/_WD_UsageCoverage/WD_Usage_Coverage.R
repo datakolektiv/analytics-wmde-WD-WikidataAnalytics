@@ -200,7 +200,7 @@ for (i in 1:length(projectsTracking)) {
   if (sum(class(pages) == "character") == 0) {
     numPages <- length(unique(pages$page_id))
     localProject <- wdUsage %>%
-      filter(wiki_db %in% projectsTracking[i])
+      dplyr::filter(wiki_db %in% projectsTracking[i])
     localProjectSitelinks <- wdSitelinks %>%
       dplyr::filter(wiki_db %in% projectsTracking[i])
     if (dim(localProjectSitelinks)[1] > 0) {
@@ -301,8 +301,8 @@ lF <- list.files(fPath)
 lF <- lF[grepl("\\.log$", lF)]
 lapply(lF, function(x) {
   system(command = 
-           paste0("cp ", fPath, x, ' ', logDir),
+           paste0("mv ", fPath, x, ' ', logDir),
          wait = T)
 })
-# - clean up
-file.remove(paste0(fPath, lF))
+
+
