@@ -59,7 +59,8 @@ def hooverIndex(x):
     return hoover
 
 ### --- parse WRI parameters
-parsFile = "/home/goransm/Analytics/Wikidata/WD_Inequality/wdiConfig.xml"
+parsFile = \
+   "/home/goransm/Analytics/Wikidata/WD_Inequality/wdiConfig.xml"
 # - parse wdiConfig.xml
 tree = ET.parse(parsFile)
 root = tree.getroot()
@@ -73,17 +74,21 @@ publicDir = params['publicDir']
 ### ---------------------------------------------------------------------------
 
 # - Kerberos Init
-command = 'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls'
+command = \
+   'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls'
 os.system(command)
 # - List wmf.mediawiki_history partitions
 query = 'SHOW PARTITIONS wmf.mediawiki_history;'
 f = open(fPath + "snapshot_query.hql", "w")
 f.write(query)
 f.close()
-commandPrefix = 'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata /usr/local/bin/beeline --incremental=true --silent -f'
+commandPrefix = 'sudo -u analytics-privatedata kerberos-run-command ' + \
+   'analytics-privatedata /usr/local/bin/beeline --incremental=true --silent -f'
 command = fPath + "snapshot_query.hql"
 commandPipe = fPath + "wdsnaps.csv"
-os.system(commandPrefix + " " + command + " > " + commandPipe)
+os.system(commandPrefix + " " + \
+   command + " > " + \
+   commandPipe)
 # - load wdsnaps.csv
 snapsFrame = pd.read_csv(fPath + "wdsnaps.csv")
 snapsFrame = pd.DataFrame.tail(snapsFrame, 1)
@@ -113,8 +118,9 @@ if check:
         params = dict(zip(k, v))
         # - set Spark
         command = 'sudo -u analytics-privatedata spark2-submit ' + \
-        params['master'] + " " + params['deploy_mode'] + " " + params['num_executors'] + " " + \
-        params['driver_memory'] + " " + params['executor_memory'] + " " + params['executor_cores'] + " " + \
+        params['master'] + " " + params['deploy_mode'] + " " + \
+        params['num_executors'] + " " + params['driver_memory'] + \
+        " " + params['executor_memory'] + " " + params['executor_cores'] + " " + \
         params['config'] + " " + fPath + "WD_Inequality_ETL.py"
         # - run Spark ETL
         os.system(command)
@@ -138,8 +144,10 @@ else:
     params = dict(zip(k, v))
     # - set Spark
     command = 'sudo -u analytics-privatedata spark2-submit ' + \
-    params['master'] + " " + params['deploy_mode'] + " " + params['num_executors'] + " " + \
-    params['driver_memory'] + " " + params['executor_memory'] + " " + params['executor_cores'] + " " + \
+    params['master'] + " " + params['deploy_mode'] + " " + \
+    params['num_executors'] + " " + \
+    params['driver_memory'] + " " + params['executor_memory'] + \
+    " " + params['executor_cores'] + " " + \
     params['config'] + " " + fPath + "WD_Inequality_ETL.py"
     # - run Spark ETL
     os.system(command)
@@ -164,7 +172,8 @@ if len(files) == 0:
     hoover['measurement'] = measurement
     snapshot = re.sub("snapshot=", "", snaps)
     hoover['snapshot'] = snapshot
-    hoover.to_csv(analyticsDir + "HooverUpdate.csv", header=True, index=False)
+    hoover.to_csv(analyticsDir + "HooverUpdate.csv", \
+       header=True, index=False)
 else:
     # - toReport
     print("Attaching new data to analyticsDir.")
@@ -181,16 +190,11 @@ else:
     newhoover['snapshot'] = snapshot
     hoover = pd.read_csv(analyticsDir + "HooverUpdate.csv")
     hoover = hoover.append(newhoover)
-    hoover.to_csv(analyticsDir + "HooverUpdate.csv", header=True, index=False)
+    hoover.to_csv(analyticsDir + "HooverUpdate.csv", \
+       header=True, index=False)
     
 ### ---------------------------------------------------------------------------
 ### --- 3: Publish
 ### ---------------------------------------------------------------------------
 command = "cp " + analyticsDir + "HooverUpdate.csv " + publicDir
 os.system(command)
-
-
-
-
-
-

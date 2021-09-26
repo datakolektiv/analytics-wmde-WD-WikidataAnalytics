@@ -42,7 +42,8 @@ import sys
 import xml.etree.ElementTree as ET
 
 ### --- parse WDCM parameters
-parsFile = "/home/goransm/Analytics/Wikidata/WD_UsageCoverage/WD_Usage_Coverage_Config.xml"
+parsFile = \
+   "/home/goransm/Analytics/Wikidata/WD_UsageCoverage/WD_Usage_Coverage_Config.xml"
 # - parse wdcmConfig.xml
 tree = ET.parse(parsFile)
 root = tree.getroot()
@@ -69,15 +70,27 @@ sqlContext = pyspark.SQLContext(sc)
 ### ---------------------------------------------------------------------------
 
 # - USAGE. Process goransm.wdcm_clients_wb_entity_usage: non-(S)itelinks
-WD_Usage = sqlContext.sql("SELECT DISTINCT eu_page_id, wiki_db from goransm.wdcm_clients_wb_entity_usage WHERE eu_aspect != 'S'")
+WD_Usage = sqlContext.sql("SELECT DISTINCT eu_page_id, wiki_db \
+                          FROM goransm.wdcm_clients_wb_entity_usage \
+                          WHERE eu_aspect != 'S'")
 WD_Usage.cache()
 # save: wdUsagePerPage
 fileName = "wdUsage"
-WD_Usage.repartition(10).write.option("quote", "\u0000").format('csv').mode("overwrite").save(hdfsPath + fileName)
+WD_Usage.repartition(10)\
+   .write.option("quote", "\u0000")\
+   .format('csv')\
+   .mode("overwrite")\
+   .save(hdfsPath + fileName)
 
 # - COVERAGE. Process goransm.wdcm_clients_wb_entity_usage: (S)itelinks
-WD_Coverage = sqlContext.sql("SELECT DISTINCT eu_page_id, wiki_db from goransm.wdcm_clients_wb_entity_usage WHERE eu_aspect == 'S'")
+WD_Coverage = sqlContext.sql("SELECT DISTINCT eu_page_id, wiki_db \
+                              FROM goransm.wdcm_clients_wb_entity_usage \
+                              WHERE eu_aspect == 'S'")
 WD_Coverage.cache()
 # save: wdSitelinks
 fileName = "wdSitelinks"
-WD_Coverage.repartition(10).write.option("quote", "\u0000").format('csv').mode("overwrite").save(hdfsPath + fileName)
+WD_Coverage.repartition(10)\
+   .write.option("quote", "\u0000")\
+   .format('csv')\
+   .mode("overwrite")\
+   .save(hdfsPath + fileName)

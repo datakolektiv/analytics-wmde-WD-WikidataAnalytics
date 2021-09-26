@@ -38,7 +38,8 @@
 # - modules
 import pyspark
 from pyspark.sql import SparkSession, DataFrame, Window
-from pyspark.sql.functions import rank, col, explode, regexp_extract, array_contains, when, sum, count, expr
+from pyspark.sql.functions import rank, col, explode, \
+   regexp_extract, array_contains, when, sum, count, expr
 import pandas as pd
 import os
 import subprocess
@@ -49,7 +50,8 @@ import sys
 import xml.etree.ElementTree as ET
     
 ### --- parse WRI parameters
-parsFile = "/home/goransm/Analytics/Wikidata/WD_Inequality/wdiConfig.xml"
+parsFile = \
+   "/home/goransm/Analytics/Wikidata/WD_Inequality/wdiConfig.xml"
 # - parse wdiConfig.xml
 tree = ET.parse(parsFile)
 root = tree.getroot()
@@ -83,43 +85,125 @@ currentMonth = mwwikiSnapshot
 currentYear = mwwikiSnapshot[0:4]
 
 ### --- Edits distribution: since the beginning of time and until current snapshot
-wdri = sqlContext.sql('SELECT event_user_id, event_user_is_bot_by FROM wmf.mediawiki_history WHERE event_entity="revision" AND event_type="create" AND wiki_db="wikidatawiki" AND page_namespace=0 AND snapshot="' + mwwikiSnapshot + '"')
-wdri = wdri.withColumn("bot_name", array_contains(col("event_user_is_bot_by"), "name"))
-wdri = wdri.withColumn("bot_group", array_contains(col("event_user_is_bot_by"), "group"))
+wdri = sqlContext.sql('SELECT event_user_id, event_user_is_bot_by \
+                      FROM wmf.mediawiki_history \
+                      WHERE event_entity="revision" AND \
+                      event_type="create" AND \
+                      wiki_db="wikidatawiki" AND \
+                      page_namespace=0 AND snapshot="' + \
+                      mwwikiSnapshot + '"')
+wdri = wdri\
+   .withColumn("bot_name", \
+   array_contains(col("event_user_is_bot_by"), "name"))
+wdri = wdri\
+   .withColumn("bot_group", \
+   array_contains(col("event_user_is_bot_by"), "group"))
 wdri = wdri.select('event_user_id', 'bot_name', 'bot_group')
-wdri = wdri.withColumn("human", when((col("bot_name") == True) | (col("bot_group") == True), 0).otherwise(1))
-wdri = wdri.withColumn("bot", when((col("bot_name") == True) | (col("bot_group") == True), 1).otherwise(0))
-wdri = wdri.filter((wdri["bot"] == 1)).select('event_user_id')
-wdri = wdri.groupBy('event_user_id').count().orderBy('count', ascending = False)
-wdri = wdri.select('count').withColumnRenamed('count', 'edits').groupBy('edits').count().orderBy('count', ascending = False)
+wdri = wdri\
+   .withColumn("human", when((col("bot_name") == True) | \
+   (col("bot_group") == True), 0).otherwise(1))
+wdri = wdri\
+   .withColumn("bot", when((col("bot_name") == True) | \
+   (col("bot_group") == True), 1).otherwise(0))
+wdri = wdri\
+   .filter((wdri["bot"] == 1))\
+   .select('event_user_id')
+wdri = wdri\
+   .groupBy('event_user_id')\
+   .count()\
+   .orderBy('count', ascending = False)
+wdri = wdri\
+   .select('count')\
+   .withColumnRenamed('count', 'edits')\
+   .groupBy('edits')\
+   .count()\
+   .orderBy('count', ascending = False)
 fileName = "wdri_history_to_current_snapshot.csv"
-wdri.cache().coalesce(1).toPandas().to_csv(dataDir + fileName, header=True, index=False)
+wdri.cache()\
+   .coalesce(1)\
+   .toPandas()\
+   .to_csv(dataDir + fileName, header=True, index=False)
 
 ### --- Edits distribution: current snapshot only: month
-wdri = sqlContext.sql('SELECT event_user_id, event_timestamp, event_user_is_bot_by FROM wmf.mediawiki_history WHERE event_entity="revision" AND event_type="create" AND wiki_db="wikidatawiki" AND page_namespace=0 AND snapshot="' + mwwikiSnapshot + '"')
+wdri = sqlContext.sql('SELECT event_user_id, event_timestamp, event_user_is_bot_by \
+                      FROM wmf.mediawiki_history \
+                      WHERE event_entity="revision" AND \
+                      event_type="create" AND \
+                      wiki_db="wikidatawiki" AND \
+                      page_namespace=0 AND snapshot="' + \
+                      mwwikiSnapshot + '"')
 wdri = wdri.filter(wdri['event_timestamp'].rlike("^" + currentMonth))
-wdri = wdri.withColumn("bot_name", array_contains(col("event_user_is_bot_by"), "name"))
-wdri = wdri.withColumn("bot_group", array_contains(col("event_user_is_bot_by"), "group"))
+wdri = wdri\
+   .withColumn("bot_name", \
+   array_contains(col("event_user_is_bot_by"), "name"))
+wdri = wdri\
+   .withColumn("bot_group", \
+   array_contains(col("event_user_is_bot_by"), "group"))
 wdri = wdri.select('event_user_id', 'bot_name', 'bot_group')
-wdri = wdri.withColumn("human", when((col("bot_name") == True) | (col("bot_group") == True), 0).otherwise(1))
-wdri = wdri.withColumn("bot", when((col("bot_name") == True) | (col("bot_group") == True), 1).otherwise(0))
-wdri = wdri.filter((wdri["bot"] == 1)).select('event_user_id')
-wdri = wdri.groupBy('event_user_id').count().orderBy('count', ascending = False)
-wdri = wdri.select('count').withColumnRenamed('count', 'edits').groupBy('edits').count().orderBy('count', ascending = False)
+wdri = wdri\
+   .withColumn("human", when((col("bot_name") == True) | \
+   (col("bot_group") == True), 0).otherwise(1))
+wdri = wdri\
+   .withColumn("bot", when((col("bot_name") == True) | \
+   (col("bot_group") == True), 1).otherwise(0))
+wdri = wdri\
+   .filter((wdri["bot"] == 1))\
+   .select('event_user_id')
+wdri = wdri\
+   .groupBy('event_user_id')\
+   .count()\
+   .orderBy('count', ascending = False)
+wdri = wdri\
+   .select('count')\
+   .withColumnRenamed('count', 'edits')\
+   .groupBy('edits')\
+   .count()\
+   .orderBy('count', ascending = False)
 fileName = "wdri_current_snapshot.csv"
-wdri.cache().coalesce(1).toPandas().to_csv(dataDir + fileName, header=True, index=False)
+wdri.cache()\
+   .coalesce(1)\
+   .toPandas()\
+   .to_csv(dataDir + fileName, header=True, index=False)
 
 ### --- Edits distribution: current year
-wdri = sqlContext.sql('SELECT event_user_id, event_timestamp, event_user_is_bot_by FROM wmf.mediawiki_history WHERE event_entity="revision" AND event_type="create" AND wiki_db="wikidatawiki" AND page_namespace=0 AND snapshot="' + mwwikiSnapshot + '"')
-wdri = wdri.filter(wdri['event_timestamp'].rlike("^" + currentYear))
-wdri = wdri.withColumn("bot_name", array_contains(col("event_user_is_bot_by"), "name"))
-wdri = wdri.withColumn("bot_group", array_contains(col("event_user_is_bot_by"), "group"))
-wdri = wdri.select('event_user_id', 'bot_name', 'bot_group')
-wdri = wdri.withColumn("human", when((col("bot_name") == True) | (col("bot_group") == True), 0).otherwise(1))
-wdri = wdri.withColumn("bot", when((col("bot_name") == True) | (col("bot_group") == True), 1).otherwise(0))
-wdri = wdri.filter((wdri["bot"] == 1)).select('event_user_id')
-wdri = wdri.groupBy('event_user_id').count().orderBy('count', ascending = False)
-wdri = wdri.select('count').withColumnRenamed('count', 'edits').groupBy('edits').count().orderBy('count', ascending = False)
+wdri = sqlContext.sql('SELECT event_user_id, event_timestamp, event_user_is_bot_by \
+                      FROM wmf.mediawiki_history \
+                      WHERE event_entity="revision" AND \
+                      event_type="create" AND \
+                      wiki_db="wikidatawiki" AND \
+                      page_namespace=0 AND snapshot="' + \
+                      mwwikiSnapshot + '"')
+wdri = wdri\
+   .filter(wdri['event_timestamp'].rlike("^" + currentYear))
+wdri = wdri\
+   .withColumn("bot_name", \
+   array_contains(col("event_user_is_bot_by"), "name"))
+wdri = wdri\
+   .withColumn("bot_group", \
+   array_contains(col("event_user_is_bot_by"), "group"))
+wdri = wdri\
+   .select('event_user_id', 'bot_name', 'bot_group')
+wdri = wdri\
+   .withColumn("human", when((col("bot_name") == True) | \
+   (col("bot_group") == True), 0).otherwise(1))
+wdri = wdri\
+   .withColumn("bot", when((col("bot_name") == True) | \
+   (col("bot_group") == True), 1).otherwise(0))
+wdri = wdri\
+   .filter((wdri["bot"] == 1))\
+   .select('event_user_id')
+wdri = wdri\
+   .groupBy('event_user_id')\
+   .count()\
+   .orderBy('count', ascending = False)
+wdri = wdri\
+   .select('count')\
+   .withColumnRenamed('count', 'edits')\
+   .groupBy('edits')\
+   .count()\
+   .orderBy('count', ascending = False)
 fileName = "wdri_current_year.csv"
-wdri.cache().coalesce(1).toPandas().to_csv(dataDir + fileName, header=True, index=False)
-
+wdri.cache()\
+   .coalesce(1)\
+   .toPandas()\
+   .to_csv(dataDir + fileName, header=True, index=False)

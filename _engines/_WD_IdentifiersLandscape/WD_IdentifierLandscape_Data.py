@@ -1,11 +1,12 @@
 
 ### ---------------------------------------------------------------------------
 ### --- WD_IdentifierLandscape_Data.py
+### --- v 1.0.0
 ### --- Authors: Goran S. Milovanovic, Data Scientist, WMDE
 ### --- Developed under the contract between Goran Milovanovic PR Data Kolektiv
 ### --- and WMDE.
 ### --- Contact: goran.milovanovic_ext@wikimedia.de
-### --- June 2020.
+### --- September 2021.
 ### ---------------------------------------------------------------------------
 ### --- COMMENT:
 ### --- Pyspark ETL procedures for the WD JSON dumps in hdfs
@@ -42,7 +43,8 @@
 ### --- Modules
 import pyspark
 from pyspark.sql import SparkSession, DataFrame
-from pyspark.sql.functions import rank, col, explode, regexp_extract
+from pyspark.sql.functions import rank, col, \
+   explode, regexp_extract
 import numpy as np
 import pandas as pd
 import csv
@@ -68,7 +70,8 @@ sc.sparkContext.setLogLevel("INFO")
 sqlContext = pyspark.SQLContext(sc)
 
 ### --- parse WEIP parameters
-parsFile = "/home/goransm/Analytics/Wikidata/WD_IdentifierLandscape/WDIdentifiersLandscape_Config.xml"
+parsFile = \
+   "/home/goransm/Analytics/Wikidata/WD_IdentifierLandscape/WDIdentifiersLandscape_Config.xml"
 # - parse wdcmConfig.xml
 tree = ET.parse(parsFile)
 root = tree.getroot()
@@ -93,20 +96,26 @@ mwwikiSnapshot = mwwikiSnapshot[-7:]
 ### ------------------------------------------------------------------------
 
 ### --- Access WD dump
-WD_dump = sqlContext.sql('SELECT id, claims.mainSnak FROM wmf.wikidata_entity WHERE snapshot="' + wikidataEntitySnapshot + '"')
+WD_dump = sqlContext.sql(\
+   'SELECT id, claims.mainSnak FROM wmf.wikidata_entity WHERE snapshot="' + \
+   wikidataEntitySnapshot + '"')
 ### --- Cache WD dump
 WD_dump.cache()
 ### --- Wrangle WD_dump
 WD_dump = WD_dump.withColumn('mainSnak', explode('mainSnak'))
-WD_dump = WD_dump.select('id', col("mainSnak.property").alias("property"),\
-                         col("mainSnak.dataType").alias("dataType"))
+WD_dump = WD_dump\
+   .select('id', col("mainSnak.property").alias("property"),\
+   col("mainSnak.dataType").alias("dataType"))
 WD_dump = WD_dump.filter(WD_dump.dataType == 'external-id')
-WD_dump = WD_dump.select('id', 'property').orderBy(["id", "property"])
+WD_dump = WD_dump.select('id', 'property')\
+   .orderBy(["id", "property"])
 # - repartition
 WD_dump = WD_dump.repartition(10)
 
 # - save to csv:
-WD_dump.write.format('csv').mode("overwrite").save(etl_hdfsDir + 'wd_extId_data_stat_.csv')
+WD_dump.write.format('csv')\
+   .mode("overwrite")\
+   .save(etl_hdfsDir + 'wd_extId_data_stat_.csv')
 
 # - clear
 sc.catalog.clearCache()
@@ -116,22 +125,27 @@ sc.catalog.clearCache()
 ### ------------------------------------------------------------------------
 
 ### --- Access WD dump
-WD_dump = sqlContext.sql('SELECT id, claims.references FROM wmf.wikidata_entity WHERE snapshot="' + wikidataEntitySnapshot + '"')
+WD_dump = sqlContext.sql(\
+   'SELECT id, claims.references FROM wmf.wikidata_entity WHERE snapshot="' + \
+   wikidataEntitySnapshot + '"')
 ### --- Cache WD dump
 WD_dump.cache()
 ### --- Wrangle WD_dump
 WD_dump = WD_dump.withColumn('references', explode('references'))
 WD_dump = WD_dump.withColumn('references', explode('references'))
 WD_dump = WD_dump.withColumn('references', explode('references.snaks'))
-WD_dump = WD_dump.select(col("id"), col("references.property").alias("property"),\
-                         col("references.dataType").alias("dataType"))
+WD_dump = WD_dump\
+   .select(col("id"), col("references.property").alias("property"),\
+   col("references.dataType").alias("dataType"))
 WD_dump = WD_dump.filter(WD_dump.dataType == 'external-id')
 WD_dump = WD_dump.select('id', 'property').orderBy(["id", "property"])
 # - repartition
 WD_dump = WD_dump.repartition(10)
 
 # - save to csv:
-WD_dump.write.format('csv').mode("overwrite").save(etl_hdfsDir + 'wd_extId_data_ref_.csv')
+WD_dump.write.format('csv')\
+   .mode("overwrite")\
+   .save(etl_hdfsDir + 'wd_extId_data_ref_.csv')
 
 # - clear
 sc.catalog.clearCache()
@@ -141,21 +155,26 @@ sc.catalog.clearCache()
 ### ------------------------------------------------------------------------
 
 ### --- Access WD dump
-WD_dump = sqlContext.sql('SELECT id, claims.qualifiers FROM wmf.wikidata_entity WHERE snapshot="' + wikidataEntitySnapshot + '"')
+WD_dump = sqlContext.sql(\
+   'SELECT id, claims.qualifiers FROM wmf.wikidata_entity WHERE snapshot="' + \
+   wikidataEntitySnapshot + '"')
 ### --- Cache WD dump
 WD_dump.cache()
 ### --- Wrangle WD_dump
 WD_dump = WD_dump.withColumn('qualifiers', explode('qualifiers'))
 WD_dump = WD_dump.withColumn('qualifiers', explode('qualifiers'))
-WD_dump = WD_dump.select(col("id"), col("qualifiers.property").alias("property"),\
-                         col("qualifiers.dataType").alias("dataType"))
+WD_dump = WD_dump\
+   .select(col("id"), col("qualifiers.property").alias("property"),\
+   col("qualifiers.dataType").alias("dataType"))
 WD_dump = WD_dump.filter(WD_dump.dataType == 'external-id')
 WD_dump = WD_dump.select('id', 'property').orderBy(["id", "property"])
 # - repartition
 WD_dump = WD_dump.repartition(10)
 
 # - save to csv:
-WD_dump.write.format('csv').mode("overwrite").save(etl_hdfsDir + 'wd_extId_data_qual_.csv')
+WD_dump.write.format('csv')\
+   .mode("overwrite")\
+   .save(etl_hdfsDir + 'wd_extId_data_qual_.csv')
 
 # - clear
 sc.catalog.clearCache()

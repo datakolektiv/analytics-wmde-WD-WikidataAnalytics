@@ -42,7 +42,8 @@
 import pyspark
 from pyspark.sql import SparkSession
 from pyspark.sql.window import Window
-from pyspark.sql.functions import rank, col, explode, regexp_extract, size
+from pyspark.sql.functions import rank, col, \
+   explode, regexp_extract, size
 from pyspark import SparkFiles
 import numpy as np
 import pandas as pd
@@ -60,7 +61,8 @@ import json
 
 
 ### --- parse WDCM parameters: wdcmConfig.xml
-parsFile = "/home/goransm/Analytics/WDCM/WDCM_Scripts/wdcmConfig.xml"
+parsFile = \
+   "/home/goransm/Analytics/WDCM/WDCM_Scripts/wdcmConfig.xml"
 # - parse wdcmConfig.xml
 tree = ET.parse(parsFile)
 root = tree.getroot()
@@ -97,66 +99,114 @@ wikidataEntitySnapshot = wikidataEntitySnapshot[-10:]
 ### ---------------------------------------------------------------------------
 
 ### --- Access WD dump
-WD_dump = sqlContext.sql('SELECT claims FROM wmf.wikidata_entity WHERE snapshot="' + wikidataEntitySnapshot + '"')
+WD_dump = sqlContext.sql('SELECT claims FROM wmf.wikidata_entity WHERE snapshot="' + \
+   wikidataEntitySnapshot + '"')
 ### --- Cache WD dump
 WD_dump.cache()
 ### --- Explode mainSnak for properties
-WD_dump = WD_dump.select(explode('claims').alias('claims')).select('claims.mainSnak')
+WD_dump = WD_dump\
+   .select(explode('claims')\
+   .alias('claims'))\
+   .select('claims.mainSnak')
 WD_dump = WD_dump.select('mainSnak.property', 'mainSnak.dataValue.value')
 WD_dump = WD_dump.filter((WD_dump["value"].rlike('"entity-type":"item"')))
-WD_dump = WD_dump.select('property', regexp_extract(col('value'), '(Q\d+)', 1).alias('value'))
-WD_dump = WD_dump.select('value').groupBy('value').count().orderBy('count', ascending = False)
+WD_dump = WD_dump\
+   .select('property', regexp_extract(col('value'), '(Q\d+)', 1).alias('value'))
+WD_dump = WD_dump\
+   .select('value')\
+   .groupBy('value')\
+   .count()\
+   .orderBy('count', ascending = False)
 WD_dump = WD_dump.withColumnRenamed('value', 'item')
-WD_dump.write.format('csv').mode("overwrite").save(hdfsDir + 'wd_statements_item_usage')
+WD_dump.write.format('csv')\
+   .mode("overwrite")\
+   .save(hdfsDir + 'wd_statements_item_usage')
 
 ### ---------------------------------------------------------------------------
 ### --- 2. Property use in Wikidata
 ### ---------------------------------------------------------------------------
 
 ### --- Access WD dump
-WD_dump = sqlContext.sql('SELECT claims FROM wmf.wikidata_entity WHERE snapshot="' + wikidataEntitySnapshot + '"')
+WD_dump = sqlContext.sql('SELECT claims FROM wmf.wikidata_entity WHERE snapshot="' + \
+   wikidataEntitySnapshot + '"')
 ### --- Cache WD dump
 WD_dump.cache()
 ### --- Explode mainSnak for properties
-WD_dump = WD_dump.select(explode('claims').alias('claims')).select('claims.mainSnak')
+WD_dump = WD_dump.select(explode('claims').alias('claims'))\
+   .select('claims.mainSnak')
 WD_dump = WD_dump.select('mainSnak.property')
-WD_dump = WD_dump.select('property').groupBy('property').count().orderBy('count', ascending = False)
-WD_dump.coalesce(10).write.format('csv').mode("overwrite").save(hdfsDir + 'wd_statements_property_usage')
+WD_dump = WD_dump.select('property')\
+   .groupBy('property')\
+   .count()\
+   .orderBy('count', ascending = False)
+WD_dump.coalesce(10)\
+   .write.format('csv')\
+   .mode("overwrite")\
+   .save(hdfsDir + 'wd_statements_property_usage')
 
 ### ---------------------------------------------------------------------------
 ### --- 3. Number of references per  Wikidata Property
 ### ---------------------------------------------------------------------------
 
-WD_dump = sqlContext.sql('SELECT id, claims FROM wmf.wikidata_entity WHERE snapshot="' + wikidataEntitySnapshot + '"')
+WD_dump = sqlContext.sql('SELECT id, claims FROM wmf.wikidata_entity WHERE snapshot="' + \
+   wikidataEntitySnapshot + '"')
 WD_dump.cache()
 WD_dump = WD_dump.select('id', explode('claims').alias('claims'))
-WD_dump = WD_dump.withColumn('numReferences', size(WD_dump.claims.references))
+WD_dump = WD_dump\
+   .withColumn('numReferences', size(WD_dump.claims.references))
 WD_dump = WD_dump.filter(WD_dump.numReferences > 0)
 WD_dump = WD_dump.select('id', 'claims.mainSnak.property', 'numReferences')
-WD_dump = WD_dump.select('property', 'numReferences').groupBy('property').sum('numReferences')
-WD_dump = WD_dump.withColumnRenamed('sum(numReferences)', 'numReferences').orderBy('numReferences', ascending = False)
-WD_dump.coalesce(10).write.format('csv').mode("overwrite").save(hdfsDir + 'wd_statements_num_ref_per_property')
+WD_dump = WD_dump.select('property', 'numReferences')\
+   .groupBy('property')\
+   .sum('numReferences')
+WD_dump = WD_dump\
+   .withColumnRenamed('sum(numReferences)', 'numReferences')\
+   .orderBy('numReferences', ascending = False)
+WD_dump.coalesce(10).write.format('csv')\
+   .mode("overwrite")\
+   .save(hdfsDir + 'wd_statements_num_ref_per_property')
 
 ### ---------------------------------------------------------------------------
 ### --- 4. Properties used in references in  Wikidata
 ### ---------------------------------------------------------------------------
 
-WD_dump = sqlContext.sql('SELECT id, claims FROM wmf.wikidata_entity WHERE snapshot="' + wikidataEntitySnapshot + '"')
+WD_dump = sqlContext.sql('SELECT id, claims FROM wmf.wikidata_entity WHERE snapshot="' + \
+   wikidataEntitySnapshot + '"')
 WD_dump.cache()
-WD_dump = WD_dump.select('id', explode('claims').alias('claims'))
-WD_dump = WD_dump.select('id', 'claims.mainSnak.property', 'claims.references.snaks')
-WD_dump = WD_dump.select('id', 'property', explode('snaks').alias('snaks'))
-WD_dump = WD_dump.select('id', 'property', explode('snaks.property').alias('snakProperty'))
-WD_dump = WD_dump.select('snakProperty').withColumnRenamed('snakProperty', 'property').groupBy('property').count().orderBy('count', ascending = False)
-WD_dump.coalesce(10).write.format('csv').mode("overwrite").save(hdfsDir + 'wd_statements_properties_used_in_references')
+WD_dump = WD_dump\
+   .select('id', explode('claims').alias('claims'))
+WD_dump = WD_dump\
+   .select('id', 'claims.mainSnak.property', 'claims.references.snaks')
+WD_dump = WD_dump\
+   .select('id', 'property', explode('snaks').alias('snaks'))
+WD_dump = WD_dump\
+   .select('id', 'property', explode('snaks.property').alias('snakProperty'))
+WD_dump = WD_dump\
+   .select('snakProperty')\
+   .withColumnRenamed('snakProperty', 'property')\
+   .groupBy('property')\
+   .count()\
+   .orderBy('count', ascending = False)
+WD_dump.coalesce(10)\
+   .write.format('csv')\
+   .mode("overwrite")\
+   .save(hdfsDir + 'wd_statements_properties_used_in_references')
 
 ### ---------------------------------------------------------------------------
 ### --- 5. Properties used in qualifiers in  Wikidata
 ### ---------------------------------------------------------------------------
 
-WD_dump = sqlContext.sql('SELECT id, claims FROM wmf.wikidata_entity WHERE snapshot="' + wikidataEntitySnapshot + '"')
+WD_dump = sqlContext.sql('SELECT id, claims FROM wmf.wikidata_entity WHERE snapshot="' + \
+   wikidataEntitySnapshot + '"')
 WD_dump.cache()
 WD_dump = WD_dump.select('id', explode('claims').alias('claims'))
-WD_dump = WD_dump.select('id', 'claims.mainSnak.property', explode('claims.qualifiers.property').alias('qualifier_propery'))
-WD_dump = WD_dump.select('qualifier_propery').withColumnRenamed('qualifier_propery', 'property').groupBy('property').count().orderBy('count', ascending = False)
-WD_dump.coalesce(10).write.format('csv').mode("overwrite").save(hdfsDir + 'wd_statements_properties_used_in_qualifiers')
+WD_dump = WD_dump.select('id', 'claims.mainSnak.property', \
+   explode('claims.qualifiers.property').alias('qualifier_propery'))
+WD_dump = WD_dump.select('qualifier_propery')\
+   .withColumnRenamed('qualifier_propery', 'property')\
+   .groupBy('property')\
+   .count()\
+   .orderBy('count', ascending = False)
+WD_dump.coalesce(10).write.format('csv')\
+   .mode("overwrite")\
+   .save(hdfsDir + 'wd_statements_properties_used_in_qualifiers')

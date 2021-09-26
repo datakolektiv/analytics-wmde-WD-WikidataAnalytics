@@ -39,7 +39,8 @@
 ### --- Modules
 import pyspark
 from pyspark.sql import SparkSession, DataFrame
-from pyspark.sql.functions import rank, col, explode, regexp_extract
+from pyspark.sql.functions import rank, col, \
+   explode, regexp_extract
 import csv
 import pandas as pd
 
@@ -52,7 +53,8 @@ sc = SparkSession\
     .enableHiveSupport()\
     .getOrCreate()
 # - hdfs path
-hdfsPath = "hdfs:///tmp/wmde/analytics/Wikidata/LanguagesLandscape/"
+hdfsPath = \
+   "hdfs:///tmp/wmde/analytics/Wikidata/LanguagesLandscape/"
 
 # - SQL Context
 sqlContext = pyspark.SQLContext(sc)
@@ -73,7 +75,9 @@ mwwikiSnapshot = mwwikiSnapshot[-7:]
 ### ------------------------------------------------------------------------
 
 ### --- Access WD dump
-WD_dump = sqlContext.sql('SELECT id, labels FROM wmf.wikidata_entity WHERE snapshot="' + wikidataEntitySnapshot + '"')
+WD_dump = sqlContext.sql('SELECT id, labels \
+                        FROM wmf.wikidata_entity WHERE snapshot="' + \
+                        wikidataEntitySnapshot + '"')
 
 ### --- Cache WD dump
 WD_dump.cache()
@@ -87,7 +91,9 @@ WD_dump = WD_dump.orderBy(["id"])
 WD_dump = WD_dump.repartition(10)
 
 # - save to csv:
-WD_dump.write.format('csv').mode("overwrite").save(hdfsPath + 'wd_dump_item_language')
+WD_dump.write.format('csv')\
+   .mode("overwrite")\
+   .save(hdfsPath + 'wd_dump_item_language')
 
 # - clear
 sc.catalog.clearCache()

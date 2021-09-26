@@ -42,7 +42,8 @@
 import pyspark
 from pyspark.sql import SparkSession
 from pyspark.sql.window import Window
-from pyspark.sql.functions import rank, col, explode, regexp_extract
+from pyspark.sql.functions import rank, col, \
+   explode, regexp_extract
 from pyspark import SparkFiles
 import numpy as np
 import pandas as pd
@@ -60,7 +61,8 @@ import json
 
 
 ### --- parse WDCM parameters: wdcmConfig.xml
-parsFile = "/home/goransm/Analytics/WDCM/WDCM_Scripts/wdcmConfig.xml"
+parsFile = \
+   "/home/goransm/Analytics/WDCM/WDCM_Scripts/wdcmConfig.xml"
 # - parse wdcmConfig.xml
 tree = ET.parse(parsFile)
 root = tree.getroot()
@@ -101,11 +103,14 @@ mwwikiSnapshot = mwwikiSnapshot[-7:]
 ### ---------------------------------------------------------------------------
 
 ### --- Access WD dump
-WD_dump = sqlContext.sql('SELECT id, claims.mainSnak FROM wmf.wikidata_entity WHERE snapshot="' + wikidataEntitySnapshot + '"')
+WD_dump = sqlContext.sql('SELECT id, claims.mainSnak \
+                          FROM wmf.wikidata_entity WHERE snapshot="' + \
+                          wikidataEntitySnapshot + '"')
 ### --- Cache WD dump
 WD_dump.cache()
 ### --- Explode mainSnak for properties
-WD_dump = WD_dump.withColumn('mainSnak', explode('mainSnak'))
+WD_dump = WD_dump\
+   .withColumn('mainSnak', explode('mainSnak'))
 
 ### --- Extract all items w. P21 (sex or gender)
 ### --- Explode claims & select
@@ -115,7 +120,8 @@ items_P21 = items_P21.select('id', 'propertyP21', \
                          col('dataValue.value').alias("valueP21"))
 items_P21 = items_P21.where(col('propertyP21').isin("P21"))
 items_P21 = items_P21.select('id', \
-                            regexp_extract('valueP21', '"id":"(Q\d+)"', 1).alias("valueP21"))
+                            regexp_extract('valueP21', '"id":"(Q\d+)"', 1)\
+                            .alias("valueP21"))
 
 ### --- Extract all items w. P19 (place of birth)
 ### --- Explode claims & select
@@ -125,7 +131,8 @@ items_P19 = items_P19.select('id', 'propertyP19', \
                          col('dataValue.value').alias("valueP19"))
 items_P19 = items_P19.where(col('propertyP19').isin("P19"))
 items_P19 = items_P19.select('id', \
-                            regexp_extract('valueP19', '"id":"(Q\d+)"', 1).alias("valueP19"))
+                            regexp_extract('valueP19', '"id":"(Q\d+)"', 1)\
+                            .alias("valueP19"))
 
 ### --- left join: items_P21 <- items_P19
 items = items_P21.join(items_P19, ["id"], how='left')
@@ -140,7 +147,8 @@ items_P106 = items_P106.select('id', 'propertyP106', \
                          col('dataValue.value').alias("valueP106"))
 items_P106 = items_P106.where(col('propertyP106').isin("P106"))
 items_P106 = items_P106.select('id', \
-                            regexp_extract('valueP106', '"id":"(Q\d+)"', 1).alias("valueP106"))
+                            regexp_extract('valueP106', '"id":"(Q\d+)"', 1)\
+                            .alias("valueP106"))
 
 ### --- left join: items <- items_P106
 items = items.join(items_P106, ["id"], how='left')
@@ -153,12 +161,15 @@ geo_items = WD_dump.select('id', col("mainSnak.property").alias("property"), \
 geo_items = geo_items.where(col('property').isin("P625"))
 geo_items = geo_items.select('id', 'dataValue.value')
 geo_items = geo_items.select('id', \
-                             regexp_extract('value', '"latitude":(-*\d*\.*\d*)', 1).alias("latitude"), \
-                             regexp_extract('value', '"longitude":(-*\d*\.*\d*)', 1).alias("longitude"))
+                             regexp_extract('value', '"latitude":(-*\d*\.*\d*)', 1)\
+                             .alias("latitude"), \
+                             regexp_extract('value', '"longitude":(-*\d*\.*\d*)', 1)\
+                             .alias("longitude"))
 
 ### --- left join: items <- geo_items
-items = items.join(geo_items.withColumnRenamed("id", "valueP19"), \
-                   ["valueP19"], how='left')
+items = items\
+   .join(geo_items.withColumnRenamed("id", "valueP19"), \
+   ["valueP19"], how='left')
 del(geo_items)
 
 ### ---------------------------------------------------------------------------
@@ -166,10 +177,11 @@ del(geo_items)
 ### ---------------------------------------------------------------------------
 
 # - from wdcm_clients_wb_entity_usage
-WDCM_MainTableRaw = sqlContext.sql('SELECT eu_entity_id AS id, wiki_db AS project, COUNT(*) AS usage FROM \
-                                        (SELECT DISTINCT eu_entity_id, eu_page_id, wiki_db \
-                                        FROM goransm.wdcm_clients_wb_entity_usage) \
-                                        AS t WHERE eu_entity_id RLIKE "^Q" GROUP BY wiki_db, eu_entity_id')
+WDCM_MainTableRaw = \
+   sqlContext.sql('SELECT eu_entity_id AS id, wiki_db AS project, COUNT(*) AS usage FROM \
+                    (SELECT DISTINCT eu_entity_id, eu_page_id, wiki_db \
+                    FROM goransm.wdcm_clients_wb_entity_usage) \
+                    AS t WHERE eu_entity_id RLIKE "^Q" GROUP BY wiki_db, eu_entity_id')
 
 # - cache WDCM_MainTableRaw
 WDCM_MainTableRaw.cache()
@@ -181,7 +193,10 @@ del(WDCM_MainTableRaw)
 ### --- repartition and save to hdfs
 items = items.repartition(10)
 # - save to csv:
-items.write.format('csv').mode("overwrite").save(hdfsDir+'WDCM_Biases_ETL')
+items.write\
+   .format('csv')\
+   .mode("overwrite")\
+   .save(hdfsDir+'WDCM_Biases_ETL')
 
 ### --- clear
 sc.catalog.clearCache()
