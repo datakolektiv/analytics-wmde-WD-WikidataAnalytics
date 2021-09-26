@@ -44,30 +44,49 @@ app_server <- function( input, output, session ) {
   
   ### --- Data
   # - get current Qurator Curious Facts:
-  withProgress(message = 'The Dashboard is loading data.', 
+  withProgress(message = "The Dashboard is loading data.", 
                detail = "Please be patient.", value = 0, {
                  
-                 dataM1 <- data.table::fread(system.file("_data", "dataM1.csv", package = "CuriousFacts"),
-                                             header = T, quote =)
-                 dataM1$explanation <- gsub('\"\"\"', '', dataM1$explanation)
-                 infoM1 <- data.table::fread(system.file("_data", "infoM1.csv", package = "CuriousFacts"), header = T)
+                 dataM1 <- data.table::fread(
+                   system.file("_data", "dataM1.csv", 
+                               package = "CuriousFacts"),
+                   header = T, quote =)
+                 dataM1$explanation <- 
+                   gsub('\"\"\"', '', dataM1$explanation)
+                 infoM1 <- data.table::fread(
+                   system.file("_data", "infoM1.csv", 
+                               package = "CuriousFacts"), 
+                   header = T)
                  infoM1$V1 <- NULL
 
                  incProgress(amount = .25, message = "M1 loaded.")
-                 dataM2 <- data.table::fread(system.file("_data", "dataM2.csv", package = "CuriousFacts"),
-                                             header = T)
-                 dataM2$explanation <- gsub('\"\"\"', '', dataM2$explanation)
-                 infoM2 <- data.table::fread(system.file("_data", "infoM2.csv", package = "CuriousFacts"), header = T)
+                 dataM2 <- data.table::fread(
+                   system.file("_data", "dataM2.csv", 
+                               package = "CuriousFacts"),
+                   header = T)
+                 dataM2$explanation <- 
+                   gsub('\"\"\"', '', dataM2$explanation)
+                 infoM2 <- data.table::fread(
+                   system.file("_data", "infoM2.csv", 
+                               package = "CuriousFacts"), 
+                   header = T)
                  infoM2$V1 <- NULL
                  # - de-duplicate dataM2
-                 dataM2 <- dataM2[!duplicated(dataM2[, c('item', 'property')]), ]
+                 dataM2 <- 
+                   dataM2[!duplicated(dataM2[, c('item', 'property')]), ]
                   
                  incProgress(amount = .25, message = "M2 loaded.")
-                 dataM3 <- data.table::fread(system.file("_data", "dataM3.csv", package = "CuriousFacts"),
-                                             header = T)
+                 dataM3 <- data.table::fread(
+                   system.file("_data", "dataM3.csv", 
+                               package = "CuriousFacts"),
+                   header = T)
                  
-                 dataM3$explanation <- gsub('\"\"', '\"', dataM3$explanation)
-                 infoM3 <- data.table::fread(system.file("_data", "infoM3.csv", package = "CuriousFacts"), header = T)
+                 dataM3$explanation <- 
+                   gsub('\"\"', '\"', dataM3$explanation)
+                 infoM3 <- data.table::fread(
+                   system.file("_data", "infoM3.csv", 
+                               package = "CuriousFacts"), 
+                   header = T)
                  infoM3$V1 <- NULL
                  
                  # - lists
@@ -115,15 +134,19 @@ app_server <- function( input, output, session ) {
     query <- paste0('SELECT ?image {wd:', 
                     item, 
                     ' wdt:P18 ?image .}')
-    res <- httr::GET(url = paste0(endPointURL, URLencode(query)))
+    res <- httr::GET(url = 
+                       paste0(endPointURL, URLencode(query)))
     if (res$status_code == 200) {
-      src <- jsonlite::fromJSON(rawToChar(res$content), simplifyDataFrame = T)
+      src <- jsonlite::fromJSON(
+        rawToChar(res$content), 
+        simplifyDataFrame = T)
       src <- src$results$bindings$image$value
       
-      srcimg <- tryCatch({tail(strsplit(src, split = "/")[[1]], 1)}, 
-                         error = function(condition) {
-                           NULL  
-                         })
+      srcimg <- tryCatch({
+        tail(strsplit(src, split = "/")[[1]], 1)},
+        error = function(condition) {
+          NULL
+          })
       if(is.null(srcimg)) {
         return(
           NULL
@@ -136,7 +159,10 @@ app_server <- function( input, output, session ) {
       srcimg <- XML::xmlToList(XML::xmlParse(srcimg))
       
       if (length(!is.null(srcimg$file$urls$thumbnail)) > 0) {
-        return(paste0('<img src="', URLencode(srcimg$file$urls$thumbnail),'">'))   
+        return(
+          paste0('<img src="', 
+                 URLencode(srcimg$file$urls$thumbnail),'">')
+          )   
       } else {
         return(NULL)
       }
@@ -170,8 +196,10 @@ app_server <- function( input, output, session ) {
       out <- paste0('<p style="font-size:120%;"align="left">',
                     fact, '</p><hr>', 
                     '<p style="font-size:120%;"align="left"> This fact was established on: <b>', 
-                    establishedOn, "</b>, and is based on the <b>", 
-                    iS$wdDumpSnapshot, "</b> snapshot in hdfs of the Wikidata JSON dump. 
+                    establishedOn, 
+                    "</b>, and is based on the <b>", 
+                    iS$wdDumpSnapshot, 
+                    "</b> snapshot in hdfs of the Wikidata JSON dump. 
                     Edits made after that date are not taken into account.")
       return(out)
       
@@ -184,7 +212,9 @@ app_server <- function( input, output, session ) {
                       ' wdt:P18 ?image .}')
       res <- httr::GET(url = paste0(endPointURL, URLencode(query)))
       if (res$status_code == 200) {
-        src <- jsonlite::fromJSON(rawToChar(res$content), simplifyDataFrame = T)
+        src <- jsonlite::fromJSON(
+          rawToChar(res$content), 
+          simplifyDataFrame = T)
         src <- src$results$bindings$image$value
         
         srcimg <- tryCatch({tail(strsplit(src, split = "/")[[1]], 1)}, 
@@ -201,7 +231,10 @@ app_server <- function( input, output, session ) {
         srcimg <- XML::xmlToList(XML::xmlParse(srcimg))
         
         if (length(!is.null(srcimg$file$urls$thumbnail)) > 0) {
-          return(paste0('<img src="',URLencode(srcimg$file$urls$thumbnail),'">'))   
+          return(
+            paste0('<img src="', 
+                   URLencode(srcimg$file$urls$thumbnail),'">')
+            )   
         } else {
           return(NULL)
         }

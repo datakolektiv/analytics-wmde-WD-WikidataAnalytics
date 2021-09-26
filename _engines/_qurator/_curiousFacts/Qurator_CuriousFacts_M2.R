@@ -1,12 +1,14 @@
 #!/usr/bin/env Rscript
 
 ### ---------------------------------------------------------------------------
-### --- Project: QURATOR Current Events
-### --- Script: Q_CE_Functions.R
+### --- Project: QURATOR Curious Facts
+### --- Version 1.0.0
+### --- Script: Qurator_CuriousFacts_M2.R
+### --- September 2021.
 ### --- Author: Goran S. Milovanovic, Data Scientist, WMDE
 ### --- Developed under the contract between Goran Milovanovic PR Data Kolektiv
 ### --- and WMDE.
-### --- Description: functions to support the Qurator Project(s) 
+### --- Description: Finds M2 type anomalies in Wikidata
 ### --- Contact: goran.milovanovic_ext@wikimedia.de
 ### ---------------------------------------------------------------------------
 
@@ -14,46 +16,66 @@
 ### --- LICENSE:
 ### ---------------------------------------------------------------------------
 ### --- GPL v2
-### --- This file is part of QURATOR Current Events
+### --- This file is part of QURATOR Curious Facts
 ### ---
-### --- QURATOR Current Events is free software: you can redistribute it and/or modify
+### --- QURATOR Curious Facts is free software: you can redistribute it and/or modify
 ### --- it under the terms of the GNU General Public License as published by
 ### --- the Free Software Foundation, either version 2 of the License, or
 ### --- (at your option) any later version.
 ### ---
-### --- QURATOR Current Events is distributed in the hope that it will be useful,
+### --- QURATOR Curious Facts is distributed in the hope that it will be useful,
 ### --- but WITHOUT ANY WARRANTY; without even the implied warranty of
 ### --- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ### --- GNU General Public License for more details.
 ### ---
 ### --- You should have received a copy of the GNU General Public License
-### --- along with QURATOR Current Events If not, see <http://www.gnu.org/licenses/>.
+### --- along with QURATOR Curious Facts If not, see <http://www.gnu.org/licenses/>.
 ### ---------------------------------------------------------------------------
 
 ### --- Setup
-library(tidyverse)
-library(httr)
-library(jsonlite)
-library(data.table)
-library(WikidataR)
 
+# - to runtime Log:
+print(paste(
+  "--- FULL QURATOR Curious Facts M2 update STARTED ON:", 
+  Sys.time(), 
+  sep = " ")
+)
+# - GENERAL TIMING:
+generalT1 <- Sys.time()
 
-### --- dirTree
-fPath <- paste0(getwd(), "/")
+# - fPath: where the scripts is run from?
+fPath <- as.character(commandArgs(trailingOnly = FALSE)[4])
+fPath <- gsub("--file=", "", fPath, fixed = TRUE)
+fPath <- unlist(strsplit(fPath, split = "/", fixed = TRUE))
+fPath <- paste(
+  paste(fPath[1:length(fPath) - 1], collapse = "/"),
+  "/",
+  sep = "")
+
+# - renv
+renv::load(project = fPath, quiet = FALSE)
+
+# - lib
+library(WMDEData)
+
+# - dirTree
 dataDir <- paste0(fPath, "_data/")
 analyticsDir <- paste0(fPath, "_analytics/")
 reportingDir <- paste0(fPath, "_reporting/")
-hdfsDir <- 'hdfs:///tmp/wmde/analytics/qurator/'
 
-### --- functions
+# - pars
+params <- XML::xmlParse(paste0(fPath, 
+                               "wd_cluster_fetch_items.xml"))
+params <- XML::xmlToList(params)
+hdfsDir <- params$hdfsDir
+
+# - proxy
+WMDEData::set_proxy()
+
+# - functions
 source(paste0(fPath, 'Q_CF_Functions.R'))
 
-### --- Set proxy for stat100*
-Sys.setenv(
-  http_proxy = 'http://webproxy.eqiad.wmnet:8080',
-  https_proxy = 'http://webproxy.eqiad.wmnet:8080')
-
-### --- WDQS endpoint
+# - WDQS endpoint
 sparqlEndPointURL <- 
   "https://query.wikidata.org/bigdata/namespace/wdq/sparql?format=json&query="
 
@@ -62,17 +84,41 @@ sparqlEndPointURL <-
 ### --- ETL/Problem Solver
 ### ----------------------------------------------------------------------------
 
-### --- obtain property constraints from Wikidata
-propConstraints <- wd_fetchPropertyConstraints(sparqlEndPointURL)
+### --- determine wmf.wikidata_entity snapshot
+# - Kerberos init
+WMDEData::kerberos_init(kerberosUser = "analytics-privatedata")
+# - Define query
+queryFile <- paste0(dataDir, 
+                    "snapshot_Query.hql")
+hiveQLquery <- "SHOW PARTITIONS wmf.wikidata_entity;"
+write(hiveQLquery, queryFile)
+# - Run HiveQL query
+filename <- "snapshot.tsv"
+WMDEData::kerberos_runHiveQL(kerberosUser = "analytics-privatedata",
+                             query = queryFile,
+                             localPath = dataDir,
+                             localFilename = filename)
+wikidataEntitySnapshot <- read.table(paste0(dataDir, filename), 
+                                     sep = "\t", 
+                                     stringsAsFactors = FALSE)
+wikidataEntitySnapshot <- tail(wikidataEntitySnapshot$V1, 1)
+wikidataEntitySnapshot <- 
+  stringr::str_extract(wikidataEntitySnapshot,
+                       "[[:digit:]]+-[[:digit:]]+-[[:digit:]]+") 
 
-### --- load problems
+### --- obtain property constraints from Wikidata
+propConstraints <- 
+  wd_fetchPropertyConstraints(sparqlEndPointURL)
+
+### --- load M2 problems
 m2_problems <- read.csv(paste0(fPath, 'm2_problems.csv'), 
                         stringsAsFactors = F, 
                         header = T)
 
 # - iterate over problems and solve
 failed <- numeric()
-for (i in 29:dim(m2_problems)[1]) {
+
+for (i in 1:dim(m2_problems)[1]) {
   
   print(paste0("--------------- ", 
                "Solving now problem : ", 
@@ -106,10 +152,13 @@ for (i in 29:dim(m2_problems)[1]) {
                                         targetClasses$relation_.value)
   
   # - extract relation
+  apiPx <- "https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&ids="
   wdRelation <- lapply(unique(targetClasses$relation_.value), 
                        function(x) {
-                         p <- WikidataR:: get_item(id = x)
-                         p <- p[[1]]$claims$P1687
+                       p <- httr::GET(URLencode(paste0(apiPx, x)))
+                         p <- rawToChar(p$content)
+                         p <- jsonlite::fromJSON(p)
+                         p <- p[[1]][[1]]$claims$P1687
                          return(p$mainsnak$datavalue$value$id)  
                        })
   names(wdRelation) <- unique(targetClasses$relation_.value)
@@ -138,60 +187,34 @@ for (i in 29:dim(m2_problems)[1]) {
   
   # - solve problem
   t1 <- Sys.time()
-  wd_cluster_fetch_items_M2(targetProperty = targetProperty,
-                            referenceProperty = targetClasses$property,
-                            referenceClasses = targetClasses$classes,
-                            fPath = fPath,
-                            dataDir = dataDir)
+  fetchCheck <- wd_cluster_fetch_items_M2(targetProperty = targetProperty,
+                                          referenceProperty = targetClasses$property,
+                                          referenceClasses = targetClasses$classes,
+                                          fPath = fPath,
+                                          dataDir = dataDir)
   timeTaken <- difftime(Sys.time(), t1, units = "mins")
   print(paste0("This took: ", round(timeTaken, 2), " minutes."))
   
-  # - read result - and process it, if there is any
-  system(paste0('sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls ', 
-                hdfsDir, ' > ', 
-                dataDir, 'files.txt'), 
-         wait = T)
-  files <- read.table(paste0(dataDir, 'files.txt'), skip = 1)
-  files <- as.character(files$V8[grepl("result_M2", files$V8)])
-  
-  if (length(files) > 0) {
-    
-    # - collect wdDumpSnapshot
-    wdDumpSnapshot <- strsplit(files, "/")[[1]][8]
-    wdDumpSnapshot <- gsub("result_M2_", "", wdDumpSnapshot)
-    wdDumpSnapshot <- gsub(".csv", "", wdDumpSnapshot, fixed = T)
-    system(paste0('sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls ',
-                  files, ' > ', 
-                  dataDir, 'files.txt'), 
-           wait = T)
-    files <- read.table(paste0(dataDir, 'files.txt'), skip = 1)
-    files <- as.character(files$V8)[2:length(as.character(files$V8))]
-    file.remove(paste0(dataDir, 'files.txt'))
-    for (j in 1:length(files)) {
-      system(paste0(
-        'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -text ',
-        files[j], ' > ',
-        paste0(dataDir, "results_M2_", j, ".csv")), wait = T)
-      }
-    # - read splits: dataSet
-    # - load
-    lF <- list.files(dataDir)
-    lF <- lF[grepl("results_M2_", lF)]
-    dataSet <- lapply(paste0(dataDir, lF),
-                      function(x) {
-                        fread(x, header = F)
-                        })
-    # - collect
-    dataSet <- rbindlist(dataSet)
+  if (fetchCheck) {
+    # - read result from hdfs
+    hdfsFPx <- paste0("result_M2_", 
+                      wikidataEntitySnapshot, 
+                      ".csv")
+    dataSet <- WMDEData::hdfs_read_from(kerberosUser = "analytics-privatedata",
+                                        localPath = dataDir,
+                                        localFilenamePrefix = "results_M1_",
+                                        hdfsDir = hdfsDir,
+                                        hdfsFilenamePrefix = hdfsFPx,
+                                        fr_header = FALSE)
     
     if (dim(dataSet)[1] > 0) {
       
       # - schema
       colnames(dataSet) <- c('item', 'property')
-        
+      
       # - PREPARE OUTPUT: targetClasses$classes, Explanation, timestamp, etc.
-      # - add Wikidata JSON Dump
-      dataSet$wdDumpSnapshot <- wdDumpSnapshot
+      # - add Wikidata JSON Dump snapshot
+      dataSet$wdDumpSnapshot <- wikidataEntitySnapshot
       # - add metadata
       dataSet$establishedOn <- as.character(Sys.time())
       dataSet$problemType <- 'M2'
@@ -200,41 +223,44 @@ for (i in 29:dim(m2_problems)[1]) {
       # - fetch 'en' item labels
       print("--- fetch 'en' item labels")
       items <- unique(dataSet$item)
-      itemLabs <- wd_api_fetch_labels(items = items,
-                                      language = 'en',
-                                      fallback = T)
+      itemLabs <- WMDEData::api_fetch_labels(items = items,
+                                             language = "en",
+                                             fallback = TRUE)
+      colnames(itemLabs) <- c("propertyValue", "propertyValueLabel")
       colnames(itemLabs) <- c('item', 'itemLabel')
       dataSet <- dplyr::left_join(dataSet,
                                   itemLabs,
                                   by = 'item')
+      
+      
       # - fetch 'en' referenceClasses labels
       refClasses <- targetClasses$classes
       refClasses <- strsplit(refClasses, ", ")[[1]]
-      refClassesLabs <- wd_api_fetch_labels(items = refClasses,
-                                            language = 'en',
-                                            fallback = T)
+      refClassesLabs <- WMDEData::api_fetch_labels(items = refClasses,
+                                                   language = "en",
+                                                   fallback = TRUE)
       # - fix for No label defined
-      refClassesLabs$en_label <- ifelse(refClassesLabs$en_label == 'No label defined',
-                                        refClassesLabs$title,
-                                        refClassesLabs$en_label)
+      refClassesLabs$label <- ifelse(refClassesLabs$label == "",
+                                     refClassesLabs$title,
+                                     refClassesLabs$label)
       tRefClasses <- paste0('<a href="https://www.wikidata.org/wiki/',
-                            refClassesLabs$title,
+                            refClassesLabs$item,
                             '" target = "_blank">',
-                            refClassesLabs$en_label,
+                            refClassesLabs$label,
                             '</a>')
       tRefClasses <- paste(tRefClasses, collapse = ", ")
-
+      
       # - fetch propertLabel
-      propLab <- wd_api_fetch_labels(items = unique(dataSet$property),
-                                     language = 'en',
-                                     fallback = T)
-      dataSet$propertyLab <- propLab$en_label
+      propLab <- WMDEData::api_fetch_labels(items = unique(dataSet$property),
+                                            language = "en",
+                                            fallback = TRUE)
+      dataSet$propertyLab <- propLab$label
       
       # - fix for No label defined
-      dataSet$itemLabel <- ifelse(dataSet$itemLabel == 'No label defined', 
+      dataSet$itemLabel <- ifelse(dataSet$itemLabel == "", 
                                   dataSet$item, 
                                   dataSet$itemLabel)
-      dataSet$propertyLab <- ifelse(dataSet$propertyLab == 'No label defined',
+      dataSet$propertyLab <- ifelse(dataSet$propertyLab == "",
                                     dataSet$property,
                                     dataSet$propertyLab)
       
@@ -271,27 +297,27 @@ for (i in 29:dim(m2_problems)[1]) {
       
       # - store results
       prop <- unique(dataSet$property)
-      CSVfilename <- paste0("M2_", propLab$title,
-                            "_", propLab$en_label, 
+      CSVfilename <- paste0("M2_", propLab$item,
+                            "_", propLab$label, 
                             "_problems_solved.csv")
       CSVfilename <- gsub(" ", "_", CSVfilename, fixed = T)
       write.csv(dataSet,
                 paste0(analyticsDir, CSVfilename))
-        
-      } else {
-        print("------ FATAL: The following problem failed:")
-        print(paste0("--------------- ", 
-                     "The problem that FAILED is : ", 
-                     i, "/", dim(m2_problems)[1], ".",
-                     " --------------- ")
-        )
-        failed <- append(failed, i)
-      }
-  
+      
+    } else {
+      print("------ ATTENTION: Empty dataset, no anomalies found:")
+      print(paste0("--------------- ",
+                   "The current is : ",
+                   i, "/", dim(m2_problems)[1], ".",
+                   " --------------- ")
+      )
+      failed <- append(failed, i)
+    } 
+    
   } else {
-    print("------ FATAL: The following problem failed:")
-    print(paste0("--------------- ", 
-                 "The problem that FAILED is : ", 
+    print("------ ATTENTION: Data Acquisition failed:")
+    print(paste0("--------------- ",
+                 "The current is : ",
                  i, "/", dim(m2_problems)[1], ".",
                  " --------------- ")
     )
@@ -308,8 +334,10 @@ for (i in 29:dim(m2_problems)[1]) {
 ### --- Collect solved M2 problems
 lF <- list.files(analyticsDir)
 lF <- lF[grepl("^M2", lF)]
-dataM2 <- lapply(paste0(analyticsDir, lF), fread, header = T)
-dataM2 <- rbindlist(dataM2)
+dataM2 <- lapply(paste0(analyticsDir, lF), 
+                 data.table::fread, 
+                 header = T)
+dataM2 <- data.table::rbindlist(dataM2)
 dataM2$V1 <- NULL
 infoM2 <- list(problemType = unique(dataM2$problemType),
                wdDumpSnapshot = unique(dataM2$wdDumpSnapshot)
@@ -331,10 +359,4 @@ write.csv(dataM2,
 m2_problems$solved <- TRUE
 m2_problems$solved[failed] <- FALSE
 write.csv(m2_problems, 
-          paste0(reportingDir, "m2_problems_solved.csv"))
-
-
-
-
-
-
+          paste0(analyticsDir, "m2_problems_solved.csv"))

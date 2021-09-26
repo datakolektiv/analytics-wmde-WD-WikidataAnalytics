@@ -1,12 +1,14 @@
 #!/usr/bin/env Rscript
 
 ### ---------------------------------------------------------------------------
-### --- Project: QURATOR Current Events
-### --- Script: Q_CE_Functions.R
+### --- Project: QURATOR Curious Facts
+### --- Version 1.0.0
+### --- Script: Q_CF_Functions.R
+### --- September 2021.
 ### --- Author: Goran S. Milovanovic, Data Scientist, WMDE
 ### --- Developed under the contract between Goran Milovanovic PR Data Kolektiv
 ### --- and WMDE.
-### --- Description: functions to support the Qurator Project(s) 
+### --- Description: Functions to support QURATOR Qurious Facts
 ### --- Contact: goran.milovanovic_ext@wikimedia.de
 ### ---------------------------------------------------------------------------
 
@@ -14,29 +16,21 @@
 ### --- LICENSE:
 ### ---------------------------------------------------------------------------
 ### --- GPL v2
-### --- This file is part of QURATOR Current Events
+### --- This file is part of QURATOR Curious Facts
 ### ---
-### --- QURATOR Current Events is free software: you can redistribute it and/or modify
+### --- QURATOR Curious Facts is free software: you can redistribute it and/or modify
 ### --- it under the terms of the GNU General Public License as published by
 ### --- the Free Software Foundation, either version 2 of the License, or
 ### --- (at your option) any later version.
 ### ---
-### --- QURATOR Current Events is distributed in the hope that it will be useful,
+### --- QURATOR Curious Facts is distributed in the hope that it will be useful,
 ### --- but WITHOUT ANY WARRANTY; without even the implied warranty of
 ### --- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ### --- GNU General Public License for more details.
 ### ---
 ### --- You should have received a copy of the GNU General Public License
-### --- along with QURATOR Current Events If not, see <http://www.gnu.org/licenses/>.
+### --- along with QURATOR Curious Facts If not, see <http://www.gnu.org/licenses/>.
 ### ---------------------------------------------------------------------------
-
-### --- Packages
-library(httr)
-library(XML)
-library(xml2)
-library(data.table)
-library(jsonlite)
-library(tidyverse)
 
 ### --- Function: wd_cluster_fetch_items_M1()
 # - fetch items that are P31/P279* of class
@@ -50,28 +44,35 @@ wd_cluster_fetch_items_M1 <- function(class,
 
   # - parameters:
   # - class: items are P31/P279* of class
+  # - targetProperty: the target property
+  # - referenceClass: the expected class of the targetProperty datavalue
   # - fPath: the working directory path
+  # - dataDir: the local data directory
   
   # - set parameters for wd_cluster_fetch_items.py
   print("--- wd_cluster_fetch_items_M1: set parameters for wd_cluster_fetch_items.py")
   params <- xml2::read_xml(paste0(fPath, "wd_cluster_fetch_items.xml"))
   params <- xml2::as_list(params)
   hdfsDir <- params$parameters$hdfsDir[[1]]
-  http_proxy <- params$parameters$http_proxy
-  https_proxy <- params$parameters$https_proxy
+  http_proxy <- params$parameters$http_proxy[[1]]
+  https_proxy <- params$parameters$https_proxy[[1]]
+  
   # - enter problem-specific parameters:
   print("--- wd_cluster_fetch_items_M1: enter problem-specific parameters")
   params$parameters$class[[1]] <- class
   params$parameters$targetProperty[[1]] <- targetProperty
   params$parameters$referenceClass[[1]] <- referenceClass
   params$parameters$dataDir[[1]] <- dataDir
-  params <- as_xml_document(params)
+  params <- xml2::as_xml_document(params)
   print("--- wd_cluster_fetch_items_M1: write XML parameters")
-  write_xml(params,
-            paste0(fPath, "wd_cluster_fetch_items.xml"))
+  xml2::write_xml(params,
+                  paste0(fPath, "wd_cluster_fetch_items.xml"))
+  
   # - Spark deployment parameters:
-  paramsDeployment <- xmlParse(paste0(fPath, "wd_cluster_fetch_items_Deployment.xml"))
-  paramsDeployment <- xmlToList(paramsDeployment)
+  paramsDeployment <- XML::xmlParse(paste0(
+    fPath, "wd_cluster_fetch_items_Deployment.xml"))
+  paramsDeployment <- XML::xmlToList(paramsDeployment)
+  
   # - spark2-submit parameters:
   sparkMaster <- paramsDeployment$spark$master
   sparkDeployMode <- paramsDeployment$spark$deploy_mode
@@ -79,8 +80,10 @@ wd_cluster_fetch_items_M1 <- function(class,
   sparkDriverMemory <- paramsDeployment$spark$driver_memory
   sparkExecutorMemory <- paramsDeployment$spark$executor_memory
   sparkConfigDynamic <- paramsDeployment$spark$config
+  
   # - public WDQS:
-  endPointURL <- 'https://query.wikidata.org/bigdata/namespace/wdq/sparql?query='
+  endPointURL <- 
+    'https://query.wikidata.org/bigdata/namespace/wdq/sparql?query='
   
   # - clean hdfs dir
   print("--- wd_cluster_fetch_items_M1: clean hdfs dir")
@@ -91,39 +94,15 @@ wd_cluster_fetch_items_M1 <- function(class,
   
   # - SPARQL: collect all subclasses of class
   print("--- wd_cluster_fetch_items_M1: SPARQL: collect all subclasses of class")
-  Sys.setenv(
-    http_proxy = http_proxy,
-    https_proxy = https_proxy)
   # - construct query:
-  query <- paste0('SELECT ?subclass WHERE {?subclass wdt:P279/wdt:P279* wd:',
-                  class, '}')
-  # - run query:
-  repeat {
-    res <- tryCatch({
-      GET(url = paste0(endPointURL, URLencode(query)))
-    },
-    error = function(condition) {
-      print("Something's wrong on WDQS: wait 10 secs, try again.")
-      Sys.sleep(10)
-      GET(url = paste0(endPointURL, URLencode(query)))
-    },
-    warning = function(condition) {
-      print("Something's wrong on WDQS: wait 10 secs, try again.")
-      Sys.sleep(10)
-      GET(url = paste0(endPointURL, URLencode(query)))
-    }
-    )  
-    if (res$status_code == 200) {
-      print(": success.")
-      break
-    } else {
-      print(": failed.")
-    }
-  }
+  qr <- paste0('SELECT ?subclass WHERE {?subclass wdt:P279/wdt:P279* wd:',
+               class, '}')
+  res <- WMDEData::wdqs_send_query(query = qr, 
+                                   SPARQL_Endpoint = endPointURL,
+                                   max_retry = 10)
   # - parse res:
   print("--- wd_cluster_fetch_items_M1: SPARQL: parse WDQS results")
-  res <- rawToChar(res$content)
-  res <- fromJSON(res, simplifyDataFrame = T)
+  res <- jsonlite::fromJSON(res, simplifyDataFrame = T)
   res <- res$results$bindings
   res <- data.frame(subclass = res$subclass$value,
                     stringsAsFactors = F)
@@ -132,47 +111,22 @@ wd_cluster_fetch_items_M1 <- function(class,
   print("--- wd_cluster_fetch_items_M1: move to hdfs directory:")
   write.csv(res, 
             paste0(fPath, "subclasses.csv"))
-  system(command = paste0(
-    'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -put -f ',
-    paste0(fPath, "subclasses.csv"), " ",
-    hdfsDir),
-    wait = T)
+  WMDEData::hdfs_copy_to(kerberosUser = "analytics-privatedata", 
+                         localPath = fPath,
+                         localFilename = "subclasses.csv", 
+                         hdfsDir = hdfsDir)
   
   # - SPARQL: collect all subclasses of referenceClass
   print("--- wd_cluster_fetch_items_M1: collect all subclasses of referenceClass:")
-  Sys.setenv(
-    http_proxy = http_proxy,
-    https_proxy = https_proxy)
   # - construct query:
-  query <- paste0('SELECT ?subclass WHERE {?subclass wdt:P279/wdt:P279* wd:',
-                  referenceClass, '}')
-  # - run query:
-  repeat {
-    res <- tryCatch({
-      GET(url = paste0(endPointURL, URLencode(query)))
-    },
-    error = function(condition) {
-      print("Something's wrong on WDQS: wait 10 secs, try again.")
-      Sys.sleep(10)
-      GET(url = paste0(endPointURL, URLencode(query)))
-    },
-    warning = function(condition) {
-      print("Something's wrong on WDQS: wait 10 secs, try again.")
-      Sys.sleep(10)
-      GET(url = paste0(endPointURL, URLencode(query)))
-    }
-    )  
-    if (res$status_code == 200) {
-      print(": success.")
-      break
-    } else {
-      print(": failed.")
-    }
-  }
+  qr <- paste0('SELECT ?subclass WHERE {?subclass wdt:P279/wdt:P279* wd:',
+               referenceClass, '}')
+  res <- WMDEData::wdqs_send_query(query = qr, 
+                                   SPARQL_Endpoint = endPointURL,
+                                   max_retry = 10)
   # - parse res:
   print("--- wd_cluster_fetch_items_M1: parse WDQS result.")
-  res <- rawToChar(res$content)
-  res <- fromJSON(res, simplifyDataFrame = T)
+  res <- jsonlite::fromJSON(res, simplifyDataFrame = T)
   res <- res$results$bindings
   res <- data.frame(subclass = res$subclass$value,
                     stringsAsFactors = F)
@@ -181,35 +135,30 @@ wd_cluster_fetch_items_M1 <- function(class,
   print("--- wd_cluster_fetch_items_M1: move to hdfs directory.")
   write.csv(res, 
             paste0(fPath, "refClassSubclasses.csv"))
-  system(command = paste0(
-    'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -put -f ',
-    paste0(fPath, "refClassSubclasses.csv"), " ",
-    hdfsDir),
-    wait = T)
-  
+  WMDEData::hdfs_copy_to(kerberosUser = "analytics-privatedata", 
+                         localPath = fPath,
+                         localFilename = "refClassSubclasses.csv", 
+                         hdfsDir = hdfsDir)
+
   # - Pyspark ETL:
   
   # - Kerberos init
   print("--- wd_cluster_fetch_items_M1: Kerberos init.")
-  system(command = 'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls', 
-         wait = T)
-  
-  # - Run PySpark ETL
+  # - Kerberos init
+  WMDEData::kerberos_init(kerberosUser = "analytics-privatedata")
+  # - Run Spark ETL
   print("--- wd_cluster_fetch_items_M1: Run PySpark ETL (wd_cluster_fetch_items_M1.py)")
-  system(command = paste0('sudo -u analytics-privatedata spark2-submit ', 
-                          sparkMaster, ' ',
-                          sparkDeployMode, ' ',
-                          sparkNumExecutors, ' ',
-                          sparkDriverMemory, ' ',
-                          sparkExecutorMemory, ' ',
-                          sparkConfigDynamic, ' ',
-                          paste0(fPath, 'wd_cluster_fetch_items_M1.py')
-  ),
-  wait = T)
-  
-  # - exit
+  WMDEData::kerberos_runSpark(kerberosUser = "analytics-privatedata",
+                              pysparkPath = paste0(fPath, "wd_cluster_fetch_items_M1.py"),
+                              sparkMaster = sparkMaster,
+                              sparkDeployMode = sparkDeployMode,
+                              sparkNumExecutors = sparkNumExecutors,
+                              sparkDriverMemory = sparkDriverMemory,
+                              sparkExecutorMemory = sparkExecutorMemory,
+                              sparkConfigDynamic = sparkConfigDynamic)
+  # - report
   print("--- wd_cluster_fetch_items_M1: DONE; Exit.)")
-  return('Done.')
+  return(TRUE)
   
 }
 
@@ -229,25 +178,32 @@ wd_cluster_fetch_items_M2 <- function(targetProperty,
   # - dataDir: local filesystem dataDir
   
   # - set parameters for wd_cluster_fetch_items_M2.py
-  print("--- wd_cluster_fetch_items_M2: set parameters for wd_cluster_fetch_items_M2.py")
-  params <- xml2::read_xml(paste0(fPath, "wd_cluster_fetch_items_M2.xml"))
+  print(
+    "--- wd_cluster_fetch_items_M2: set parameters for wd_cluster_fetch_items_M2.py"
+    )
+  params <- xml2::read_xml(paste0(
+    fPath, "wd_cluster_fetch_items_M2.xml"))
   params <- xml2::as_list(params)
   hdfsDir <- params$parameters$hdfsDir[[1]]
   http_proxy <- params$parameters$http_proxy
   https_proxy <- params$parameters$https_proxy
   # - enter problem-specific parameters:
-  print("--- wd_cluster_fetch_items_M2: enter problem-specific parameters")
+  print(
+    "--- wd_cluster_fetch_items_M2: enter problem-specific parameters"
+    )
   params$parameters$targetProperty[[1]] <- targetProperty
   params$parameters$referenceProperty[[1]] <- referenceProperty
   params$parameters$referenceClasses[[1]] <- referenceClasses
   params$parameters$dataDir[[1]] <- dataDir
-  params <- as_xml_document(params)
+  params <- xml2::as_xml_document(params)
   print("--- wd_cluster_fetch_items_M2: write XML parameters")
-  write_xml(params,
-            paste0(fPath, "wd_cluster_fetch_items_M2.xml"))
+  xml2::write_xml(params,
+                  paste0(fPath, "wd_cluster_fetch_items_M2.xml"))
+  
   # - Spark deployment parameters:
-  paramsDeployment <- xmlParse(paste0(fPath, "wd_cluster_fetch_items_Deployment.xml"))
-  paramsDeployment <- xmlToList(paramsDeployment)
+  paramsDeployment <- XML::xmlParse(
+    paste0(fPath, "wd_cluster_fetch_items_Deployment.xml"))
+  paramsDeployment <- XML::xmlToList(paramsDeployment)
   # - spark2-submit parameters:
   sparkMaster <- paramsDeployment$spark$master
   sparkDeployMode <- paramsDeployment$spark$deploy_mode
@@ -255,6 +211,7 @@ wd_cluster_fetch_items_M2 <- function(targetProperty,
   sparkDriverMemory <- paramsDeployment$spark$driver_memory
   sparkExecutorMemory <- paramsDeployment$spark$executor_memory
   sparkConfigDynamic <- paramsDeployment$spark$config
+  
   # - public WDQS:
   endPointURL <- 'https://query.wikidata.org/bigdata/namespace/wdq/sparql?query='
   
@@ -267,89 +224,86 @@ wd_cluster_fetch_items_M2 <- function(targetProperty,
   
   # - fetch all subclasses of referenceClasses
   # - SPARQL: collect all subclasses of referenceClass
-  print("--- wd_cluster_fetch_items_M1: collect all subclasses of referenceClasses:")
-  Sys.setenv(
-    http_proxy = http_proxy,
-    https_proxy = https_proxy)
+  print("--- wd_cluster_fetch_items_M2: collect all subclasses of referenceClasses:")
+  WMDEData::set_proxy(http_proxy = http_proxy, 
+                      https_proxy = https_proxy)
   referenceClasses <- strsplit(referenceClasses, 
                                split = ", ")[[1]]
-  referenceSubClasses <- vector(mode = "list", length = length(referenceClasses))
+  referenceSubClasses <- vector(mode = "list", 
+                                length = length(referenceClasses))
+  checkWDQS <- TRUE
   for (i in 1:length(referenceClasses)) {
-    print(paste0("WDQS: ", referenceClasses[i], "; ", i, ". out of: ", length(referenceClasses)))
+    print(paste0("WDQS: ", 
+                 referenceClasses[i], 
+                 "; ", i, ". out of: ", 
+                 length(referenceClasses)))
     # - construct query:
-    query <- paste0('SELECT ?subclass WHERE {?subclass wdt:P279/wdt:P279* wd:',
-                    referenceClasses[i], '}')
+    qr <- paste0('SELECT ?subclass WHERE {?subclass wdt:P279/wdt:P279* wd:',
+                 referenceClasses[i], '}')
     # - run query:
-    repeat {
-      res <- tryCatch({
-        GET(url = paste0(endPointURL, URLencode(query)))
-      },
-      error = function(condition) {
-        print("Something's wrong on WDQS: wait 10 secs, try again.")
-        Sys.sleep(10)
-        GET(url = paste0(endPointURL, URLencode(query)))
-      },
-      warning = function(condition) {
-        print("Something's wrong on WDQS: wait 10 secs, try again.")
-        Sys.sleep(10)
-        GET(url = paste0(endPointURL, URLencode(query)))
-      }
-      )  
-      if (res$status_code == 200) {
-        print(": success.")
-        break
-      } else {
-        print(": failed.")
-      }
-    }
+    res <- WMDEData::wdqs_send_query(query = qr, 
+                                     SPARQL_Endpoint = endPointURL,
+                                     max_retry = 10)
     # - parse res:
     print("--- wd_cluster_fetch_items_M2: parse WDQS result.")
-    res <- rawToChar(res$content)
-    res <- fromJSON(res, simplifyDataFrame = T)
-    res <- res$results$bindings
-    res <- data.frame(subclass = res$subclass$value,
-                      stringsAsFactors = F)
-    res$subclass <- gsub("http://www.wikidata.org/entity/", "", res$subclass)
-    referenceSubClasses[[i]] <- res
+    res <- tryCatch({
+      jsonlite::fromJSON(res, simplifyDataFrame = T)},
+      error = function(condition) {
+        message("--- wd_cluster_fetch_items_M2: CRITICAL WDQS parse failed.")
+        return(NULL)
+      })
+    if (!is.null(res)) {
+      res <- res$results$bindings
+      res <- data.frame(subclass = res$subclass$value,
+                        stringsAsFactors = F)
+      res$subclass <- gsub("http://www.wikidata.org/entity/", "", res$subclass)
+      referenceSubClasses[[i]] <- res
+    } else {
+      checkWDQS <- FALSE
+      break
+    }
   }
-  referenceSubClasses <- rbindlist(referenceSubClasses)
-  referenceClasses <- data.frame(subclass = referenceClasses, 
-                                 stringsAsFactors = F)
-  referenceSubClasses <- rbind(referenceSubClasses, referenceClasses) 
-  referenceSubClasses <- referenceSubClasses[!duplicated(referenceSubClasses), ]
-  # - move all referenceClasses to hdfs directory:
-  print("--- wd_cluster_fetch_items_M1: move to hdfs directory.")
-  write.csv(referenceSubClasses, 
-            paste0(fPath, "refClassSubclasses.csv"))
-  system(command = paste0(
-    'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -put -f ',
-    paste0(fPath, "refClassSubclasses.csv"), " ",
-    hdfsDir),
-    wait = T)
-  
-  # - Pyspark ETL:
-  
-  # - Kerberos init
-  print("--- wd_cluster_fetch_items_M2: Kerberos init.")
-  system(command = 'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls', 
-         wait = T)
-  
-  # - Run PySpark ETL
-  print("--- wd_cluster_fetch_items_M1: Run PySpark ETL (wd_cluster_fetch_items_M1.py)")
-  system(command = paste0('sudo -u analytics-privatedata spark2-submit ', 
-                          sparkMaster, ' ',
-                          sparkDeployMode, ' ',
-                          sparkNumExecutors, ' ',
-                          sparkDriverMemory, ' ',
-                          sparkExecutorMemory, ' ',
-                          sparkConfigDynamic, ' ',
-                          paste0(fPath, 'wd_cluster_fetch_items_M2.py')
-  ),
-  wait = T)
-  
-  # - exit
-  print("--- wd_cluster_fetch_items_M2: DONE; Exit.)")
-  return('Done.')
+  if (checkWDQS) {
+    referenceSubClasses <- 
+      data.table::rbindlist(referenceSubClasses)
+    referenceClasses <- data.frame(subclass = referenceClasses, 
+                                   stringsAsFactors = F)
+    referenceSubClasses <- 
+      rbind(referenceSubClasses, referenceClasses) 
+    referenceSubClasses <- 
+      referenceSubClasses[!duplicated(referenceSubClasses), ]
+    # - move all referenceClasses to hdfs directory:
+    print("--- wd_cluster_fetch_items_M2: move to hdfs directory.")
+    write.csv(referenceSubClasses, 
+              paste0(fPath, "refClassSubclasses.csv"))
+    WMDEData::hdfs_copy_to(kerberosUser = "analytics-privatedata", 
+                           localPath = fPath,
+                           localFilename = "refClassSubclasses.csv", 
+                           hdfsDir = hdfsDir)
+    
+    # - Pyspark ETL:
+    # - Kerberos init
+    WMDEData::kerberos_init(kerberosUser = "analytics-privatedata")
+    # - Run Spark ETL
+    print(
+      "--- wd_cluster_fetch_items_M2: Run PySpark ETL (wd_cluster_fetch_items_M2.py)"
+    )
+    WMDEData::kerberos_runSpark(kerberosUser = "analytics-privatedata",
+                                pysparkPath = paste0(fPath, "wd_cluster_fetch_items_M2.py"),
+                                sparkMaster = sparkMaster,
+                                sparkDeployMode = sparkDeployMode,
+                                sparkNumExecutors = sparkNumExecutors,
+                                sparkDriverMemory = sparkDriverMemory,
+                                sparkExecutorMemory = sparkExecutorMemory,
+                                sparkConfigDynamic = sparkConfigDynamic)
+    
+    # - exit
+    print("--- wd_cluster_fetch_items_M2: DONE; Exit.)")
+    return(TRUE)
+  } else {
+    print("--- wd_cluster_fetch_items_M2: FATAL; WDQS FAILURE.)")
+    return(FALSE)
+  }
   
 }
 
@@ -370,17 +324,17 @@ wd_fetchPropertyConstraints <- function(sparqlEndPointURL) {
   # - Run Query:
   repeat {
     res <- tryCatch({
-      GET(url = paste0(sparqlEndPointURL, URLencode(query)))
+      httr::GET(url = paste0(sparqlEndPointURL, URLencode(query)))
     },
     error = function(condition) {
       message("wd_fetchPropertyConstraints: something's wrong on WDQS: wait 10 secs, try again.")
       Sys.sleep(10)
-      GET(url = paste0(sparqlEndPointURL, URLencode(query)))
+      httr::GET(url = paste0(sparqlEndPointURL, URLencode(query)))
     },
     warning = function(condition) {
       message("wd_fetchPropertyConstraints: something's wrong on WDQS: wait 10 secs, try again.")
       Sys.sleep(10)
-      GET(url = paste0(sparqlEndPointURL, URLencode(query)))
+      httr::GET(url = paste0(sparqlEndPointURL, URLencode(query)))
     }
     )  
     if (res$status_code == 200) {
@@ -421,7 +375,7 @@ wd_fetchPropertyConstraints <- function(sparqlEndPointURL) {
   }
   
   # - rc to data.frame
-  rc <- fromJSON(rc, simplifyDataFrame = T)
+  rc <- jsonlite::fromJSON(rc, simplifyDataFrame = T)
   rc <- rc$results$bindings
   rc <- jsonlite::flatten(rc)
   
@@ -431,91 +385,6 @@ wd_fetchPropertyConstraints <- function(sparqlEndPointURL) {
 }
 
 
-### --- Function: wd_api_fetch_labels()
-# - fetch item labels in batches 
-# - (max values = 50, MediaWiki API constraint)
-wd_api_fetch_labels <- function(items, language, fallback) {
-  
-  # - params:
-  # - items - character vector of Wikidata identifiers
-  # - language - character, ISO 639-1 two-letter language code
-  # - fallback - to use or not to use the Wikidata language fallback 
-  
-  # - API prefix    
-  APIprefix <- 'https://www.wikidata.org/w/api.php?action=wbgetentities&'
-  
-  # - enforce item uniqueness
-  items <- unique(items)
-  # - iLabs: store batches
-  iLabs <- list()
-  
-  # fetch items
-  # - counter
-  c <- 0
-  # - batch start
-  ixStart <- 1
-  repeat {
-    ixEnd <- ixStart + 50 - 1
-    searchItems <- items[ixStart:ixEnd]
-    w <- which(is.na(searchItems))
-    if (length(w) > 0) {searchItems <- searchItems[-w]}
-    ids <- paste(searchItems, collapse = "|")
-    if (fallback == T) {
-      query <- paste0(APIprefix, 
-                      'ids=', ids, '&',
-                      'props=labels&languages=', 
-                      language, 
-                      '&languagefallback=&sitefilter=wikidatawiki&format=json')
-    } else {
-      query <- paste0(APIprefix, 
-                      'ids=', ids, '&',
-                      'props=labels&languages=', 
-                      language, 
-                      '&sitefilter=wikidatawiki&format=json')
-    }
-    res <- tryCatch(
-      {
-        GET(url = URLencode(query))
-      },
-      error = function(condition) {
-        Sys.sleep(10)
-        GET(url = URLencode(query))
-      },
-      warning = function(condition) {
-        Sys.sleep(10)
-        GET(url = URLencode(query))
-      }
-    )
-    rclabs <- rawToChar(res$content)
-    rclabs <- fromJSON(rclabs)
-    itemLabels <- unlist(lapply(rclabs$entities, function(x) {
-      if (length(x$labels) > 0) {
-       return(x$labels[[1]]$value) 
-      } else {
-        return("")
-      }
-    }))
-    itemLabels <- data.frame(title = names(itemLabels), 
-                             en_label = itemLabels, 
-                             stringsAsFactors = F, 
-                             row.names = c())
-    c <- c + 1
-    iLabs[[c]] <- itemLabels
-    if (length(searchItems) < 50) {
-      break
-    } else {
-      ixStart <- ixStart + 50
-      # - pause here 1 sec
-      Sys.sleep(1)
-    }
-  }
-  iLabs <- rbindlist(iLabs)
-  iLabs <- as.data.frame(iLabs)
-  iLabs$en_label[nchar(iLabs$en_label) == 0] <- 'No label defined'
-  return(iLabs)
-}
-
-  
 ### --- wd_Superclasses_Recurrently
 # - fetch all superclasses (inverse P279 search) 
 # - or parts (inverse P361 search)

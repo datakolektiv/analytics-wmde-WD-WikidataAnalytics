@@ -36,7 +36,8 @@
 import pyspark
 from pyspark.sql import SparkSession
 from pyspark.sql.window import Window
-from pyspark.sql.functions import rank, col, round, explode, row_number, regexp_extract
+from pyspark.sql.functions import rank, col, round, \
+   explode, row_number, regexp_extract
 from pyspark import SparkFiles
 from pyspark.sql.types import *
 import numpy as np
@@ -54,7 +55,8 @@ import requests
 import json
 
 ### --- parse WDCM parameters: wdcmConfig.xml
-parsFile = "/home/goransm/Analytics/Qurator/CuriousFacts/wd_cluster_fetch_items_M2.xml"
+parsFile = \
+   "/home/goransm/Analytics/Qurator/CuriousFacts/wd_cluster_fetch_items_M2.xml"
 # - parse wdcmConfig.xml
 tree = ET.parse(parsFile)
 root = tree.getroot()
@@ -74,7 +76,7 @@ referenceClasses = params['referenceClasses']
 # - Spark Session
 sc = SparkSession\
     .builder\
-    .appName("WMDE Qurator ETL")\
+    .appName("WMDE Qurator ETL M2")\
     .enableHiveSupport()\
     .getOrCreate()
 # - Spark Session Log Level: INFO
@@ -90,29 +92,44 @@ wikidataEntitySnapshot = wikidataEntitySnapshot[-10:]
 
 ### --- Section 1. All items with targetProperty
 # - initiate dump for items
-WD_dump = sqlContext.sql('SELECT id, claims FROM wmf.wikidata_entity WHERE snapshot="' + wikidataEntitySnapshot + '"')
+WD_dump = \
+   sqlContext.sql('SELECT id, claims FROM wmf.wikidata_entity WHERE snapshot="' + \
+   wikidataEntitySnapshot + '"')
 # - cache WD dump for items
 WD_dump.cache()
 # - explode properties
-WD_dump = WD_dump.select('id', explode('claims').alias('claims')).select('id', 'claims.mainSnak')
+WD_dump = WD_dump\
+   .select('id', explode('claims').alias('claims'))\
+   .select('id', 'claims.mainSnak')
 WD_dump = WD_dump.select('id', 'mainSnak.property')
 # - keep targetProperty only
-WD_dump = WD_dump.filter(WD_dump.property == targetProperty)
+WD_dump = WD_dump\
+   .filter(WD_dump.property == targetProperty)
 # - keep items only
-WD_dump = WD_dump.filter(WD_dump["id"].rlike('Q\d+'))
+WD_dump = WD_dump\
+   .filter(WD_dump["id"].rlike('Q\d+'))
 
 ### --- Section 2. All items with referenceProperty in referenceClasses
 # - initiate dump for items
-WD_items = sqlContext.sql('SELECT id, claims FROM wmf.wikidata_entity WHERE snapshot="' + wikidataEntitySnapshot + '"')
+WD_items = \
+   sqlContext.sql('SELECT id, claims FROM wmf.wikidata_entity WHERE snapshot="' + \
+   wikidataEntitySnapshot + '"')
 # - cache WD dump for items
 WD_items.cache()
 # - explode properties
-WD_items = WD_items.select('id', explode('claims').alias('claims')).select('id', 'claims.mainSnak')
-WD_items = WD_items.select('id', 'mainSnak.property', 'mainSnak.dataValue.value')
+WD_items = WD_items\
+   .select('id', explode('claims').alias('claims'))\
+   .select('id', 'claims.mainSnak')
+WD_items = WD_items\
+   .select('id', 'mainSnak.property', 'mainSnak.dataValue.value')
 # - keep items on 'value' only
-WD_items = WD_items.select('id', 'property', regexp_extract(col('value'), '(Q\d+)', 1).alias('value'))
+WD_items = WD_items\
+   .select('id', 'property', \
+   regexp_extract(col('value'), '(Q\d+)', 1).alias('value'))
 # - keep items on 'id' only and referenceProperty
-WD_items = WD_items.filter((WD_items["id"].rlike('Q\d+')) & (WD_items.property == referenceProperty))
+WD_items = WD_items\
+   .filter((WD_items["id"].rlike('Q\d+')) & \
+   (WD_items.property == referenceProperty))
 # - read subclasses
 subclassesFile = hdfsDir +  'refClassSubclasses.csv'
 subclasses = sqlContext.read.csv(subclassesFile, header=True)
@@ -123,14 +140,18 @@ subclasses =  subclasses['subclass'].tolist()
 # - unique elements only
 subclasses = list(set(subclasses))
 # - filter by: referenceClasses list
-WD_items = WD_items.filter(WD_items['value'].isin(subclasses))
+WD_items = WD_items\
+   .filter(WD_items['value'].isin(subclasses))
 WD_items = WD_items.select('id')
 
 ### --- Section 3. All wd_dump that are not in WD_items
-WD_dump  = WD_dump.join(WD_items, on=['id'], how='left_anti')
+WD_dump  = WD_dump\
+   .join(WD_items, on=['id'], how='left_anti')
 
-### --- Section 4. Store csv to local filesystem
+### --- Section 4. Store csv to hdfs
 filename = "result_M2_" + wikidataEntitySnapshot + ".csv"
-WD_dump.coalesce(10).write.format('csv').mode("overwrite").save(hdfsDir + filename)
-
-
+WD_dump\
+   .repartition(10)\
+   .write.format('csv')\
+   .mode("overwrite")\
+   .save(hdfsDir + filename)

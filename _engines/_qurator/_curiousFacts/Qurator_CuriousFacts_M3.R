@@ -1,12 +1,14 @@
 #!/usr/bin/env Rscript
 
 ### ---------------------------------------------------------------------------
-### --- Project: QURATOR Current Events
-### --- Script: Q_CE_Functions.R
+### --- Project: QURATOR Curious Facts
+### --- Version 1.0.0
+### --- Script: Qurator_CuriousFacts_M3.R
+### --- September 2021.
 ### --- Author: Goran S. Milovanovic, Data Scientist, WMDE
 ### --- Developed under the contract between Goran Milovanovic PR Data Kolektiv
 ### --- and WMDE.
-### --- Description: functions to support the Qurator Project(s) 
+### --- Description: Finds M3 type anomalies in Wikidata
 ### --- Contact: goran.milovanovic_ext@wikimedia.de
 ### ---------------------------------------------------------------------------
 
@@ -14,45 +16,66 @@
 ### --- LICENSE:
 ### ---------------------------------------------------------------------------
 ### --- GPL v2
-### --- This file is part of QURATOR Current Events
+### --- This file is part of QURATOR Curious Facts
 ### ---
-### --- QURATOR Current Events is free software: you can redistribute it and/or modify
+### --- QURATOR Curious Facts is free software: you can redistribute it and/or modify
 ### --- it under the terms of the GNU General Public License as published by
 ### --- the Free Software Foundation, either version 2 of the License, or
 ### --- (at your option) any later version.
 ### ---
-### --- QURATOR Current Events is distributed in the hope that it will be useful,
+### --- QURATOR Curious Facts is distributed in the hope that it will be useful,
 ### --- but WITHOUT ANY WARRANTY; without even the implied warranty of
 ### --- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ### --- GNU General Public License for more details.
 ### ---
 ### --- You should have received a copy of the GNU General Public License
-### --- along with QURATOR Current Events If not, see <http://www.gnu.org/licenses/>.
+### --- along with QURATOR Curious Facts If not, see <http://www.gnu.org/licenses/>.
 ### ---------------------------------------------------------------------------
 
 ### --- Setup
-library(tidyverse)
-library(httr)
-library(jsonlite)
-library(data.table)
-library(WikidataR)
 
-### --- dirTree
-fPath <- paste0(getwd(), "/")
+# - to runtime Log:
+print(paste(
+  "--- FULL QURATOR Curious Facts M3 update STARTED ON:", 
+  Sys.time(), 
+  sep = " ")
+)
+# - GENERAL TIMING:
+generalT1 <- Sys.time()
+
+# - fPath: where the scripts is run from?
+fPath <- as.character(commandArgs(trailingOnly = FALSE)[4])
+fPath <- gsub("--file=", "", fPath, fixed = TRUE)
+fPath <- unlist(strsplit(fPath, split = "/", fixed = TRUE))
+fPath <- paste(
+  paste(fPath[1:length(fPath) - 1], collapse = "/"),
+  "/",
+  sep = "")
+
+# - renv
+renv::load(project = fPath, quiet = FALSE)
+
+# - lib
+library(WMDEData)
+
+# - dirTree
 dataDir <- paste0(fPath, "_data/")
 analyticsDir <- paste0(fPath, "_analytics/")
 reportingDir <- paste0(fPath, "_reporting/")
-hdfsDir <- 'hdfs:///tmp/wmde/analytics/qurator/'
 
-### --- functions
+# - pars
+params <- XML::xmlParse(paste0(fPath, 
+                               "wd_cluster_fetch_items.xml"))
+params <- XML::xmlToList(params)
+hdfsDir <- params$hdfsDir
+
+# - proxy
+WMDEData::set_proxy()
+
+# - functions
 source(paste0(fPath, 'Q_CF_Functions.R'))
 
-### --- Set proxy for stat100*
-Sys.setenv(
-  http_proxy = 'http://webproxy.eqiad.wmnet:8080',
-  https_proxy = 'http://webproxy.eqiad.wmnet:8080')
-
-### --- WDQS endpoint
+# - WDQS endpoint
 sparqlEndPointURL <- 
   "https://query.wikidata.org/bigdata/namespace/wdq/sparql?format=json&query="
 
@@ -61,35 +84,37 @@ sparqlEndPointURL <-
 ### --- Single Value Property Constraint ETL/Problem Solver
 ### ----------------------------------------------------------------------------
 
+### --- determine wmf.wikidata_entity snapshot
+# - Kerberos init
+WMDEData::kerberos_init(kerberosUser = "analytics-privatedata")
+# - Define query
+queryFile <- paste0(dataDir, 
+                    "snapshot_Query.hql")
+hiveQLquery <- "SHOW PARTITIONS wmf.wikidata_entity;"
+write(hiveQLquery, queryFile)
+# - Run HiveQL query
+filename <- "snapshot.tsv"
+WMDEData::kerberos_runHiveQL(kerberosUser = "analytics-privatedata",
+                             query = queryFile,
+                             localPath = dataDir,
+                             localFilename = filename)
+wikidataEntitySnapshot <- read.table(paste0(dataDir, filename), 
+                                     sep = "\t", 
+                                     stringsAsFactors = FALSE)
+wikidataEntitySnapshot <- tail(wikidataEntitySnapshot$V1, 1)
+wikidataEntitySnapshot <- 
+  stringr::str_extract(wikidataEntitySnapshot,
+                       "[[:digit:]]+-[[:digit:]]+-[[:digit:]]+") 
+
 ### --- WDQS: obtain properties with single value constraints
-query <- 'select distinct ?property where {?property wdt:P2302 wd:Q19474404 .}'
+qr <- 'SELECT DISTINCT ?property WHERE {?property wdt:P2302 wd:Q19474404 .}'
 # - run query:
-repeat {
-  res <- tryCatch({
-    GET(url = paste0(sparqlEndPointURL, URLencode(query)))
-  },
-  error = function(condition) {
-    print("Something's wrong on WDQS: wait 10 secs, try again.")
-    Sys.sleep(10)
-    GET(url = paste0(sparqlEndPointURL, URLencode(query)))
-  },
-  warning = function(condition) {
-    print("Something's wrong on WDQS: wait 10 secs, try again.")
-    Sys.sleep(10)
-    GET(url = paste0(sparqlEndPointURL, URLencode(query)))
-  }
-  )  
-  if (res$status_code == 200) {
-    print(": success.")
-    break
-  } else {
-    print(": failed.")
-  }
-}
+res <- WMDEData::wdqs_send_query(query = qr, 
+                                 SPARQL_Endpoint = sparqlEndPointURL,
+                                 max_retry = 10)
 # - parse res:
 print("--- M3: parse WDQS result.")
-res <- rawToChar(res$content)
-res <- fromJSON(res, simplifyDataFrame = T)
+res <- jsonlite::fromJSON(res, simplifyDataFrame = T)
 res <- res$results$bindings
 res <- data.frame(property = res$property$value,
                   stringsAsFactors = F)
@@ -99,47 +124,25 @@ res$property <- gsub("http://www.wikidata.org/entity/", "", res$property)
 print("--- M3: move to hdfs directory.")
 write.csv(res, 
           paste0(fPath, "singleValueConstraintProperties.csv"))
-system(command = paste0(
-  'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -put -f ',
-  paste0(fPath, "singleValueConstraintProperties.csv"), " ",
-  hdfsDir),
-  wait = T)
-
+WMDEData::hdfs_copy_to(kerberosUser = "analytics-privatedata", 
+                       localPath = fPath,
+                       localFilename = "singleValueConstraintProperties.csv", 
+                       hdfsDir = hdfsDir)
 
 ### --- WDQS: obtain all separators, for all properties w. single value constraints
-query <- 'select ?property ?propertyLabel ?propertyConstraint ?propertyConstraintLabel
-  where {
+qr <- 'SELECT ?property ?propertyLabel ?propertyConstraint ?propertyConstraintLabel
+  WHERE {
     ?property p:P2302 ?statement .
     ?statement pq:P4155 ?propertyConstraint .
     SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
   }'
 # - run query:
-repeat {
-  res <- tryCatch({
-    GET(url = paste0(sparqlEndPointURL, URLencode(query)))
-  },
-  error = function(condition) {
-    print("Something's wrong on WDQS: wait 10 secs, try again.")
-    Sys.sleep(10)
-    GET(url = paste0(sparqlEndPointURL, URLencode(query)))
-  },
-  warning = function(condition) {
-    print("Something's wrong on WDQS: wait 10 secs, try again.")
-    Sys.sleep(10)
-    GET(url = paste0(sparqlEndPointURL, URLencode(query)))
-  }
-  )  
-  if (res$status_code == 200) {
-    print(": success.")
-    break
-  } else {
-    print(": failed.")
-  }
-}
+res <- WMDEData::wdqs_send_query(query = qr, 
+                                 SPARQL_Endpoint = sparqlEndPointURL,
+                                 max_retry = 10)
 # - parse res:
 print("--- M3: parse WDQS result.")
-res <- rawToChar(res$content)
-res <- fromJSON(res, simplifyDataFrame = T)
+res <- jsonlite::fromJSON(res, simplifyDataFrame = T)
 res <- res$results$bindings
 res <- data.frame(property = res$property$value,
                   separator = res$propertyConstraint$value,
@@ -152,17 +155,17 @@ res <- res[!duplicated(res), ]
 print("--- M3: move to hdfs directory.")
 write.csv(res, 
           paste0(fPath, "separators.csv"))
-system(command = paste0(
-  'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -put -f ',
-  paste0(fPath, "separators.csv"), " ",
-  hdfsDir),
-  wait = T)
+WMDEData::hdfs_copy_to(kerberosUser = "analytics-privatedata", 
+                       localPath = fPath,
+                       localFilename = "separators.csv", 
+                       hdfsDir = hdfsDir)
 
 ### --- Apache Spark ETL
 
 # - Spark deployment parameters:
-paramsDeployment <- xmlParse(paste0(fPath, "wd_cluster_fetch_items_Deployment.xml"))
-paramsDeployment <- xmlToList(paramsDeployment)
+paramsDeployment <- XML::xmlParse(paste0(
+  fPath, "wd_cluster_fetch_items_Deployment.xml"))
+paramsDeployment <- XML::xmlToList(paramsDeployment)
 # - spark2-submit parameters:
 sparkMaster <- paramsDeployment$spark$master
 sparkDeployMode <- paramsDeployment$spark$deploy_mode
@@ -172,65 +175,49 @@ sparkExecutorMemory <- paramsDeployment$spark$executor_memory
 sparkConfigDynamic <- paramsDeployment$spark$config
 
 # - Kerberos init
-print("--- wd_cluster_fetch_items_M3: Kerberos init.")
-system(command = 'sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls', 
-       wait = T)
-
-# - Run PySpark ETL
-print("--- wd_cluster_fetch_items_M3: Run PySpark ETL (wd_cluster_fetch_items_M3.py)")
-system(command = paste0('sudo -u analytics-privatedata spark2-submit ', 
-                        sparkMaster, ' ',
-                        sparkDeployMode, ' ',
-                        sparkNumExecutors, ' ',
-                        sparkDriverMemory, ' ',
-                        sparkExecutorMemory, ' ',
-                        sparkConfigDynamic, ' ',
-                        paste0(fPath, 'wd_cluster_fetch_items_M3.py')
-                        ),
-       wait = T)
-
+WMDEData::kerberos_init(kerberosUser = "analytics-privatedata")
+# - Run Spark ETL
+print(
+  "--- wd_cluster_fetch_items_M2: Run PySpark ETL (wd_cluster_fetch_items_M3.py)"
+  )
+WMDEData::kerberos_runSpark(kerberosUser = "analytics-privatedata",
+                            pysparkPath = paste0(fPath, "wd_cluster_fetch_items_M3.py"),
+                            sparkMaster = sparkMaster,
+                            sparkDeployMode = sparkDeployMode,
+                            sparkNumExecutors = sparkNumExecutors,
+                            sparkDriverMemory = sparkDriverMemory,
+                            sparkExecutorMemory = sparkExecutorMemory,
+                            sparkConfigDynamic = sparkConfigDynamic)
 # - exit
 print("--- wd_cluster_fetch_items_M3: DONE; Exit.)")
 
-# - read result - and process it, if there is any
-system(paste0('sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls ', 
-              hdfsDir, ' > ', 
-              dataDir, 'files.txt'), 
-       wait = T)
-files <- read.table(paste0(dataDir, 'files.txt'), skip = 1)
-files <- as.character(files$V8[grepl("result_M3", files$V8)])
-# - collect wdDumpSnapshot
-wdDumpSnapshot <- strsplit(files, "/")[[1]][8]
-wdDumpSnapshot <- gsub("result_M3_", "", wdDumpSnapshot)
-wdDumpSnapshot <- gsub(".csv", "", wdDumpSnapshot, fixed = T)
-system(paste0('sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -ls ',
-              files, ' > ', 
-              dataDir, 'files.txt'), 
-       wait = T)
-files <- read.table(paste0(dataDir, 'files.txt'), skip = 1)
-files <- as.character(files$V8)[2:length(as.character(files$V8))]
-file.remove(paste0(dataDir, 'files.txt'))
-for (j in 1:length(files)) {
-  system(paste0('sudo -u analytics-privatedata kerberos-run-command analytics-privatedata hdfs dfs -text ', 
-                files[j], ' > ',  
-                paste0(dataDir, "results_M3_", j, ".csv")), wait = T)
-}
-# - read splits: dataSet
-# - load
-lF <- list.files(dataDir)
-lF <- lF[grepl("results_M3_", lF)]
-dataSet <- lapply(paste0(dataDir, lF), 
-                  function(x) {fread(x, header = F)})
-# - collect
-dataSet <- rbindlist(dataSet)
-colnames(dataSet) <- c('item', 'itemLabel', 'property', 'propertyLabel', 'num_values')
-dataSet$itemLabel <- gsub('^\\\\"', '', dataSet$itemLabel)
-dataSet$itemLabel <- gsub('\\\\"$', '', dataSet$itemLabel)
-dataSet$propertyLabel <- gsub('^\\\\"', '', dataSet$propertyLabel)
-dataSet$propertyLabel <- gsub('\\\\"$', '', dataSet$propertyLabel)
+### --- read and process result
+hdfsFPx <- paste0("result_M3_", 
+                  wikidataEntitySnapshot, 
+                  ".csv")
+dataSet <- WMDEData::hdfs_read_from(kerberosUser = "analytics-privatedata",
+                                    localPath = dataDir,
+                                    localFilenamePrefix = "results_M1_",
+                                    hdfsDir = hdfsDir,
+                                    hdfsFilenamePrefix = hdfsFPx,
+                                    fr_header = FALSE)
+colnames(dataSet) <- c("item", 
+                       "itemLabel", 
+                       "property", 
+                       "propertyLabel", 
+                       "num_values")
 # - filter for count > 1
 dataSet <- dplyr::filter(dataSet, 
                          num_values > 1)
+# - sanitize dataSet
+dataSet$itemLabel <- gsub('^\\\\"', "", 
+                          dataSet$itemLabel)
+dataSet$itemLabel <- gsub('\\\\"$', "", 
+                          dataSet$itemLabel)
+dataSet$propertyLabel <- gsub('^\\\\"', "", 
+                              dataSet$propertyLabel)
+dataSet$propertyLabel <- gsub('\\\\"$', "", 
+                              dataSet$propertyLabel)
 
 ### ----------------------------------------------------------------------------
 ### --- Module 3: Items that should have one value for a property but have many
@@ -249,17 +236,15 @@ tProperty <- paste0('<a href="https://www.wikidata.org/wiki/Property:',
                     dataSet$propertyLabel,
                     '</a>')
 dataSet$explanation <- paste0(tItem,
-                              ' has multiple values for Property ',
+                              " has multiple values for Property ",
                               tProperty, 
-                              ', but is generally expected to have only one.')
+                              ", but is generally expected to have only one.")
 
 dataSet$establishedOn <- as.character(Sys.time())
 write.csv(dataSet, 
           paste0(reportingDir, "dataM3.csv"))
 infoM3 <- list(problemType = 'M3',
-               wdDumpSnapshot = wdDumpSnapshot)
+               wdDumpSnapshot = wikidataEntitySnapshot)
 infoM3 <- as.data.frame(infoM3)
 write.csv(infoM3, 
           paste0(reportingDir, "infoM3.csv"))
-
-
