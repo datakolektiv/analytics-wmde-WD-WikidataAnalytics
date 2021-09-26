@@ -264,7 +264,7 @@ if ("QCF_MainReport.csv" %in% lF) {
 generalT2 <- Sys.time()
 # - GENERAL TIMING REPORT:
 print(paste0("--- Qurator_CuriousFacts_Orchestra.R RUN COMPLETED IN: ", 
-             generalT2 - generalT1, "."))
+             difftime(generalT2, generalT1, units = "mins"), "."))
 
 ### --------------------------------------------------
 ### --- copy and clean up log files:
