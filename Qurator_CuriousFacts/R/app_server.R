@@ -39,7 +39,7 @@ app_server <- function( input, output, session ) {
   # Your application server logic 
   
   # - endPointURL
-  endPointURL <- 
+  endPointURL <-
     'https://query.wikidata.org/bigdata/namespace/wdq/sparql?query='
   
   ### --- Data
@@ -149,9 +149,12 @@ app_server <- function( input, output, session ) {
           })
       if(is.null(srcimg)) {
         return(
-          NULL
+          '<p style="font-size:150%;"align="left"></p>'
         )
       }
+      # - copy srcimg
+      srcimgfile <- srcimg
+      # - crop image 
       srcimg <- paste0("https://magnus-toolserver.toolforge.org/commonsapi.php?image=", 
                        srcimg, 
                        "&thumbwidth=300")
@@ -159,12 +162,49 @@ app_server <- function( input, output, session ) {
       srcimg <- XML::xmlToList(XML::xmlParse(srcimg))
       
       if (length(!is.null(srcimg$file$urls$thumbnail)) > 0) {
-        return(
+        # - image attribution
+        iaqr <-paste0("https://commons.wikimedia.org/w/api.php?action=query&prop=imageinfo&iiprop=extmetadata&titles=", 
+                      "File:", srcimgfile, 
+                      "&format=json")
+        res <- httr::GET(url = URLencode(iaqr))
+        if (res$status_code == 200) {
+          iaqr <- jsonlite::fromJSON(
+            rawToChar(res$content))
+          iaqr <- iaqr$query$pages[[1]]$imageinfo$extmetadata 
+          license <- iaqr$License$value
+          license_url <- iaqr$LicenseUrl$value
+          if (grepl("Public domain", license)) {
+            license_url <- ""
+          }
+          usage_terms <- iaqr$UsageTerms$value
+          author <- iaqr$Artist$value
+          author <- gsub(".+href", "", author) 
+          re <- regexpr(">[^<>]+<", author)
+          author <- substr(author, 
+                           re+1, 
+                           re+attr(re, "match.length")-2)
+          return(
+            paste0('<p><img src="', 
+                   URLencode(srcimg$file$urls$thumbnail),'">',
+                   '<br>',
+                   'Author: ', author, 
+                   '<br>',
+                   usage_terms, 'br',
+                   ifelse(license_url == "", 
+                          "</p>",
+                          paste0('<a href="', 
+                                 license_url, '">', 
+                                 license, '</a></p>'))
+            )
+          )  
+        } else {
           paste0('<img src="', 
                  URLencode(srcimg$file$urls$thumbnail),'">')
-          )   
+        }
       } else {
-        return(NULL)
+        return(
+          '<p style="font-size:150%;"align="left"></p>'
+        )
       }
     } else {
       return(
@@ -224,6 +264,9 @@ app_server <- function( input, output, session ) {
         if(is.null(srcimg)) {
           return(NULL)
         }
+        # - copy srcimg
+        srcimgfile <- srcimg
+        # - crop image 
         srcimg <- paste0("https://magnus-toolserver.toolforge.org/commonsapi.php?image=", 
                          srcimg, 
                          "&thumbwidth=300")
@@ -231,12 +274,49 @@ app_server <- function( input, output, session ) {
         srcimg <- XML::xmlToList(XML::xmlParse(srcimg))
         
         if (length(!is.null(srcimg$file$urls$thumbnail)) > 0) {
-          return(
+          # - image attribution
+          iaqr <-paste0("https://commons.wikimedia.org/w/api.php?action=query&prop=imageinfo&iiprop=extmetadata&titles=", 
+                        "File:", srcimgfile, 
+                        "&format=json")
+          res <- httr::GET(url = URLencode(iaqr))
+          if (res$status_code == 200) {
+            iaqr <- jsonlite::fromJSON(
+              rawToChar(res$content))
+            iaqr <- iaqr$query$pages[[1]]$imageinfo$extmetadata 
+            license <- iaqr$License$value
+            license_url <- iaqr$LicenseUrl$value
+            if (grepl("Public domain", license)) {
+              license_url <- ""
+            }
+            usage_terms <- iaqr$UsageTerms$value
+            author <- iaqr$Artist$value
+            author <- gsub(".+href", "", author) 
+            re <- regexpr(">[^<>]+<", author)
+            author <- substr(author, 
+                             re+1, 
+                             re+attr(re, "match.length")-2)
+            return(
+              paste0('<p><img src="', 
+                     URLencode(srcimg$file$urls$thumbnail),'">',
+                     '<br>',
+                     'Author: ', author, 
+                     '<br>',
+                     usage_terms, '<br>', 
+                     ifelse(license_url == "", 
+                            "</p>",
+                            paste0('<a href="', 
+                                   license_url, '">', 
+                                   license, '</a></p>'))
+                     )
+            )  
+          } else {
             paste0('<img src="', 
                    URLencode(srcimg$file$urls$thumbnail),'">')
-            )   
+          }
         } else {
-          return(NULL)
+          return(
+            '<p style="font-size:150%;"align="left"></p>'
+          )
         }
       } else {
         return(
