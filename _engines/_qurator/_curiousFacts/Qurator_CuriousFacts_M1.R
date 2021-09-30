@@ -102,14 +102,13 @@ wikidataEntitySnapshot <-
   stringr::str_extract(wikidataEntitySnapshot,
                        "[[:digit:]]+-[[:digit:]]+-[[:digit:]]+") 
 
-
 ### --- load M1 problems
 m1_problems <- read.csv(paste0(fPath, 'm1_problems.csv'), 
                         stringsAsFactors = F, 
                         header = T)
 
 ### --- iterate over problems and solve
-for (i in 1:dim(m1_problems)[1]) {
+for (i in 13:dim(m1_problems)[1]) {
   
   print(paste0("--------------- ", 
                "Solving now problem : ", 
@@ -146,7 +145,6 @@ for (i in 1:dim(m1_problems)[1]) {
                "; ", 
                paste0(targetProperty, "_", targetPropertyLabel), 
                "; ",
-               "; ", 
                paste0(referenceClass, "_", referenceClassLabel), 
                "; ")
         )
@@ -183,11 +181,11 @@ for (i in 1:dim(m1_problems)[1]) {
                         "kerberos-run-command analytics-privatedata ",
                         "hdfs dfs -rmr ", 
                         hdfsDir,
-                        hdfsFPx)
+                        "*")
   system(command = kerberosCom, wait = TRUE)
   
   #  - wrangle dataSet
-  colnames(dataSet) <- c('id', 'propertyValue')
+  colnames(dataSet) <- c('propertyValue', 'id')
   dataSet$property <- targetProperty
   dataSet$propertyLabel <- targetPropertyLabel
   dataSet$referenceClass <- referenceClass
@@ -212,7 +210,6 @@ for (i in 1:dim(m1_problems)[1]) {
   dataSet <- dplyr::left_join(dataSet,
                               itemLabs,
                               by = "propertyValue")
-  
   # - fix for No label defined
   dataSet$itemLabel <- ifelse(dataSet$itemLabel == "", 
                               dataSet$id, 

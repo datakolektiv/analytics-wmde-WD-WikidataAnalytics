@@ -45,7 +45,7 @@ app_ui <- function(request) {
       fluidRow(
         column(width = 12, 
                br(), br(),
-               HTML('<p style="font-family:georgia,garamond,serif;font-size:400%;"align="center"><b>FOR REAL, WIKIDATA..?</b></p>'),
+               HTML('<p style="font-size:400%;"align="left"><b>FOR REAL, WIKIDATA..?</b></p>'),
                br(), br()
         )
       ),

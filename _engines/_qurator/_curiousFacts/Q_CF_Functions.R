@@ -101,7 +101,7 @@ wd_cluster_fetch_items_M1 <- function(class,
   # - SPARQL: collect all subclasses of class
   print("--- wd_cluster_fetch_items_M1: SPARQL: collect all subclasses of class")
   # - construct query:
-  qr <- paste0('SELECT ?subclass WHERE {?subclass wdt:P279/wdt:P279* wd:',
+  qr <- paste0('SELECT ?subclass {?subclass wdt:P279/wdt:P279* wd:',
                class, '}')
   res <- WMDEData::wdqs_send_query(query = qr, 
                                    SPARQL_Endpoint = endPointURL,
@@ -113,6 +113,11 @@ wd_cluster_fetch_items_M1 <- function(class,
   res <- data.frame(subclass = res$subclass$value,
                     stringsAsFactors = F)
   res$subclass <- gsub("http://www.wikidata.org/entity/", "", res$subclass)
+  wL <- which(grepl("^L", res$subclass))
+  if (length(wL) > 0) {
+    res <- dplyr::filter(res, 
+                         !(subclass %in% res$subclass[wL]))
+  }
   # - move to hdfs directory:
   print("--- wd_cluster_fetch_items_M1: move to hdfs directory:")
   write.csv(res, 
@@ -125,7 +130,7 @@ wd_cluster_fetch_items_M1 <- function(class,
   # - SPARQL: collect all subclasses of referenceClass
   print("--- wd_cluster_fetch_items_M1: collect all subclasses of referenceClass:")
   # - construct query:
-  qr <- paste0('SELECT ?subclass WHERE {?subclass wdt:P279/wdt:P279* wd:',
+  qr <- paste0('SELECT ?subclass {?subclass wdt:P279/wdt:P279* wd:',
                referenceClass, '}')
   res <- WMDEData::wdqs_send_query(query = qr, 
                                    SPARQL_Endpoint = endPointURL,
@@ -147,7 +152,6 @@ wd_cluster_fetch_items_M1 <- function(class,
                          hdfsDir = hdfsDir)
 
   # - Pyspark ETL:
-  
   # - Kerberos init
   print("--- wd_cluster_fetch_items_M1: Kerberos init.")
   # - Kerberos init
