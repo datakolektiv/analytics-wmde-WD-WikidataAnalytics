@@ -1,0 +1,15 @@
+version: "3.0"
+
+services:
+  quratorqce:
+    container_name: quratorqcerevolver
+    # To build the image locally, comment out "image" below, and uncomment
+    # "build" and the lines indented under it.
+    image: quratorqcerevolver-img
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    user: 'root'
+    volumes: 
+      - /srv/_data:/app/data
