@@ -12,4 +12,4 @@ services:
     restart: always
     user: 'root'
     volumes: 
-      - /srv/_data:/app/data
+      - /home/goransm/WMDE/WD_Analytics_FrontEnd/_data:/app/data

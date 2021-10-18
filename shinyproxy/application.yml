@@ -100,16 +100,17 @@ proxy:
     description: Wikidata Analytics Portal landing page.
     container-image: wdanalyticslanding-img
     container-network: wd-analytics-net
-  - id: QURATOR_CuriousFacts
+  - id: CuriousFacts
     display-name: Qurator Curious Facts
     description: Finding anomalies in Wikidata.
     container-image: quratorcuriousfacts-img
     container-network: wd-analytics-net
-  - id: QURATOR_CurrentEvents
+  - id: CurrentEvents
     display-name: Qurator Current Events
     description: What is being edited now in Wikidata?
     container-image: quratorcurrentevents-img
     container-network: wd-analytics-net
+    container-volumes: "/srv/_data:/build_zone/data"
   
 logging:
   file:

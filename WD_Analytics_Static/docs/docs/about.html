@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>About</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #ffffff;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html"><img id="logo" style="width: 30px;" src="800px-Wikidata-logo-black-en_fav.png" /></a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    WDCM
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_OverviewDashboard">WDCM Overview Dashboard</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_UsageDashboard">WDCM Usage Dashboard</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_SemanticsDashboard">WDCM Semantics Dashboard</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_BiasesDashboard">WDCM Biases Dashboard</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_GeoDashboard">WDCM Geo Dashboard</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_SitelinksDashboard">WDCM (S)itelinks Dashboard</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_TitlesDashboard">WDCM (T)itles Dashboard</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_StatementsDashboard">WDCM Statements Dashboard</a>
+    </li>
+  </ul>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Analytics
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_pageviewsPerNamespace">WD Pageviews per Namespace</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_percentUsageDashboard">WD Usage and Coverage</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_HumanEdits">WD Human vs Bot Edits per Class</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_GameReferenceHunt">WD Game: Reference Treasure Hunt</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_Inequality">WD Inequality: Hoover Index</a>
+    </li>
+  </ul>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Structural Systems
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_LanguagesLandscape">Wikidata Languages Landscape</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_ExternalIdentifiersDashboard">Wikidata External Identifiers Landscape</a>
+    </li>
+  </ul>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Qurator
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/CuriousFacts">Curious Facts</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/CurrentEvents">Current Events</a>
+    </li>
+  </ul>
+</li>
+<li>
+  <a href="reports.html">Reports</a>
+</li>
+<li>
+  <a href="datasets.html">Datasets</a>
+</li>
+<li>
+  <a href="resources.html">Resources</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">About</h1>
+
+</div>
+
+
+<p><img src="Goran_S_Milovanovic.jpg" /></p>
+<p><strong>Who?</strong></p>
+<p>The Wikidata Analytic Systems encompassed by this portal are developed under contract between <a href="https://www.datakolektiv.com/">DataKolektiv</a> and <a href="https://www.wikimedia.de/">Wikimedia Deutschland</a>, 2017 - 2021. Important cooperation with the <a href="https://wikitech.wikimedia.org/wiki/AnalyticsEngineering">WMF Analytics Engineering</a> and <a href="https://meta.wikimedia.org/wiki/Research:Index">Research</a> teams takes place in the development of Wikidata Analytics. While <a href="https://wikitech.wikimedia.org/wiki/User:GoranSMilovanovic">Goran S. Milovanović, Data Scientist for Wikidata</a> does (almost) all the coding and Data Science here, it would certainly not be possible for a single developer to maintain the understanding and operations across the whole infrastructure that supports the systems encompassed by Wikidata Analytics. Many thanks go to Lydia, Léa, Tobi, Jan, Adam, Amir, Leszek, Franziska, Andrew, Dan, Luca, Joseph, Mikhail, Martin, Isaac, Leila, and many community members for their support, patience, and feedback.</p>
+<p><strong>How do we change things here?</strong></p>
+<p>You can always reach me on <strong>Phabricator</strong> as <code>GoranSM</code> (while the project and workboard are: <code>User-GoranSMilovanovic</code>) if you think something needs to change or happens to be broken. Requests for fixes and new features will typically involve Lydia Pintscher, Product Manager for Wikidata, Wikimedia Deutschland, and someone from the WMDE Engineering Management - probably Leszek Manicki. Open a ticket and I can discuss the proposal with you, but please take into you consideration that development takes place only in coordination with PMs and EMs and following the discussion on available resources and priorities.</p>
+<p><strong>Tech Stack</strong></p>
+<p>I mainly use <a href="https://www.r-project.org/about.html" target="_blank">R</a>. However, the whole zoo encompasses:</p>
+<ul>
+<li>R:
+<ul>
+<li>Front-end: (<a href="https://shiny.rstudio.com/" target="_blank">Shiny</a>, <a href="https://rmarkdown.rstudio.com/" target="_blank">R Markdown</a> - I use either the <a href="https://rstudio.com/products/shiny/download-server/" target="_blank">Open Source Shiny Server</a>, or productionize with <a href="https://github.com/ThinkR-open/golem" target="_blank">golem</a> and scale with <a href="https://www.shinyproxy.io/" target="_blank">ShinyProxy</a> via <a href="https://www.docker.com/" target="_blank">Docker</a>); visualizations: <a href="https://ggplot2.tidyverse.org/" target="_blank">ggplot2</a>, <a href="https://hafen.github.io/rbokeh/" target="_blank">Bokeh</a>, <a href="https://plotly.com/" target="_blank">Plotly</a>, <a href="https://datastorm-open.github.io/visNetwork/" target="_blank">VisNetwork</a>, <a href="https://igraph.org/r/" target="_blank">igraph</a>;</li>
+<li>Back-end/ML: <a href="https://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.html" target="_blank">data.table</a>, <a href="http://text2vec.org/" target="_blank">text2vec</a>, <a href="https://github.com/TaddyLab/maptpx" target="_blank">maptpx</a>, <a href="https://github.com/jkrijthe/Rtsne" target="_blank">Rtsne</a>, <a href="https://xgboost.readthedocs.io/en/latest/" target="_blank">XGBoost</a>, <a href="https://cran.r-project.org/web/packages/Matrix/index.html" target="_blank">Matrix</a>, <a href="https://cran.r-project.org/web/packages/mclust/vignettes/mclust.html" target="_blank">mclust</a>, and probably many more;<br />
+</li>
+</ul></li>
+<li><a href="https://www.python.org/" target="_blank">Python</a>/<a href="https://spark.apache.org/docs/latest/api/python/index.html" target="_blank">Pyspark</a>/<a href="https://spark.apache.org/" target="_blank">Apache Spark</a>, <a href="https://hadoop.apache.org/" target="_blank">Hadoop</a>/<a href="https://en.wikipedia.org/wiki/Apache_Hive" target="_blank">HiveQL</a>, and <a href="https://mariadb.org/" target="_blank">MariaDB</a>, typically for ETL from the WMF Data Lake and local project databases;</li>
+<li><a href="https://www.w3.org/XML/" target="_blank">XML</a>, <a href="https://www.json.org/json-en.html" target="_blank">JSON</a>, <a href="https://www.w3.org/RDF/" target="_blank">RDF</a> (code parameterizations, <a href="https://www.wikidata.org/wiki/Wikidata:Database_download" target="_blank">Wikidata dump processing</a>);</li>
+<li><a href="https://www.w3.org/TR/sparql11-query/" target="_blank">SPARQL</a>, <a href="https://www.wikidata.org/wiki/Wikidata:SPARQL_tutorial" target="_blank">WDQS</a>, in combination with <a href="https://github.com/blazegraph/database/wiki/RDF_GAS_API" target="_blank">Blazegraph GAS programs</a>;</li>
+<li>the <a href="https://www.mediawiki.org/wiki/Wikibase/API" target="_blank">Wikibase MediaWiki API</a>;</li>
+<li>of course <a href="https://rstudio.com/" target="_blank">RStudio</a> is my favorite IDE, but also <a href="https://code.visualstudio.com/" target="_blank">Visual Studio Code</a> and <a href="https://www.jetbrains.com/pycharm/" target="_blank">PyCharm</a>.</li>
+</ul>
+<p><strong>Code and Documentation</strong></p>
+<p>Our code is hosted on <a href="https://gerrit.wikimedia.org/" target="_blank">Gerrit</a> under <code>analytics/wmde</code>; also, on <a href="https://github.com/wikimedia" target="_blank">GitHub, Wikimedia</a> look for things prefixed by <code>analytics-wmde-</code> (<a href="https://github.com/wikimedia?q=analytics-wmde-&amp;type=&amp;language=" target="_blank">here!</a>). Each Wikidata analytic system encompasses links towards the respective repository and documentation (mainly maintained on <a href="https://wikitech.wikimedia.org/wiki/Main_Page">Wikitech</a> and <a href="https://meta.wikimedia.org/wiki/Main_Page">Meta</a>). Most dashboards are self-documented.</p>
+<p><strong>License</strong></p>
+<p>Everything is <a href="https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html">GPL v2.0</a>.</p>
+
+<script type="text/javascript" src="links.js"></script>
+
+<hr>
+<p>
+  <img src="33h_px-Wikidata-logo-black-en.svg.png">
+</p>
+<p style="font-size:13px;">
+  <a href="https://github.com/GoranMilovanovic" target="_blank">Goran S. Milovanović</a>, Data Scientist for Wikidata, <a href="https://www.wikimedia.de/" target="_blank">Wikimedia Deutschland</a>: <a href = "mailto: goran.milovanovic_ext@wikimedia.de">goran.milovanovic_ext@wikimedia.de</a>
+  <br>
+  This is free software: all content and code is <a href="https://www.gnu.org/licenses/old-licenses/gpl-2.0.md" target="_blank">GPL v2.0</a> licensed.
+</p>
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
+</script>
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

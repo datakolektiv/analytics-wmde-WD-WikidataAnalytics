@@ -40,7 +40,7 @@ options(dplyr.summarise.inform = FALSE)
 dataDir <- "data/"
 
 ### --- Constants
-nTop_users <- 20
+nTop_Freqs <- 20
 
 ### --- Functions
 # - fetch item labels in batches 
@@ -163,10 +163,6 @@ repeat {
     # - load batch
     batch <- 
       readRDS(paste0(dataDir, "batch.Rds"))
-    
-    # - load aggregate: 1 hour
-    aggRev_hours1 <- 
-      readRDS(paste0(dataDir, "aggRev_hours1.Rds"))
     
     # - endTimestamp
     endTimestamp <- as.character(max(batch$timestamp))
@@ -304,44 +300,54 @@ repeat {
     saveRDS(rc, 
             paste0(dataDir, "batch.Rds"))
     
-    # - update aggregate: 1 hour
-    aggRev_hours1 <- rbind(aggRev_hours1, rc)
-    # - check for duplicated revisions, if any
-    w <- duplicated(
-      aggRev_hours1[, 
-                    c('title', 'revid', 'timestamp', 'user')]
-    )
-    if (length(w) > 0) {
-      aggRev_hours1 <- aggRev_hours1[-w, ]
-    }
-    # - keep 1 hour of data only
-    aggRev_hours1 <- dplyr::arrange(aggRev_hours1, desc(timestamp))
-    cutOff_timestamp <- max(aggRev_hours1$timestamp) - 60*60
-    aggRev_hours1 <- dplyr::filter(aggRev_hours1,
-                                   timestamp >= cutOff_timestamp)
-    # - save aggregate: 1 hour
-    saveRDS(aggRev_hours1, 
-            paste0(dataDir, "aggRev_hours1.Rds"))
-    
-    # - produce statistics for 1 hour
-    aggRev_hours1_stats <- aggRev_hours1 %>% 
-      dplyr::select(title, en_label, timestamp, user) %>% 
-      dplyr::group_by(title) %>% 
-      dplyr::summarise(revisions = dplyr::n(), 
-                       label = tail(en_label, 1), 
-                       timestamp = max(timestamp), 
-                       n_users = dplyr::n_distinct(user)) %>% 
-      dplyr::arrange(dplyr::desc(revisions))
-    aggRev_hours1_stats <- dplyr::filter(aggRev_hours1_stats,
-                                         n_users >= 3)
-    frequencies <- head(sort(
-      unique(aggRev_hours1_stats$n_users), decreasing = T), 
-      nTop_users)
-    aggRev_hours1_stats <- aggRev_hours1_stats %>%
-      dplyr::filter(revisions %in% frequencies)
-    # - save statistics for 1 hour
-    saveRDS(aggRev_hours1_stats, 
-            paste0(dataDir, "aggRev_hours1_stats.Rds"))
+    ### --- update aggregates:
+    hours <- c(6, 24, 48, 72)
+    aggs <- lapply(hours, function(x) {
+      # - load existing aggregate:
+      filename <- paste0("aggRev_hours", x, ".Rds")
+      aggRev_hours <- 
+        readRDS(paste0(dataDir, filename))
+      # - add new batch
+      aggRev_hours <- rbind(aggRev_hours, rc)
+      # - check for duplicated revisions, if any
+      w <- duplicated(
+        aggRev_hours[, c('title', 'revid', 'timestamp', 'user')]
+      )
+      if (length(w) > 0) {
+        aggRev_hours <- aggRev_hours[-w, ]
+      }
+      # - keep x hour of data only
+      aggRev_hours <- dplyr::arrange(aggRev_hours, desc(timestamp))
+      cutOff_timestamp <- max(aggRev_hours$timestamp) - x*60*60
+      aggRev_hours <- dplyr::filter(aggRev_hours,
+                                    timestamp >= cutOff_timestamp)
+      # - save aggregate: x hours
+      saveRDS(aggRev_hours, 
+              paste0(dataDir, filename))
+      
+      # - produce statistics for x hours
+      aggRev_hours_stats <- aggRev_hours %>% 
+        dplyr::select(title, en_label, timestamp, user) %>% 
+        dplyr::group_by(title) %>% 
+        dplyr::summarise(revisions = dplyr::n(), 
+                         label = tail(en_label, 1), 
+                         timestamp = max(timestamp), 
+                         n_users = dplyr::n_distinct(user)) %>% 
+        dplyr::arrange(dplyr::desc(revisions))
+      aggRev_hours_stats <- dplyr::filter(aggRev_hours_stats,
+                                          revisions >= 2)
+      frequencies <- head(sort(
+        unique(aggRev_hours_stats$revisions), decreasing = T), 
+        nTop_Freqs)
+      aggRev_hours_stats <- aggRev_hours_stats %>%
+        dplyr::filter(revisions %in% frequencies)
+      # - save statistics for x hours
+      filename <- paste0("aggRev_hours", 
+                         x,
+                         "_stats.Rds")
+      saveRDS(aggRev_hours_stats, 
+              paste0(dataDir, filename))
+    })
     
   } else {
     
@@ -415,8 +421,14 @@ repeat {
     # - save batch
     saveRDS(rc, paste0(dataDir, "batch.Rds"))
     
-    # - save aggregate: 1 hour
-    saveRDS(rc, paste0(dataDir, "aggRev_hours1.Rds"))
+    # - save aggregate: 6 hours
+    saveRDS(rc, paste0(dataDir, "aggRev_hours6.Rds"))
+    # - save aggregate: 24 hours
+    saveRDS(rc, paste0(dataDir, "aggRev_hours24.Rds"))
+    # - save aggregate: 48 hours
+    saveRDS(rc, paste0(dataDir, "aggRev_hours48.Rds"))
+    # - save aggregate: 72 hours
+    saveRDS(rc, paste0(dataDir, "aggRev_hours72.Rds"))
     
   }
   

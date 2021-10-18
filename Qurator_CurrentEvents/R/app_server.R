@@ -38,43 +38,46 @@
 app_server <- function( input, output, session ) {
 
   ### --- constants
-  pubDir <- 
-    'https://analytics.wikimedia.org/published/datasets/wmde-analytics-engineering/Qurator/'
+  dataDir <- "data/"
   googleNews <- 
     'https://news.google.com/search?q='
   
   # - output$updateTimestamp
   output$updateTimestamp <- renderText({
-    # - get update stamp:
-    h <- curl::new_handle()
-    curl::handle_setopt(h,
-                        copypostfields = "QURATOR_CurrentEvents");
-    curl::handle_setheaders(h,
-                            "Cache-Control" = "no-cache"
-    )
-    timestamp <- curl::curl_fetch_memory(URLencode(pubDir))
-    timestamp <- rawToChar(timestamp$content)
-    timestamp <- stringr::str_extract_all(timestamp, 
-                                          "[[:digit:]]+-[[:digit:]]+-[[:digit:]]+\\s[[:digit:]]+:[[:digit:]]+")[[1]][1]
-    timestamp <- trimws(timestamp, which = "both")
-    ifelse(is.na(timestamp),
-           "No update timestamp info is available at this point.",
-           paste0("Updated: ", timestamp, " UTC")
-    )
+    
+    # - invalidate: every 10 minutes
+    invalidateLater(1000 * 60 * 10, session)
+    
+    tryCatch({
+      
+      f <- file.info(paste0(dataDir, 
+                            "batch.Rds"))$ctime
+      attr(f, "tzone") <- "UTC"
+      return(paste0("<b>Latest update batch timestamp:</b> ",
+                    paste0(as.character(f),
+                           " UTC"))
+             )
+      
+    }, 
+    error = function(condition) {
+      return(NULL)
+    })
     
   })
   
-  # - output$minutes10_update
-  output$minutes10_update <- DT::renderDataTable({
+  # - output$hours6_update
+  output$hours6_update <- DT::renderDataTable({
     
-    # - invalidate: every minute
-    invalidateLater(1000 * 60, session)
-    
-    # - load data and provide
-    dataSet <- readRDS(gzcon(url(paste0(pubDir,
-                                        "aggRev_minutes10_stats.Rds"))))
-    
-    if (dim(dataSet)[1] > 0) {
+    tryCatch({
+      
+      # - invalidate: every 10 minutes
+      invalidateLater(1000 * 60 * 10, session)
+      
+      # - load data and provide
+      dataSet <- readRDS(paste0(dataDir, "aggRev_hours6_stats.Rds"))
+      dataSet <- dplyr::arrange(dataSet, 
+                                dplyr::desc(n_users),
+                                dplyr::desc(revisions))
       
       # - fix missing labels
       dataSet$label[nchar(dataSet$label) == 0 | 
@@ -97,7 +100,74 @@ app_server <- function( input, output, session ) {
                          dataSet$label) 
       newsLink <- paste0('<a href="', 
                          newsLink,
-                         '" target="_blank">Search URL</a>')
+                         '" target="_blank">News search</a>')
+      w <- which(grepl("No label defined", newsLink))
+      if (length(w) > 0) {
+        newsLink[w] <- ""
+      }
+      dataSet <- data.frame(Entity = url, 
+                            Revisions = dataSet$revisions, 
+                            Timestamp = dataSet$timestamp,
+                            Editors = dataSet$n_users,
+                            Search = newsLink,
+                            stringsAsFactors = F) %>% 
+        dplyr::filter(Revisions >= 3)
+      
+      DT::datatable(dataSet,
+                    options = list(
+                      pageLength = 25,
+                      width = '100%',
+                      escape = F,
+                      columnDefs = list(list(className = 'dt-left', 
+                                             targets = "_all"))
+                    ),
+                    rownames = FALSE, 
+                    escape = F
+      )
+      
+    }, 
+    error = function(condition) {
+      return(NULL)
+    })
+    
+  })
+  
+  # - output$hours24_update
+  output$hours24_update <- DT::renderDataTable({
+    
+    tryCatch({
+      
+      # - invalidate: every 10 minutes
+      invalidateLater(1000 * 60 * 10, session)
+      
+      # - load data and provide
+      dataSet <- readRDS(paste0(dataDir, "aggRev_hours24_stats.Rds"))
+      dataSet <- dplyr::arrange(dataSet, 
+                                dplyr::desc(n_users),
+                                dplyr::desc(revisions))
+      
+      # - fix missing labels
+      dataSet$label[nchar(dataSet$label) == 0 | 
+                      grepl("No label defined", dataSet$label)] <- 
+        dataSet$title[nchar(dataSet$label) == 0 | 
+                        grepl("No label defined", dataSet$label)]
+      
+      # - produce html
+      url <- paste0('https://www.wikidata.org/wiki/', 
+                    dataSet$title)
+      text <- paste0(dataSet$label,
+                     " (",
+                     dataSet$title,
+                     ")")
+      url <- paste0('<a href="', 
+                    url, '" target="_blank">', 
+                    text, 
+                    "</a>")
+      newsLink <- paste0(googleNews, 
+                         dataSet$label) 
+      newsLink <- paste0('<a href="', 
+                         newsLink,
+                         '" target="_blank">News search</a>')
       w <- which(grepl("No label defined", newsLink))
       if (length(w) > 0) {
         newsLink[w] <- ""
@@ -121,38 +191,26 @@ app_server <- function( input, output, session ) {
                     escape = F
       )
       
-    } else {
-      
-      dataSet <- data.frame(`Message` = "No current events in the previous ten minutes.")
-      
-      DT::datatable(dataSet,
-                    options = list(
-                      pageLength = 25,
-                      width = '100%',
-                      escape = F,
-                      columnDefs = list(list(className = 'dt-left', targets = "_all"))
-                    ),
-                    rownames = FALSE,
-                    escape = F
-                    
-      )
-      
-    }
+    }, 
+    error = function(condition) {
+      return(NULL)
+    })
     
   })
   
-  # - output$hours1_update
-  output$hours1_update <- DT::renderDataTable({
+  # - output$hours48_update
+  output$hours48_update <- DT::renderDataTable({
     
-    # - invalidate: every minute
-    invalidateLater(1000 * 60, session)
-    
-    # - load data and provide
-    dataSet <- readRDS(gzcon(url(paste0(pubDir,
-                                        "aggRev_hours1_stats.Rds"))))
-    
-    # - check if there is any current events, process or not
-    if (dim(dataSet)[1] > 0) {
+    tryCatch({
+      
+      # - invalidate: every 10 minutes
+      invalidateLater(1000 * 60 * 10, session)
+      
+      # - load data and provide
+      dataSet <- readRDS(paste0(dataDir, "aggRev_hours48_stats.Rds"))
+      dataSet <- dplyr::arrange(dataSet, 
+                                dplyr::desc(n_users),
+                                dplyr::desc(revisions))
       
       # - fix missing labels
       dataSet$label[nchar(dataSet$label) == 0 | 
@@ -175,7 +233,7 @@ app_server <- function( input, output, session ) {
                          dataSet$label) 
       newsLink <- paste0('<a href="', 
                          newsLink,
-                         '" target="_blank">Search URL</a>')
+                         '" target="_blank">News search</a>')
       w <- which(grepl("No label defined", newsLink))
       if (length(w) > 0) {
         newsLink[w] <- ""
@@ -185,8 +243,8 @@ app_server <- function( input, output, session ) {
                             Timestamp = dataSet$timestamp,
                             Editors = dataSet$n_users,
                             Search = newsLink,
-                            stringsAsFactors = F)%>% 
-        dplyr::filter(Revisions >= 5)
+                            stringsAsFactors = F) %>% 
+        dplyr::filter(Revisions >= 3)
       
       DT::datatable(dataSet,
                     options = list(
@@ -195,14 +253,65 @@ app_server <- function( input, output, session ) {
                       escape = F,
                       columnDefs = list(list(className = 'dt-left', targets = "_all"))
                     ),
-                    rownames = FALSE,
+                    rownames = FALSE, 
                     escape = F
-                    
       )
       
-    } else {
+    }, 
+    error = function(condition) {
+      return(NULL)
+    })
+    
+    
+  })
+  
+  # - output$hours72_update
+  output$hours72_update <- DT::renderDataTable({
+    
+    tryCatch({
       
-      dataSet <- data.frame(`Message` = "No current events in the previous hour.")
+      # - invalidate: every 10 minutes
+      invalidateLater(1000 * 60 * 10, session)
+      
+      # - load data and provide
+      dataSet <- readRDS(paste0(dataDir, "aggRev_hours72_stats.Rds"))
+      dataSet <- dplyr::arrange(dataSet, 
+                                dplyr::desc(n_users),
+                                dplyr::desc(revisions))
+      
+      # - fix missing labels
+      dataSet$label[nchar(dataSet$label) == 0 | 
+                      grepl("No label defined", dataSet$label)] <- 
+        dataSet$title[nchar(dataSet$label) == 0 | 
+                        grepl("No label defined", dataSet$label)]
+      
+      # - produce html
+      url <- paste0('https://www.wikidata.org/wiki/', 
+                    dataSet$title)
+      text <- paste0(dataSet$label,
+                     " (",
+                     dataSet$title,
+                     ")")
+      url <- paste0('<a href="', 
+                    url, '" target="_blank">', 
+                    text, 
+                    "</a>")
+      newsLink <- paste0(googleNews, 
+                         dataSet$label) 
+      newsLink <- paste0('<a href="', 
+                         newsLink,
+                         '" target="_blank">News search</a>')
+      w <- which(grepl("No label defined", newsLink))
+      if (length(w) > 0) {
+        newsLink[w] <- ""
+      }
+      dataSet <- data.frame(Entity = url, 
+                            Revisions = dataSet$revisions, 
+                            Timestamp = dataSet$timestamp,
+                            Editors = dataSet$n_users,
+                            Search = newsLink,
+                            stringsAsFactors = F) %>% 
+        dplyr::filter(Revisions >= 3)
       
       DT::datatable(dataSet,
                     options = list(
@@ -211,12 +320,14 @@ app_server <- function( input, output, session ) {
                       escape = F,
                       columnDefs = list(list(className = 'dt-left', targets = "_all"))
                     ),
-                    rownames = FALSE,
+                    rownames = FALSE, 
                     escape = F
-                    
       )
       
-    }
+    }, 
+    error = function(condition) {
+      return(NULL)
+    })
     
     
   })

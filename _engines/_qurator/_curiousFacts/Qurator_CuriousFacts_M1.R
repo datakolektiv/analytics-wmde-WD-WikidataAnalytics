@@ -108,7 +108,7 @@ m1_problems <- read.csv(paste0(fPath, 'm1_problems.csv'),
                         header = T)
 
 ### --- iterate over problems and solve
-for (i in 13:dim(m1_problems)[1]) {
+for (i in 1:dim(m1_problems)[1]) {
   
   print(paste0("--------------- ", 
                "Solving now problem : ", 
