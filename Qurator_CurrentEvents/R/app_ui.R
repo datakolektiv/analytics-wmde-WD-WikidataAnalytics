@@ -45,12 +45,21 @@ app_ui <- function(request) {
       fluidRow(
         column(width = 6,
                br(),
-               tags$img(src = "www/Wikidata-logo-en.png"),
+               div(class="float-container",
+                   div(class="float-child", 
+                       style="display: inline-block; width: 300px;",
+                       tags$img(src = "www/Wikidata-logo-en.png")
+                       ),
+                   div(class="float-child", 
+                       style="display: inline-block; width: 900px;",
+                       h1("Wikidata Current Events Dashboard")
+                       )
+               ),
+               br(),
                includeMarkdown(system.file("app/www/dashboard_header.html", 
                                            package = "QuratorCurentEvents")),
                # hr(),
                htmlOutput("updateTimestamp"),
-               htmlOutput("wd"),
                hr()
         )
       ),

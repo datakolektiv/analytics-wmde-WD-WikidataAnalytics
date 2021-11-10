@@ -107,19 +107,18 @@ app_server <- function( input, output, session ) {
       }
       dataSet <- data.frame(Entity = url, 
                             Revisions = dataSet$revisions, 
-                            Timestamp = dataSet$timestamp,
                             Editors = dataSet$n_users,
-                            Search = newsLink,
                             stringsAsFactors = F) %>% 
         dplyr::filter(Revisions >= 3)
       
       DT::datatable(dataSet,
                     options = list(
+                      bFilter = 0,
                       pageLength = 25,
                       width = '100%',
                       escape = F,
-                      columnDefs = list(list(className = 'dt-left', 
-                                             targets = "_all"))
+                      columnDefs = list(list(className = 'dt-right', 
+                                             targets = 1:2))
                     ),
                     rownames = FALSE, 
                     escape = F
@@ -174,18 +173,18 @@ app_server <- function( input, output, session ) {
       }
       dataSet <- data.frame(Entity = url, 
                             Revisions = dataSet$revisions, 
-                            Timestamp = dataSet$timestamp,
                             Editors = dataSet$n_users,
-                            Search = newsLink,
                             stringsAsFactors = F) %>% 
         dplyr::filter(Revisions >= 3)
       
       DT::datatable(dataSet,
                     options = list(
+                      bFilter = 0,
                       pageLength = 25,
                       width = '100%',
                       escape = F,
-                      columnDefs = list(list(className = 'dt-left', targets = "_all"))
+                      columnDefs = list(list(className = 'dt-right', 
+                                             targets = 1:2))
                     ),
                     rownames = FALSE, 
                     escape = F
@@ -240,18 +239,18 @@ app_server <- function( input, output, session ) {
       }
       dataSet <- data.frame(Entity = url, 
                             Revisions = dataSet$revisions, 
-                            Timestamp = dataSet$timestamp,
                             Editors = dataSet$n_users,
-                            Search = newsLink,
                             stringsAsFactors = F) %>% 
         dplyr::filter(Revisions >= 3)
       
       DT::datatable(dataSet,
                     options = list(
+                      bFilter = 0,
                       pageLength = 25,
                       width = '100%',
                       escape = F,
-                      columnDefs = list(list(className = 'dt-left', targets = "_all"))
+                      columnDefs = list(list(className = 'dt-right', 
+                                             targets = 1:2))
                     ),
                     rownames = FALSE, 
                     escape = F
@@ -307,18 +306,18 @@ app_server <- function( input, output, session ) {
       }
       dataSet <- data.frame(Entity = url, 
                             Revisions = dataSet$revisions, 
-                            Timestamp = dataSet$timestamp,
                             Editors = dataSet$n_users,
-                            Search = newsLink,
                             stringsAsFactors = F) %>% 
         dplyr::filter(Revisions >= 3)
       
       DT::datatable(dataSet,
                     options = list(
+                      bFilter = 0, 
                       pageLength = 25,
                       width = '100%',
                       escape = F,
-                      columnDefs = list(list(className = 'dt-left', targets = "_all"))
+                      columnDefs = list(list(className = 'dt-right', 
+                                             targets = 1:2))
                     ),
                     rownames = FALSE, 
                     escape = F
