@@ -43,132 +43,131 @@ app_ui <- function(request) {
     fluidPage(
       
       fluidRow(
-        column(width = 6,
+        column(width = 12,
                br(),
-               div(class="float-container",
-                   div(class="float-child", 
-                       style="display: inline-block; width: 300px;",
-                       tags$img(src = "www/Wikidata-logo-en.png")
-                       ),
-                   div(class="float-child", 
-                       style="display: inline-block; width: 900px;",
-                       h1("Wikidata Current Events Dashboard")
-                       )
-               ),
+               tags$img(src = "www/Wikidata-logo-en.png")
+               )
+      ),
+      
+      fluidRow(
+        column(width = 12,
                br(),
-               includeMarkdown(system.file("app/www/dashboard_header.html", 
+               includeMarkdown(system.file("app/www/dashboard_header.html",
                                            package = "QuratorCurentEvents")),
                # hr(),
                htmlOutput("updateTimestamp"),
                hr()
-        )
+               )
       ),
-        
-            tabsetPanel(type = "tabs",
-                        
-                        tabPanel("6 hours", 
-                                 
-                                 fluidRow(
-                                   column(width = 12,
-                                          h3("Frequently revised items in the previous 6 hours"),
-                                          hr(),
-                                          includeMarkdown(system.file("app/www/last_6hours.html", 
-                                                                      package = "QuratorCurentEvents")),
-                                          br(), br(),
-                                          shinycssloaders::withSpinner(DT::dataTableOutput("hours6_update"))
-                                   )
-                                 ),
-                                 
-                                 fluidRow(
-                                   column(width = 12,
-                                          hr(),
-                                          HTML('<p style="font-size:80%;"><b>Wikidata Current Events :: Wikidata, WMDE 2020</b><br></p>'),
-                                          HTML('<p style="font-size:80%;"><b>Contact:</b> Goran S. Milovanovic, Data Scientist, WMDE<br>
+      
+      fluidRow(
+        column(width = 12,
+               tabsetPanel(type = "tabs",
+                           
+                           tabPanel("6h", 
+                                    
+                                    fluidRow(
+                                      column(width = 12,
+                                             h3("Frequently revised items in the previous 6 hours"),
+                                             hr(),
+                                             includeMarkdown(system.file("app/www/last_6hours.html", 
+                                                                         package = "QuratorCurentEvents")),
+                                             br(), br(),
+                                             shinycssloaders::withSpinner(DT::dataTableOutput("hours6_update"))
+                                      )
+                                    ),
+                                    
+                                    fluidRow(
+                                      column(width = 12,
+                                             hr(),
+                                             HTML('<p style="font-size:80%;"><b>Wikidata Current Events :: Wikidata, WMDE 2020</b><br></p>'),
+                                             HTML('<p style="font-size:80%;"><b>Contact:</b> Goran S. Milovanovic, Data Scientist, WMDE<br>
                                                   <b>e-mail:</b> goran.milovanovic_ext@wikimedia.de<br><b>IRC:</b> goransm</p>'),
-                                          br(), br()
-                                   )
-                                 )
-                                 
-                        ),
-                        
-                        tabPanel("24 hours",
-                                 
-                                 fluidRow(
-                                   column(width = 12,
-                                          h3("Frequently revised items in the previous 24 hours"),
-                                          hr(),
-                                          HTML("<b>Updated every minute</b>"),
-                                          includeMarkdown(system.file("app/www/last_24hours.html", 
-                                                                      package = "QuratorCurentEvents")),
-                                          br(), br(),
-                                          shinycssloaders::withSpinner(DT::dataTableOutput("hours24_update"))
-                                   )
-                                 ),
-                                 
-                                 fluidRow(
-                                   column(width = 12,
-                                          hr(),
-                                          HTML('<p style="font-size:80%;"><b>Wikidata Current Events :: Wikidata, WMDE 2020</b><br></p>'),
-                                          HTML('<p style="font-size:80%;"><b>Contact:</b> Goran S. Milovanovic, Data Scientist, WMDE<br>
+                                             br(), br()
+                                      )
+                                    )
+                                    
+                           ),
+                           
+                           tabPanel("24h",
+                                    
+                                    fluidRow(
+                                      column(width = 12,
+                                             h3("Frequently revised items in the previous 24 hours"),
+                                             hr(),
+                                             HTML("<b>Updated every minute</b>"),
+                                             includeMarkdown(system.file("app/www/last_24hours.html", 
+                                                                         package = "QuratorCurentEvents")),
+                                             br(), br(),
+                                             shinycssloaders::withSpinner(DT::dataTableOutput("hours24_update"))
+                                      )
+                                    ),
+                                    
+                                    fluidRow(
+                                      column(width = 12,
+                                             hr(),
+                                             HTML('<p style="font-size:80%;"><b>Wikidata Current Events :: Wikidata, WMDE 2020</b><br></p>'),
+                                             HTML('<p style="font-size:80%;"><b>Contact:</b> Goran S. Milovanovic, Data Scientist, WMDE<br>
                                                   <b>e-mail:</b> goran.milovanovic_ext@wikimedia.de<br><b>IRC:</b> goransm</p>'),
-                                          br(), br()
-                                          )
-                                   )
-                                 ),
-                        
-                        tabPanel("48 hours",
-                                 
-                                 fluidRow(
-                                   column(width = 12,
-                                          h3("Frequently revised items in the previous 48 hours"),
-                                          hr(),
-                                          HTML("<b>Updated every minute</b>"),
-                                          includeMarkdown(system.file("app/www/last_48hours.html", 
-                                                                      package = "QuratorCurentEvents")),
-                                          br(), br(),
-                                          shinycssloaders::withSpinner(DT::dataTableOutput("hours48_update"))
-                                   )
-                                 ),
-                                 
-                                 fluidRow(
-                                   column(width = 12,
-                                          hr(),
-                                          HTML('<p style="font-size:80%;"><b>Wikidata Current Events :: Wikidata, WMDE 2020</b><br></p>'),
-                                          HTML('<p style="font-size:80%;"><b>Contact:</b> Goran S. Milovanovic, Data Scientist, WMDE<br>
+                                             br(), br()
+                                      )
+                                    )
+                           ),
+                           
+                           tabPanel("48h",
+                                    
+                                    fluidRow(
+                                      column(width = 12,
+                                             h3("Frequently revised items in the previous 48 hours"),
+                                             hr(),
+                                             HTML("<b>Updated every minute</b>"),
+                                             includeMarkdown(system.file("app/www/last_48hours.html", 
+                                                                         package = "QuratorCurentEvents")),
+                                             br(), br(),
+                                             shinycssloaders::withSpinner(DT::dataTableOutput("hours48_update"))
+                                      )
+                                    ),
+                                    
+                                    fluidRow(
+                                      column(width = 12,
+                                             hr(),
+                                             HTML('<p style="font-size:80%;"><b>Wikidata Current Events :: Wikidata, WMDE 2020</b><br></p>'),
+                                             HTML('<p style="font-size:80%;"><b>Contact:</b> Goran S. Milovanovic, Data Scientist, WMDE<br>
                                                   <b>e-mail:</b> goran.milovanovic_ext@wikimedia.de<br><b>IRC:</b> goransm</p>'),
-                                          br(), br()
-                                   )
-                                 )
-                        ),
-                        
-                        tabPanel("72 hours",
-                                 
-                                 fluidRow(
-                                   column(width = 12,
-                                          h3("Frequently revised items in the previous 72 hours"),
-                                          hr(),
-                                          HTML("<b>Updated every minute</b>"),
-                                          includeMarkdown(system.file("app/www/last_72hours.html", 
-                                                                      package = "QuratorCurentEvents")),
-                                          br(), br(),
-                                          shinycssloaders::withSpinner(DT::dataTableOutput("hours72_update"))
-                                   )
-                                 ),
-                                 
-                                 fluidRow(
-                                   column(width = 12,
-                                          hr(),
-                                          HTML('<p style="font-size:80%;"><b>Wikidata Current Events :: Wikidata, WMDE 2020</b><br></p>'),
-                                          HTML('<p style="font-size:80%;"><b>Contact:</b> Goran S. Milovanovic, Data Scientist, WMDE<br>
+                                             br(), br()
+                                      )
+                                    )
+                           ),
+                           
+                           tabPanel("72h",
+                                    
+                                    fluidRow(
+                                      column(width = 12,
+                                             h3("Frequently revised items in the previous 72 hours"),
+                                             hr(),
+                                             HTML("<b>Updated every minute</b>"),
+                                             includeMarkdown(system.file("app/www/last_72hours.html", 
+                                                                         package = "QuratorCurentEvents")),
+                                             br(), br(),
+                                             shinycssloaders::withSpinner(DT::dataTableOutput("hours72_update"))
+                                      )
+                                    ),
+                                    
+                                    fluidRow(
+                                      column(width = 12,
+                                             hr(),
+                                             HTML('<p style="font-size:80%;"><b>Wikidata Current Events :: Wikidata, WMDE 2020</b><br></p>'),
+                                             HTML('<p style="font-size:80%;"><b>Contact:</b> Goran S. Milovanovic, Data Scientist, WMDE<br>
                                                   <b>e-mail:</b> goran.milovanovic_ext@wikimedia.de<br><b>IRC:</b> goransm</p>'),
-                                          br(), br()
-                                   )
-                                 )
-                        )
-                        
-                        )
-            )
+                                             br(), br()
+                                             )
+                                      )
+                                    )
+                           )
+               )
         )
+      )
+    )
 
   }
 
