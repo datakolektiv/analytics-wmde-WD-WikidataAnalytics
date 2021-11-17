@@ -49,6 +49,9 @@ RUN Rscript -e 'remotes::install_github("r-lib/usethis@6cc7d34082d06acbdb8f483dc
 RUN Rscript -e 'remotes::install_github("Thinkr-open/golem@0603f0915d7bab71a9f6ce0452030d63bf95efac")'
 RUN Rscript -e 'install.packages("markdown")'
 RUN Rscript -e 'install.packages("shinycssloaders")'
+RUN Rscript -e 'install.packages("httr")'
+RUN Rscript -e 'install.packages("jsonlite")'
+RUN Rscript -e 'install.packages("data.table")'
 
 RUN mkdir /build_zone
 ADD . /build_zone
