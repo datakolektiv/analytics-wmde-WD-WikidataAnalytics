@@ -206,6 +206,7 @@ repeat {
                       '&rclimit=500',
                       '&rcprop=title|redirect|timestamp|ids|user',
                       '&rctype=edit',
+                      '&rcshow=!bot',
                       '&format=json')
     counter = 1
     repeat {
@@ -368,6 +369,7 @@ repeat {
                       '&rclimit=100',
                       '&rcprop=title|redirect|timestamp|ids|user',
                       '&rctype=edit',
+                      '&rcshow=!bot',
                       '&format=json')
     
     # - this is the first batch
