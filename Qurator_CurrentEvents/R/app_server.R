@@ -157,7 +157,8 @@ app_server <- function( input, output, session ) {
       dataSet <- readRDS(paste0(dataDir, "aggRev_hours6_stats.Rds"))
       dataSet <- dplyr::arrange(dataSet, 
                                 dplyr::desc(n_users),
-                                dplyr::desc(revisions))
+                                dplyr::desc(revisions)) %>% 
+        dplyr::filter(n_users > 1)
       
       # - fix missing labels
       dataSet$label[nchar(dataSet$label) == 0 | 
@@ -237,7 +238,8 @@ app_server <- function( input, output, session ) {
       dataSet <- readRDS(paste0(dataDir, "aggRev_hours24_stats.Rds"))
       dataSet <- dplyr::arrange(dataSet, 
                                 dplyr::desc(n_users),
-                                dplyr::desc(revisions))
+                                dplyr::desc(revisions)) %>% 
+        dplyr::filter(n_users > 1)
       
       # - fix missing labels
       dataSet$label[nchar(dataSet$label) == 0 | 
@@ -317,7 +319,8 @@ app_server <- function( input, output, session ) {
       dataSet <- readRDS(paste0(dataDir, "aggRev_hours48_stats.Rds"))
       dataSet <- dplyr::arrange(dataSet, 
                                 dplyr::desc(n_users),
-                                dplyr::desc(revisions))
+                                dplyr::desc(revisions)) %>% 
+        dplyr::filter(n_users > 1)
       
       # - fix missing labels
       dataSet$label[nchar(dataSet$label) == 0 | 
@@ -398,7 +401,8 @@ app_server <- function( input, output, session ) {
       dataSet <- readRDS(paste0(dataDir, "aggRev_hours72_stats.Rds"))
       dataSet <- dplyr::arrange(dataSet, 
                                 dplyr::desc(n_users),
-                                dplyr::desc(revisions))
+                                dplyr::desc(revisions)) %>% 
+        dplyr::filter(n_users > 1)
       
       # - fix missing labels
       dataSet$label[nchar(dataSet$label) == 0 | 
