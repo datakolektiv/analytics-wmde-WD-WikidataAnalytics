@@ -6,27 +6,6 @@
 ### --- Developed under the contract between Goran Milovanovic PR Data Kolektiv
 ### --- and Wikimedia Deutschland (WMDE).
 ### --- Contact: goran.milovanovic_ext@wikimedia.de
-### --- Contact: goran.milovanovic@datakolektiv.com
-### ---------------------------------------------------------------------------
-### --- LICENSE:
-### ---------------------------------------------------------------------------
-### --- GPL v2
-### --- This file is part of Wikidata Analytics (WA)
-### --- https://wikidata-analytics.wmflabs.org/
-### ---
-### --- WA is free software: you can redistribute it and/or modify
-### --- it under the terms of the GNU General Public License as published by
-### --- the Free Software Foundation, either version 2 of the License, or
-### --- (at your option) any later version.
-### ---
-### --- WA is distributed in the hope that it will be useful,
-### --- but WITHOUT ANY WARRANTY; without even the implied warranty of
-### --- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-### --- GNU General Public License for more details.
-### ---
-### --- You should have received a copy of the GNU General Public License
-### --- along with WA If not, see <http://www.gnu.org/licenses/>.
-### ---------------------------------------------------------------------------
 
 #' The application server-side
 #' 
@@ -39,9 +18,7 @@ app_server <- function( input, output, session ) {
 
   ### --- constants
   dataDir <- "data/"
-  googleNews <- 
-    'https://news.google.com/search?q='
-  
+
   ### --- functions
   api_fetch_labels <- 
     function(items,
@@ -158,7 +135,8 @@ app_server <- function( input, output, session ) {
       dataSet <- dplyr::arrange(dataSet, 
                                 dplyr::desc(n_users),
                                 dplyr::desc(revisions)) %>% 
-        dplyr::filter(n_users > 1)
+        dplyr::filter(n_users > 1) %>% 
+        head(100)
       
       # - fix missing labels
       dataSet$label[nchar(dataSet$label) == 0 | 
@@ -191,37 +169,60 @@ app_server <- function( input, output, session ) {
                     url, '" target="_blank">', 
                     text, 
                     "</a>")
-      newsLink <- paste0(googleNews, 
-                         dataSet$label) 
-      newsLink <- paste0('<a href="', 
-                         newsLink,
-                         '" target="_blank">News search</a>')
-      w <- which(grepl("No label defined", newsLink))
-      if (length(w) > 0) {
-        newsLink[w] <- ""
-      }
       dataSet <- data.frame(Entity = url, 
-                            Revisions = dataSet$revisions, 
                             Editors = dataSet$n_users,
+                            Revisions = dataSet$revisions, 
                             stringsAsFactors = F) %>% 
-        dplyr::filter(Revisions >= 3)
+        dplyr::arrange(desc(Editors), desc(Revisions))
       
-      DT::datatable(dataSet,
-                    options = list(
-                      bFilter = 0,
-                      pageLength = 25,
-                      width = '100%',
-                      escape = F,
-                      columnDefs = list(list(className = 'dt-right', 
-                                             targets = 1:2))
-                    ),
-                    rownames = FALSE, 
-                    escape = F
-      )
+      if (dim(dataSet)[1] == 0) {
+        msgSet <- data.frame(Message = 
+                               "No items currently satisfy the criteria.")
+        return(DT::datatable(msgSet,
+                             options = list(
+                               bFilter = 0,
+                               width = '100%',
+                               escape = F,
+                               columnDefs = list(list(className = 'dt-left', 
+                                                      targets = 1))
+                             ),
+                             rownames = FALSE, 
+                             escape = F
+        )
+        )
+      } else {
+        return(
+        DT::datatable(dataSet,
+                      options = list(
+                        bFilter = 0,
+                        pageLength = 25,
+                        width = '100%',
+                        escape = F,
+                        columnDefs = list(list(className = 'dt-right', 
+                                               targets = 1:2))
+                      ),
+                      rownames = FALSE, 
+                      escape = F
+                      )
+        )
+        }
       
     }, 
     error = function(condition) {
-      return(NULL)
+      msgSet <- data.frame(Message = 
+                             "No items currently satisfy the criteria.")
+      return(DT::datatable(msgSet,
+                           options = list(
+                             bFilter = 0,
+                             width = '100%',
+                             escape = F,
+                             columnDefs = list(list(className = 'dt-left', 
+                                                    targets = 1))
+                           ),
+                           rownames = FALSE, 
+                           escape = F
+      )
+      )
     })
     
   })
@@ -239,7 +240,8 @@ app_server <- function( input, output, session ) {
       dataSet <- dplyr::arrange(dataSet, 
                                 dplyr::desc(n_users),
                                 dplyr::desc(revisions)) %>% 
-        dplyr::filter(n_users > 1)
+        dplyr::filter(n_users > 1) %>% 
+        head(100)
       
       # - fix missing labels
       dataSet$label[nchar(dataSet$label) == 0 | 
@@ -272,37 +274,60 @@ app_server <- function( input, output, session ) {
                     url, '" target="_blank">', 
                     text, 
                     "</a>")
-      newsLink <- paste0(googleNews, 
-                         dataSet$label) 
-      newsLink <- paste0('<a href="', 
-                         newsLink,
-                         '" target="_blank">News search</a>')
-      w <- which(grepl("No label defined", newsLink))
-      if (length(w) > 0) {
-        newsLink[w] <- ""
-      }
       dataSet <- data.frame(Entity = url, 
-                            Revisions = dataSet$revisions, 
                             Editors = dataSet$n_users,
+                            Revisions = dataSet$revisions, 
                             stringsAsFactors = F) %>% 
-        dplyr::filter(Revisions >= 3)
+        dplyr::arrange(desc(Editors), desc(Revisions))
       
-      DT::datatable(dataSet,
-                    options = list(
-                      bFilter = 0,
-                      pageLength = 25,
-                      width = '100%',
-                      escape = F,
-                      columnDefs = list(list(className = 'dt-right', 
-                                             targets = 1:2))
-                    ),
-                    rownames = FALSE, 
-                    escape = F
-      )
+      if (dim(dataSet)[1] == 0) {
+        msgSet <- data.frame(Message = 
+                               "No items currently satisfy the criteria.")
+        return(DT::datatable(msgSet,
+                             options = list(
+                               bFilter = 0,
+                               width = '100%',
+                               escape = F,
+                               columnDefs = list(list(className = 'dt-left', 
+                                                      targets = 1))
+                             ),
+                             rownames = FALSE, 
+                             escape = F
+        )
+        )
+      } else {
+        return(
+          DT::datatable(dataSet,
+                        options = list(
+                          bFilter = 0,
+                          pageLength = 25,
+                          width = '100%',
+                          escape = F,
+                          columnDefs = list(list(className = 'dt-right', 
+                                                 targets = 1:2))
+                        ),
+                        rownames = FALSE, 
+                        escape = F
+          )
+        )
+      }
       
     }, 
     error = function(condition) {
-      return(NULL)
+      msgSet <- data.frame(Message = 
+                             "No items currently satisfy the criteria.")
+      return(DT::datatable(msgSet,
+                           options = list(
+                             bFilter = 0,
+                             width = '100%',
+                             escape = F,
+                             columnDefs = list(list(className = 'dt-left', 
+                                                    targets = 1))
+                           ),
+                           rownames = FALSE, 
+                           escape = F
+      )
+      )
     })
     
   })
@@ -320,7 +345,8 @@ app_server <- function( input, output, session ) {
       dataSet <- dplyr::arrange(dataSet, 
                                 dplyr::desc(n_users),
                                 dplyr::desc(revisions)) %>% 
-        dplyr::filter(n_users > 1)
+        dplyr::filter(n_users > 1) %>% 
+        head(100)
       
       # - fix missing labels
       dataSet$label[nchar(dataSet$label) == 0 | 
@@ -353,37 +379,60 @@ app_server <- function( input, output, session ) {
                     url, '" target="_blank">', 
                     text, 
                     "</a>")
-      newsLink <- paste0(googleNews, 
-                         dataSet$label) 
-      newsLink <- paste0('<a href="', 
-                         newsLink,
-                         '" target="_blank">News search</a>')
-      w <- which(grepl("No label defined", newsLink))
-      if (length(w) > 0) {
-        newsLink[w] <- ""
-      }
       dataSet <- data.frame(Entity = url, 
-                            Revisions = dataSet$revisions, 
                             Editors = dataSet$n_users,
+                            Revisions = dataSet$revisions, 
                             stringsAsFactors = F) %>% 
-        dplyr::filter(Revisions >= 3)
+        dplyr::arrange(desc(Editors), desc(Revisions))
       
-      DT::datatable(dataSet,
-                    options = list(
-                      bFilter = 0,
-                      pageLength = 25,
-                      width = '100%',
-                      escape = F,
-                      columnDefs = list(list(className = 'dt-right', 
-                                             targets = 1:2))
-                    ),
-                    rownames = FALSE, 
-                    escape = F
-      )
+      if (dim(dataSet)[1] == 0) {
+        msgSet <- data.frame(Message = 
+                               "No items currently satisfy the criteria.")
+        return(DT::datatable(msgSet,
+                             options = list(
+                               bFilter = 0,
+                               width = '100%',
+                               escape = F,
+                               columnDefs = list(list(className = 'dt-left', 
+                                                      targets = 1))
+                             ),
+                             rownames = FALSE, 
+                             escape = F
+        )
+        )
+      } else {
+        return(
+          DT::datatable(dataSet,
+                        options = list(
+                          bFilter = 0,
+                          pageLength = 25,
+                          width = '100%',
+                          escape = F,
+                          columnDefs = list(list(className = 'dt-right', 
+                                                 targets = 1:2))
+                        ),
+                        rownames = FALSE, 
+                        escape = F
+          )
+        )
+      }
       
     }, 
     error = function(condition) {
-      return(NULL)
+      msgSet <- data.frame(Message = 
+                             "No items currently satisfy the criteria.")
+      return(DT::datatable(msgSet,
+                           options = list(
+                             bFilter = 0,
+                             width = '100%',
+                             escape = F,
+                             columnDefs = list(list(className = 'dt-left', 
+                                                    targets = 1))
+                           ),
+                           rownames = FALSE, 
+                           escape = F
+      )
+      )
     })
     
     
@@ -402,7 +451,8 @@ app_server <- function( input, output, session ) {
       dataSet <- dplyr::arrange(dataSet, 
                                 dplyr::desc(n_users),
                                 dplyr::desc(revisions)) %>% 
-        dplyr::filter(n_users > 1)
+        dplyr::filter(n_users > 1) %>% 
+        head(100)
       
       # - fix missing labels
       dataSet$label[nchar(dataSet$label) == 0 | 
@@ -435,39 +485,61 @@ app_server <- function( input, output, session ) {
                     url, '" target="_blank">', 
                     text, 
                     "</a>")
-      newsLink <- paste0(googleNews, 
-                         dataSet$label) 
-      newsLink <- paste0('<a href="', 
-                         newsLink,
-                         '" target="_blank">News search</a>')
-      w <- which(grepl("No label defined", newsLink))
-      if (length(w) > 0) {
-        newsLink[w] <- ""
-      }
       dataSet <- data.frame(Entity = url, 
-                            Revisions = dataSet$revisions, 
                             Editors = dataSet$n_users,
+                            Revisions = dataSet$revisions, 
                             stringsAsFactors = F) %>% 
-        dplyr::filter(Revisions >= 3)
+        dplyr::arrange(desc(Editors), desc(Revisions))
       
-      DT::datatable(dataSet,
-                    options = list(
-                      bFilter = 0, 
-                      pageLength = 25,
-                      width = '100%',
-                      escape = F,
-                      columnDefs = list(list(className = 'dt-right', 
-                                             targets = 1:2))
-                    ),
-                    rownames = FALSE, 
-                    escape = F
-      )
+      if (dim(dataSet)[1] == 0) {
+        msgSet <- data.frame(Message = 
+                               "No items currently satisfy the criteria.")
+        return(DT::datatable(msgSet,
+                             options = list(
+                               bFilter = 0,
+                               width = '100%',
+                               escape = F,
+                               columnDefs = list(list(className = 'dt-left', 
+                                                      targets = 1))
+                             ),
+                             rownames = FALSE, 
+                             escape = F
+        )
+        )
+      } else {
+        return(
+          DT::datatable(dataSet,
+                        options = list(
+                          bFilter = 0,
+                          pageLength = 25,
+                          width = '100%',
+                          escape = F,
+                          columnDefs = list(list(className = 'dt-right', 
+                                                 targets = 1:2))
+                        ),
+                        rownames = FALSE, 
+                        escape = F
+          )
+        )
+      }
       
     }, 
     error = function(condition) {
-      return(NULL)
+      msgSet <- data.frame(Message = 
+                             "No items currently satisfy the criteria.")
+      return(DT::datatable(msgSet,
+                           options = list(
+                             bFilter = 0,
+                             width = '100%',
+                             escape = F,
+                             columnDefs = list(list(className = 'dt-left', 
+                                                    targets = 1))
+                           ),
+                           rownames = FALSE, 
+                           escape = F
+      )
+      )
     })
-    
     
   })
   

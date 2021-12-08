@@ -11,25 +11,6 @@
 ### --- Pyspark ETL procedures to process the WD JSON dumps in hdfs:
 ### --- extract Terms Model (labels, aliases, descriptions)
 ### ---------------------------------------------------------------------------
-### ---------------------------------------------------------------------------
-### --- LICENSE:
-### ---------------------------------------------------------------------------
-### --- GPL v2
-### --- This file is part of the Wikidata Languages Project (WLP)
-### ---
-### --- WLP is free software: you can redistribute it and/or modify
-### --- it under the terms of the GNU General Public License as published by
-### --- the Free Software Foundation, either version 2 of the License, or
-### --- (at your option) any later version.
-### ---
-### --- WLP is distributed in the hope that it will be useful,
-### --- but WITHOUT ANY WARRANTY; without even the implied warranty of
-### --- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-### --- GNU General Public License for more details.
-### ---
-### --- You should have received a copy of the GNU General Public License
-### --- along with WLP. If not, see <http://www.gnu.org/licenses/>.
-### ---------------------------------------------------------------------------
 
 ### --- Modules
 import pyspark

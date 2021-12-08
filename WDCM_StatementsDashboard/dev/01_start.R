@@ -6,27 +6,6 @@
 ### --- Developed under the contract between Goran Milovanovic PR Data Kolektiv
 ### --- and Wikimedia Deutschland (WMDE).
 ### --- Contact: goran.milovanovic_ext@wikimedia.de
-### --- Contact: goran.milovanovic@datakolektiv.com
-### ---------------------------------------------------------------------------
-### --- LICENSE:
-### ---------------------------------------------------------------------------
-### --- GPL v2
-### --- This file is part of Wikidata Concepts Monitor (WDCM)
-### --- https://wikidata-analytics.wmflabs.org/
-### ---
-### --- WDCM is free software: you can redistribute it and/or modify
-### --- it under the terms of the GNU General Public License as published by
-### --- the Free Software Foundation, either version 2 of the License, or
-### --- (at your option) any later version.
-### ---
-### --- WDCM is distributed in the hope that it will be useful,
-### --- but WITHOUT ANY WARRANTY; without even the implied warranty of
-### --- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-### --- GNU General Public License for more details.
-### ---
-### --- You should have received a copy of the GNU General Public License
-### --- along with WDCM If not, see <http://www.gnu.org/licenses/>.
-### ---------------------------------------------------------------------------
 
 golem::fill_desc(
   pkg_name = "WDCMStatementsDashboard", # The Name of the package containing the App 
@@ -42,7 +21,6 @@ golem::fill_desc(
 golem::set_golem_options()
 
 ## Create Common Files ----
-usethis::use_gpl_license(version = 2, include_future = TRUE)
 usethis::use_readme_rmd(open = FALSE)
 usethis::use_code_of_conduct()
 

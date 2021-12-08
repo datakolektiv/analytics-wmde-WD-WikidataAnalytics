@@ -10,26 +10,6 @@
 ### --- WMDEData::wdqs_send_query()
 ### --- Function to query WDQS
 ### ---------------------------------------------------------------------------
-### ---------------------------------------------------------------------------
-### --- LICENSE:
-### ---------------------------------------------------------------------------
-### --- GPL v2
-### --- This file is part of the WMDEData project
-### ---
-### --- WLP is free software: you can redistribute it and/or modify
-### --- it under the terms of the GNU General Public License as published by
-### --- the Free Software Foundation, either version 2 of the License, or
-### --- (at your option) any later version.
-### ---
-### --- WMDEData is distributed in the hope that it will be useful,
-### --- but WITHOUT ANY WARRANTY; without even the implied warranty of
-### --- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-### --- GNU General Public License for more details.
-### ---
-### --- You should have received a copy of the GNU General Public License
-### --- along with WMDEData If not, see <http://www.gnu.org/licenses/>.
-### ---------------------------------------------------------------------------
-
 
 #' wdqs_send_query
 #'
@@ -42,9 +22,16 @@
 #' @return
 #' @export
 #'
-#' @examples wdqs_send_query(query = 'SELECT ?item ?itemLabel WHERE { ?item wdt:P31 wd:Q146. }', SPARQL_Endpoint = "https://query.wikidata.org/bigdata/namespace/wdq/sparql?query=", max_retry = 10)
+#' @examples 
+#' \dontrun{
+#' wdqs_send_query(
+#'    query = 'SELECT ?item ?itemLabel WHERE { ?item wdt:P31 wd:Q146. }', 
+#'    SPARQL_Endpoint = "https://query.wikidata.org/bigdata/namespace/wdq/sparql?query=", 
+#'    max_retry = 10)
+#' }
 wdqs_send_query <- function(query,
-                            SPARQL_Endpoint = "https://query.wikidata.org/bigdata/namespace/wdq/sparql?query=",
+                            SPARQL_Endpoint = 
+                              "https://query.wikidata.org/bigdata/namespace/wdq/sparql?query=",
                             max_retry = 10) {
 
   # - Run query

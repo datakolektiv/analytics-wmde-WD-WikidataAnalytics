@@ -6,27 +6,6 @@
 ### --- Developed under the contract between Goran Milovanovic PR Data Kolektiv
 ### --- and Wikimedia Deutschland (WMDE).
 ### --- Contact: goran.milovanovic_ext@wikimedia.de
-### --- Contact: goran.milovanovic@datakolektiv.com
-### ---------------------------------------------------------------------------
-### --- LICENSE:
-### ---------------------------------------------------------------------------
-### --- GPL v2
-### --- This file is part of Wikidata Analytics (WA)
-### --- https://wikidata-analytics.wmflabs.org/
-### ---
-### --- WA is free software: you can redistribute it and/or modify
-### --- it under the terms of the GNU General Public License as published by
-### --- the Free Software Foundation, either version 2 of the License, or
-### --- (at your option) any later version.
-### ---
-### --- WA is distributed in the hope that it will be useful,
-### --- but WITHOUT ANY WARRANTY; without even the implied warranty of
-### --- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-### --- GNU General Public License for more details.
-### ---
-### --- You should have received a copy of the GNU General Public License
-### --- along with WA If not, see <http://www.gnu.org/licenses/>.
-### ---------------------------------------------------------------------------
 
 #' The application User-Interface
 #' 
@@ -35,6 +14,7 @@
 #' @import shiny
 #' @noRd
 app_ui <- function(request) {
+  
   tagList(
     # Leave this function for adding external resources
     golem_add_external_resources(),
@@ -45,7 +25,7 @@ app_ui <- function(request) {
       fluidRow(
         column(width = 12,
                br(),
-               tags$img(src = "www/Wikidata-logo-en.png")
+               h1("Wikidata Current Events"),
                )
       ),
       
@@ -54,62 +34,17 @@ app_ui <- function(request) {
                br(),
                includeMarkdown(system.file("app/www/dashboard_header.html",
                                            package = "QuratorCurentEvents")),
-               # hr(),
-               htmlOutput("updateTimestamp"),
-               hr()
                )
       ),
       
       fluidRow(
         column(width = 12,
                tabsetPanel(type = "tabs",
-                           
-                           tabPanel("6h", 
-                                    
+                           tabPanel("72h",
                                     fluidRow(
                                       column(width = 12,
-                                             h3("Frequently revised items in the previous 6 hours"),
-                                             hr(),
-                                             includeMarkdown(system.file("app/www/last_6hours.html", 
-                                                                         package = "QuratorCurentEvents")),
-                                             br(), br(),
-                                             shinycssloaders::withSpinner(DT::dataTableOutput("hours6_update"))
-                                      )
-                                    ),
-                                    
-                                    fluidRow(
-                                      column(width = 12,
-                                             hr(),
-                                             HTML('<p style="font-size:80%;"><b>Wikidata Current Events :: Wikidata, WMDE 2020</b><br></p>'),
-                                             HTML('<p style="font-size:80%;"><b>Contact:</b> Goran S. Milovanovic, Data Scientist, WMDE<br>
-                                                  <b>e-mail:</b> goran.milovanovic_ext@wikimedia.de<br><b>IRC:</b> goransm</p>'),
-                                             br(), br()
-                                      )
-                                    )
-                                    
-                           ),
-                           
-                           tabPanel("24h",
-                                    
-                                    fluidRow(
-                                      column(width = 12,
-                                             h3("Frequently revised items in the previous 24 hours"),
-                                             hr(),
-                                             HTML("<b>Updated every minute</b>"),
-                                             includeMarkdown(system.file("app/www/last_24hours.html", 
-                                                                         package = "QuratorCurentEvents")),
-                                             br(), br(),
-                                             shinycssloaders::withSpinner(DT::dataTableOutput("hours24_update"))
-                                      )
-                                    ),
-                                    
-                                    fluidRow(
-                                      column(width = 12,
-                                             hr(),
-                                             HTML('<p style="font-size:80%;"><b>Wikidata Current Events :: Wikidata, WMDE 2020</b><br></p>'),
-                                             HTML('<p style="font-size:80%;"><b>Contact:</b> Goran S. Milovanovic, Data Scientist, WMDE<br>
-                                                  <b>e-mail:</b> goran.milovanovic_ext@wikimedia.de<br><b>IRC:</b> goransm</p>'),
-                                             br(), br()
+                                             br(),
+                                             shinycssloaders::withSpinner(DT::dataTableOutput("hours72_update"))
                                       )
                                     )
                            ),
@@ -118,54 +53,87 @@ app_ui <- function(request) {
                                     
                                     fluidRow(
                                       column(width = 12,
-                                             h3("Frequently revised items in the previous 48 hours"),
-                                             hr(),
-                                             HTML("<b>Updated every minute</b>"),
-                                             includeMarkdown(system.file("app/www/last_48hours.html", 
-                                                                         package = "QuratorCurentEvents")),
-                                             br(), br(),
+                                             br(),
                                              shinycssloaders::withSpinner(DT::dataTableOutput("hours48_update"))
-                                      )
-                                    ),
-                                    
-                                    fluidRow(
-                                      column(width = 12,
-                                             hr(),
-                                             HTML('<p style="font-size:80%;"><b>Wikidata Current Events :: Wikidata, WMDE 2020</b><br></p>'),
-                                             HTML('<p style="font-size:80%;"><b>Contact:</b> Goran S. Milovanovic, Data Scientist, WMDE<br>
-                                                  <b>e-mail:</b> goran.milovanovic_ext@wikimedia.de<br><b>IRC:</b> goransm</p>'),
-                                             br(), br()
                                       )
                                     )
                            ),
                            
-                           tabPanel("72h",
-                                    
+                           tabPanel("24h",
                                     fluidRow(
                                       column(width = 12,
-                                             h3("Frequently revised items in the previous 72 hours"),
-                                             hr(),
-                                             HTML("<b>Updated every minute</b>"),
-                                             includeMarkdown(system.file("app/www/last_72hours.html", 
-                                                                         package = "QuratorCurentEvents")),
-                                             br(), br(),
-                                             shinycssloaders::withSpinner(DT::dataTableOutput("hours72_update"))
-                                      )
-                                    ),
-                                    
-                                    fluidRow(
-                                      column(width = 12,
-                                             hr(),
-                                             HTML('<p style="font-size:80%;"><b>Wikidata Current Events :: Wikidata, WMDE 2020</b><br></p>'),
-                                             HTML('<p style="font-size:80%;"><b>Contact:</b> Goran S. Milovanovic, Data Scientist, WMDE<br>
-                                                  <b>e-mail:</b> goran.milovanovic_ext@wikimedia.de<br><b>IRC:</b> goransm</p>'),
-                                             br(), br()
-                                             )
+                                             br(),
+                                             shinycssloaders::withSpinner(DT::dataTableOutput("hours24_update"))
                                       )
                                     )
+                           ),
+                           
+                           tabPanel("6h", 
+                                    fluidRow(
+                                      column(width = 12,
+                                             br(),
+                                             shinycssloaders::withSpinner(DT::dataTableOutput("hours6_update"))
+                                      )
+                                    )
+                                    
+                           ),
                            )
+               ),
+        ),
+      fluidRow(
+        column(width = 12,
+               htmlOutput("updateTimestamp"),
+               hr()
                )
-        )
+      ),
+      fluidRow(
+        div(style = "background-color: #ABBAEA;"),
+        column(width = 3,
+               HTML('<b>About Current Events Dashboard</b>
+                    <br>
+                    <br>
+                    <a href="https://github.com/wikimedia/analytics-wmde-WD-WikidataAnalytics/blob/master/Qurator_CurrentEvents/LICENSE.md" 
+                    target = "_blank">Licensed under GPv2</a>
+                    <br>
+                    <a href="https://github.com/wikimedia/analytics-wmde-WD-WikidataAnalytics/tree/master/Qurator_CurrentEvents" 
+                    target = "_blank">View Source</a>
+                    <br>
+                    <a href="https://phabricator.wikimedia.org/maniphest/task/edit/form/1/?title=Wikidata%20Current%20Events%20Dashboard&description=%2A%2AMain%20components%3A%2A%2A%20%0A%2A%20Current%20Events%20Dashboard%0A%0A%2A%2AProblem%3A%2A%2A%0APlease%20describe%20the%20problem.%20If%20possible%20include%20steps%20to%20reproduce%20and%20give%20an%20example.%0A%0A%2A%2AScreenshots%3A%2A%2A%0AIf%20possible%2C%20please%20add%20a%20screenshot%20that%20illustrates%20the%20problem.%20&projects=Wikidata_Analytics" 
+                    target = "_blank">Report an issue</a>
+                    ')
+               ),
+        column(width = 3,
+               HTML('<b>About us</b>
+                    <br>
+                    <br>
+                    <a href="https://foundation.wikimedia.org/wiki/Non-wiki_privacy_policy" 
+                    target = "_blank">Privacy Policy</a>
+                    <br>
+                    <a href="https://www.wikimedia.de/" 
+                    target = "_blank">Wikimedia Deutschland</a>
+                    <br>
+                    <a href="https://www.wikidata.org/wiki/Wikidata:Report_a_technical_problem" 
+                    target = "_blank">Made by the Wikidata Team</a>')
+               ),
+        column(width = 3,
+               HTML('<b>More Data Quality Tools</b>
+                    <br>
+                    <br>
+                    <a href="https://query.wikidata.org/querybuilder/" 
+                    target = "_blank">Query Builder</a>
+                    <br>
+                    <a href="https://item-quality-evaluator.toolforge.org/" 
+                    target = "_blank">Item Quality Evaluator</a>
+                    <br>
+                    <a href="https://wikidata-analytics.wmcloud.org/app/CuriousFacts" 
+                    target = "_blank">Curious Facts</a>')
+               )
+      ),
+      fluidRow(
+        column(width = 12,
+               HTML("<br><br>")
+               )
+      )
       )
     )
 

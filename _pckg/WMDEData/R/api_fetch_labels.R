@@ -11,25 +11,6 @@
 ### --- obtains a list of Wikidata labels in the desired language
 ### --- from a character vector of Q ids.
 ### ---------------------------------------------------------------------------
-### ---------------------------------------------------------------------------
-### --- LICENSE:
-### ---------------------------------------------------------------------------
-### --- GPL v2
-### --- This file is part of the WMDEData project
-### ---
-### --- WLP is free software: you can redistribute it and/or modify
-### --- it under the terms of the GNU General Public License as published by
-### --- the Free Software Foundation, either version 2 of the License, or
-### --- (at your option) any later version.
-### ---
-### --- WMDEData is distributed in the hope that it will be useful,
-### --- but WITHOUT ANY WARRANTY; without even the implied warranty of
-### --- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-### --- GNU General Public License for more details.
-### ---
-### --- You should have received a copy of the GNU General Public License
-### --- along with WMDEData If not, see <http://www.gnu.org/licenses/>.
-### ---------------------------------------------------------------------------
 
 #' api_fetch_labels
 #'
@@ -44,7 +25,13 @@
 #' @export
 #'
 #' @examples
-#' api_fetch_labels(items = paste0("Q", 1:100), language = "en", fallback = TRUE, APIprefix = "https://www.wikidata.org/w/api.php?action=wbgetentities&")
+#' \dontrun{
+#' api_fetch_labels(
+#'    items = paste0("Q", 1:100), 
+#'    language = "en", 
+#'    fallback = TRUE, 
+#'    APIprefix = "https://www.wikidata.org/w/api.php?action=wbgetentities&")
+#' }
 api_fetch_labels <- function(items,
                              language = "en",
                              fallback = TRUE,

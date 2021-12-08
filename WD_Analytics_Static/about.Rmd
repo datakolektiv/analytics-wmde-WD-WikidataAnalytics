@@ -31,6 +31,7 @@ Our code is hosted on [Gerrit](https://gerrit.wikimedia.org/){target="_blank"} u
 
 **License**
 
-Everything is [GPL v2.0](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html).
-
+[BSD 3-Clause License](https://opensource.org/licenses/BSD-3-Clause).
+Copyright (c) 2021, Wikimedia Deutschland e. V.
+All rights reserved.
 
