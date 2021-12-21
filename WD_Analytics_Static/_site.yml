@@ -1,49 +1,49 @@
 name: "WMDE Wikidata Analytics"
 navbar:
-  title: "<img id=\"logo\" style=\"width: 30px;\" src=\"800px-Wikidata-logo-black-en_fav.png\" />"
+  title: "<img id=\"logo\" style=\"width: 52px;\" src=\"800px-Wikidata-logo-black-en_fav.png\" />"
   left:
     - text: "WDCM"
       menu:
         - text: "WDCM Overview Dashboard"
-          href: https://wikidata-analytics.wmcloud.org/app/WDCM_OverviewDashboard
+          href: http://datakolektiv.org/app/WDCM_OverviewDashboard
         - text: "WDCM Usage Dashboard"
-          href: https://wikidata-analytics.wmcloud.org/app/WDCM_UsageDashboard
+          href: http://datakolektiv.org/app/WDCM_UsageDashboard
         - text: "WDCM Semantics Dashboard"
-          href: https://wikidata-analytics.wmcloud.org/app/WDCM_SemanticsDashboard
+          href: http://datakolektiv.org/app/WDCM_SemanticsDashboard
         - text: "WDCM Biases Dashboard"
-          href: https://wikidata-analytics.wmcloud.org/app/WDCM_BiasesDashboard
-        - text: "WDCM Geo Dashboard"
-          href: https://wikidata-analytics.wmcloud.org/app/WDCM_GeoDashboard
-        - text: "WDCM (S)itelinks Dashboard"
-          href: https://wikidata-analytics.wmcloud.org/app/WDCM_SitelinksDashboard          
-        - text: "WDCM (T)itles Dashboard"
-          href: https://wikidata-analytics.wmcloud.org/app/WDCM_TitlesDashboard
+          href: http://datakolektiv.org/app/WDCM_BiasesDashboard
         - text: "WDCM Statements Dashboard"
-          href: https://wikidata-analytics.wmcloud.org/app/WDCM_StatementsDashboard
+          href: http://datakolektiv.org/app/WDCM_StatementsDashboard
+        - text: "WDCM Geo Dashboard"
+          href: http://datakolektiv.org/app/WDCM_GeoDashboard
+        - text: "WDCM (S)itelinks Dashboard"
+          href: http://datakolektiv.org/app/WDCM_SitelinksDashboard          
+        - text: "WDCM (T)itles Dashboard"
+          href: http://datakolektiv.org/app/WDCM_TitlesDashboard          
     - text: "Analytics"
       menu:
         - text: "WD Pageviews per Namespace"
-          href: https://wikidata-analytics.wmcloud.org/app/WD_pageviewsPerNamespace
+          href: http://datakolektiv.org/app/WD_pageviewsPerNamespace
         - text: "WD Usage and Coverage"
-          href: https://wikidata-analytics.wmcloud.org/app/WD_percentUsageDashboard
+          href: http://datakolektiv.org/app/WD_percentUsageDashboard
         - text: "WD Human vs Bot Edits per Class"
-          href: https://wikidata-analytics.wmcloud.org/app/WD_HumanEdits
+          href: http://datakolektiv.org/app/WD_HumanEdits
         - text: "WD Game: Reference Treasure Hunt"
-          href: https://wikidata-analytics.wmcloud.org/app/WD_GameReferenceHunt
+          href: http://datakolektiv.org/app/WD_GameReferenceHunt
         - text: "WD Inequality: Hoover Index"
-          href: https://wikidata-analytics.wmcloud.org/app/WD_Inequality
+          href: http://datakolektiv.org/app/WD_Inequality
     - text: "Structural Systems"
       menu:
         - text: "Wikidata Languages Landscape"
-          href: https://wikidata-analytics.wmcloud.org/app/WD_LanguagesLandscape
+          href: http://datakolektiv.org/app/WD_LanguagesLandscape
         - text: "Wikidata External Identifiers Landscape"
-          href: https://wikidata-analytics.wmcloud.org/app/WD_ExternalIdentifiersDashboard
+          href: http://datakolektiv.org/app/WD_ExternalIdentifiersDashboard
     - text: "Qurator"
       menu:
-        - text: "Curious Facts"
-          href: https://wikidata-analytics.wmcloud.org/app/CuriousFacts
-        - text: "Current Events"
-          href: https://wikidata-analytics.wmcloud.org/app/CurrentEvents
+        - text: "Curious facts"
+          href: http://datakolektiv.org/app/QURATOR_CuriousFacts
+        - text: "Current events"
+          href: http://datakolektiv.org/app/QURATOR_CurrentEvents
     - text: "Reports"
       href: reports.html
     - text: "Datasets"
@@ -52,6 +52,10 @@ navbar:
       href: resources.html
     - text: "About"
       href: about.html
+    - text: "Wiktionary"
+      menu:
+        - text: "Cognate Dashboard"
+          href: https://wiktionary-analytics.wmcloud.org/Wiktionary_CognateDashboard/
 
 output:
   html_document:
