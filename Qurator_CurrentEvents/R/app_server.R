@@ -6,6 +6,26 @@
 ### --- Developed under the contract between Goran Milovanovic PR Data Kolektiv
 ### --- and Wikimedia Deutschland (WMDE).
 ### --- Contact: goran.milovanovic_ext@wikimedia.de
+### --- Contact: goran.milovanovic@datakolektiv.com
+### ---------------------------------------------------------------------------
+### --- LICENSE:
+### ---------------------------------------------------------------------------
+### --- GPL v2
+### --- This file is part of Wikidata Analytics (WA)
+### ---
+### --- WA is free software: you can redistribute it and/or modify
+### --- it under the terms of the GNU General Public License as published by
+### --- the Free Software Foundation, either version 2 of the License, or
+### --- (at your option) any later version.
+### ---
+### --- WA is distributed in the hope that it will be useful,
+### --- but WITHOUT ANY WARRANTY; without even the implied warranty of
+### --- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+### --- GNU General Public License for more details.
+### ---
+### --- You should have received a copy of the GNU General Public License
+### --- along with WA If not, see <http://www.gnu.org/licenses/>.
+### ---------------------------------------------------------------------------
 
 #' The application server-side
 #' 
@@ -17,7 +37,13 @@
 app_server <- function( input, output, session ) {
 
   ### --- constants
+  # - shared data directory
   dataDir <- "data/"
+  # - items to filter out
+  # - see: https://phabricator.wikimedia.org/T297225#7554084
+  filterOut <- c("Q16943273",
+                 "Q4115189",
+                 "Q17339402")
 
   ### --- functions
   api_fetch_labels <- 
@@ -132,6 +158,9 @@ app_server <- function( input, output, session ) {
       
       # - load data and provide
       dataSet <- readRDS(paste0(dataDir, "aggRev_hours6_stats.Rds"))
+      # - filterOut:
+      dataSet <- dataSet %>% 
+        dplyr::filter(!(title %in% filterOut))
       dataSet <- dplyr::arrange(dataSet, 
                                 dplyr::desc(n_users),
                                 dplyr::desc(revisions)) %>% 
@@ -237,6 +266,9 @@ app_server <- function( input, output, session ) {
       
       # - load data and provide
       dataSet <- readRDS(paste0(dataDir, "aggRev_hours24_stats.Rds"))
+      # - filterOut:
+      dataSet <- dataSet %>% 
+        dplyr::filter(!(title %in% filterOut))
       dataSet <- dplyr::arrange(dataSet, 
                                 dplyr::desc(n_users),
                                 dplyr::desc(revisions)) %>% 
@@ -342,6 +374,9 @@ app_server <- function( input, output, session ) {
       
       # - load data and provide
       dataSet <- readRDS(paste0(dataDir, "aggRev_hours48_stats.Rds"))
+      # - filterOut:
+      dataSet <- dataSet %>% 
+        dplyr::filter(!(title %in% filterOut))
       dataSet <- dplyr::arrange(dataSet, 
                                 dplyr::desc(n_users),
                                 dplyr::desc(revisions)) %>% 
@@ -448,6 +483,9 @@ app_server <- function( input, output, session ) {
       
       # - load data and provide
       dataSet <- readRDS(paste0(dataDir, "aggRev_hours72_stats.Rds"))
+      # - filterOut:
+      dataSet <- dataSet %>% 
+        dplyr::filter(!(title %in% filterOut))
       dataSet <- dplyr::arrange(dataSet, 
                                 dplyr::desc(n_users),
                                 dplyr::desc(revisions)) %>% 
