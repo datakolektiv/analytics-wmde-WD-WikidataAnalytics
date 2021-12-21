@@ -767,6 +767,13 @@ app_ui <- function(request) {
                                           it is all relative to the Wikidata/Wikimedia universe: a language might be able to refer to some particular referent (i.e. have a word for something), but the respective 
                                           sign (word) might not be yet present in Wikidata as a label. 
                                           </font></p>
+                                          
+                                          <hr>
+                                          <h4>License</h4>
+                                          <br>
+                                          <p><font size = 2>
+                                          <a href="https://github.com/wikimedia/analytics-wmde-WD-WikidataAnalytics/blob/master/LICENSE" target="_blank">BSD 3-Clause License</a>
+                                          </font></p>
                                           ')
                                 )
                               ),

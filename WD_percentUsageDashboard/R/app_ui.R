@@ -40,7 +40,7 @@ app_ui <- function(request) {
                DT::dataTableOutput('overviewDT', width = "100%"),
                hr(),
                HTML('<p style="font-size:80%;"align="left"><b>Contact:</b> Goran S. Milovanovic, Data Scientist, WMDE<br><b>e-mail:</b> goran.milovanovic_ext@wikimedia.de
-                          <br><b>IRC:</b> goransm</p>'),
+                          <br><b>IRC:</b> goransm<br><a href="https://github.com/wikimedia/analytics-wmde-WD-WikidataAnalytics/blob/master/LICENSE" target="_blank">License: BSD 3-Clause License</a></p>'),
                hr(),
                includeMarkdown(system.file("app/www/technical_notes.html",
                                            package = "WDUsageCoverage")),

@@ -482,6 +482,10 @@ app_ui <- function(request) {
                                          <h4>Dashboard: Similarity Maps</h4>
                                          <p style="font-size:80%;">Upon a selection of semantic category, the Dashboard will present a 2D map which represents the similarities between the Wikimedia projects computed from the selected category\'s 
                                          semantic model only. Here you can learn how similar or dissimilar are the sister projects in respect to their usage Wikidata items from a single semantic category.</p>
+                                         <hr>
+                                         <h4>License</h4>
+                                         <br>
+                                         <p><font size = 2><a href="https://github.com/wikimedia/analytics-wmde-WD-WikidataAnalytics/blob/master/LICENSE" target="_blank">License: BSD 3-Clause License</a></font></p>
                                           ')
                                 ),
                                 column(width = 1),

@@ -649,6 +649,11 @@ app_ui <- function(request) {
                                                    <p><font size = 2><b>N.B.</b> The current <b>Wikidata item usage statistic</b> definition is <i>the count of the number of pages in a particular client project
                                                    where the respective Wikidata item is used</i>. For example, if a Wikidata item is used once or more than once on a page, we take that as one mention of that item 
                                                    - no matter the number of its occurrences on that page. The current definition thus ignores the usage aspects completely.</font></p>
+                                                   <hr>
+                                                   <h4>License</h4>
+                                                   <br>
+                                                   <p><font size = 2><a href="https://github.com/wikimedia/analytics-wmde-WD-WikidataAnalytics/blob/master/LICENSE" target="_blank">License: BSD 3-Clause License</a></font></p>
+                                                   
                                                    ')
                                 )
                               ),

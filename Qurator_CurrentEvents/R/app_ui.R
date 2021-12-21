@@ -92,8 +92,8 @@ app_ui <- function(request) {
                HTML('<b>About Current Events Dashboard</b>
                     <br>
                     <br>
-                    <a href="https://github.com/wikimedia/analytics-wmde-WD-WikidataAnalytics/blob/master/Qurator_CurrentEvents/LICENSE.md" 
-                    target = "_blank">Licensed under GPv2</a>
+                    <a href="https://github.com/wikimedia/analytics-wmde-WD-WikidataAnalytics/blob/master/LICENSE" 
+                    target = "_blank">Licensed under BSD 3-Clause License</a>
                     <br>
                     <a href="https://github.com/wikimedia/analytics-wmde-WD-WikidataAnalytics/tree/master/Qurator_CurrentEvents" 
                     target = "_blank">View Source</a>

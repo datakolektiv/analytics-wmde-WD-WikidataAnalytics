@@ -81,6 +81,7 @@ app_ui <- function(request) {
                HTML('<p style="font-size:80%;"><b>Curious Facts :: Wikidata, WMDE 2021</b><br></p>'),
                HTML('<p style="font-size:80%;"><b>Contact:</b> Goran S. Milovanovic, Data Scientist, WMDE<br>
                                           <b>e-mail:</b> goran.milovanovic_ext@wikimedia.de<br><b>IRC:</b> goransm</p>'),
+               HTML('<a href="https://github.com/wikimedia/analytics-wmde-WD-WikidataAnalytics/blob/master/LICENSE" target="_blank">License: BSD 3-Clause License</a>'),
                br(), br()
         )
       )

@@ -447,7 +447,10 @@ app_ui <- function(request) {
                                           tab provides a browser of these classes, generates a local neighborhood similarity structure (based on an overlap in identifier usage) for all the 
                                           identifiers found in the selected class, and lists all of the class identifiers. Similarly, the <b>Particular Identifier</b> tab provides information about 
                                           a particular WD external identifier: its local neighborhood structure, and a set of exemplar uses of that identifier (represented by a selection of items that
-                                          it describes, the WD classes (in a sense of <a href = "" target="_blank">instance of (P31)</a>) to which these items belong, and the values of the selected identifier associated to them).</p>'
+                                          it describes, the WD classes (in a sense of <a href = "" target="_blank">instance of (P31)</a>) to which these items belong, and the values of the selected identifier associated to them).</p>
+                                          <h4>License</h4>
+                                          <br>
+                                          <p style="font-size:90%;"><a href="https://github.com/wikimedia/analytics-wmde-WD-WikidataAnalytics/blob/master/LICENSE" target="_blank">BSD 3-Clause License</a></p>'
                                        )
                                 ),
                                 column(width = 1),

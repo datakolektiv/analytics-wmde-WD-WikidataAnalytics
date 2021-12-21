@@ -121,6 +121,7 @@ app_ui <- function(request) {
                hr(),
                HTML('<p style="font-size:80%;"align="left"><b>Contact:</b> Goran S. Milovanovic, Data Scientist, WMDE<br><b>e-mail:</b> goran.milovanovic_ext@wikimedia.de
                           <br><b>IRC:</b> goransm</p>'),
+               HTML('<a href="https://github.com/wikimedia/analytics-wmde-WD-WikidataAnalytics/blob/master/LICENSE" target="_blank">License: BSD 3-Clause License</a>'),
                hr(),
                br(),
                hr()

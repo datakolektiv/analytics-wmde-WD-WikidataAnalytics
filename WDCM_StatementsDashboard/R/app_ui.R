@@ -490,7 +490,12 @@ app_ui <- function(request) {
                                            <b>Wikidata Items as values in claims.</b> 
                                           The table encompasses the top 100,items in respect to how many times in Wikidata 
                                           they are used as values for various properties in claims.
-                                          </p>')
+                                          </p>
+                                          <hr>
+                                          <h4>License</h4>
+                                          <br>
+                                          <p><font size = 2><a href="https://github.com/wikimedia/analytics-wmde-WD-WikidataAnalytics/blob/master/LICENSE" target="_blank">License: BSD 3-Clause License</a></font></p>  
+                                            ')
                                 ),
                                 column(width = 1),
                                 column(width = 3,

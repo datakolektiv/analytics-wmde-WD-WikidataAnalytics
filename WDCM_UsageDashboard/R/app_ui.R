@@ -779,7 +779,10 @@ app_ui <- function(request) {
                                           <h4>Tables</h4>
                                           <br>
                                           <p style="font-size:90%;">The section presents searchable and sortable tables and crosstabulations with self-explanatory semantics. Access full WDCM usage datasets from here.</p>
-                                          ')
+                                          <hr>
+                                          <h4>License</h4>
+                                          <br>
+                                          <p><font size = 2><a href="https://github.com/wikimedia/analytics-wmde-WD-WikidataAnalytics/blob/master/LICENSE" target="_blank">License: BSD 3-Clause License</a></font></p>')
                                 ),
                                 column(width = 1),
                                 column(width = 3,

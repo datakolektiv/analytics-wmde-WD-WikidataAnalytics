@@ -664,7 +664,11 @@ app_ui <- function(request) {
                                           a table that presents a Client Project vs. Semantic Category cross-tabulation. The Usage column in this table is the Wikidata 
                                           usage statistic for a particular Semantic Category x Client Project combination (e.g. The Wikidata usage in the category "Human" in 
                                           the dewiki project). The second table presents the total Wikidata usage per client project (i.e. the sum of Wikidata usage across 
-                                          all semantic categories for a particular client project; e.g. the total Wikidata usage volume of enwiki).</p>')
+                                          all semantic categories for a particular client project; e.g. the total Wikidata usage volume of enwiki).</p>
+                                          <hr>
+                                          <h4>License</h4>
+                                          <br>
+                                          <p><font size = 2><a href="https://github.com/wikimedia/analytics-wmde-WD-WikidataAnalytics/blob/master/LICENSE" target="_blank">License: BSD 3-Clause License</a></font></p>')
                                 ),
                                 column(width = 1),
                                 column(width = 3,

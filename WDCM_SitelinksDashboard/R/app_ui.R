@@ -725,7 +725,10 @@ app_ui <- function(request) {
                                           Project selection criteria and all other technical information are provided on 
                                           <a href="https://wikitech.wikimedia.org/wiki/Wikidata_Concepts_Monitor#WDCM_(S)itelinks_Dashboard" target="_blank">Wikitech</a>.<br>
                                           In order to learn how to work with the Wikidata Concepts Monitor, please visit the projects\'s 
-                                          <a href = "https://www.wikidata.org/wiki/Wikidata:Wikidata_Concepts_Monitor" target = "_blank">Wikidata page</a>.</p>')
+                                          <a href = "https://www.wikidata.org/wiki/Wikidata:Wikidata_Concepts_Monitor" target = "_blank">Wikidata page</a>.</p>
+                                          <hr>
+                                          <br>
+                                          <p><font size = 2><a href="https://github.com/wikimedia/analytics-wmde-WD-WikidataAnalytics/blob/master/LICENSE" target="_blank">License: BSD 3-Clause License</a></font></p>')
                                 )
                               ),
                               fluidRow(
