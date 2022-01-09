@@ -1,12 +1,11 @@
 ### ---------------------------------------------------------------------------
-### --- Project: QURATOR Current Events (QCE)
+### --- Project: QURATOR Curious Facts (QCF)
 ### --- Version 1.0.0
-### --- Script: currentEvents_Revolver.R
-### --- September 2021.
+### --- December 2021.
 ### --- Author: Goran S. Milovanovic, Data Scientist, WMDE
 ### --- Developed under the contract between Goran Milovanovic PR Data Kolektiv
 ### --- and WMDE.
-### --- Description: Continuous Wikibase API contact for QCE
+### --- Description: data update for the Qurator Curious Facts system
 ### --- Contact: goran.milovanovic_ext@wikimedia.de
 ### ---------------------------------------------------------------------------
 
@@ -22,7 +21,7 @@ RUN Rscript -e 'install.packages("magrittr")'
 
 RUN mkdir /app
 RUN mkdir /app/data
-COPY currenteventsrevolver.R /app
+COPY curiousfactsrevolver.R /app
 WORKDIR /app
 
-CMD ["Rscript", "currenteventsrevolver.R"]
+CMD ["Rscript", "curiousfactsrevolver.R"]

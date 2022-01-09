@@ -105,6 +105,7 @@ proxy:
     description: Finding anomalies in Wikidata.
     container-image: quratorcuriousfacts-img
     container-network: wd-analytics-net
+    container-volumes: "/srv/_data:/build_zone/data"
   - id: CurrentEvents
     display-name: Qurator Current Events
     description: What is being edited now in Wikidata?

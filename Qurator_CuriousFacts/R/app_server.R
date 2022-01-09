@@ -6,6 +6,7 @@
 ### --- Developed under the contract between Goran Milovanovic PR Data Kolektiv
 ### --- and Wikimedia Deutschland (WMDE).
 ### --- Contact: goran.milovanovic_ext@wikimedia.de
+### ---------------------------------------------------------------------------
 
 #' The application server-side
 #' 
@@ -15,11 +16,14 @@
 #' @import magrittr
 #' @noRd
 app_server <- function( input, output, session ) {
-  # Your application server logic 
+  # - application server logic 
   
+  ### --- constants
   # - endPointURL
   endPointURL <-
     'https://query.wikidata.org/bigdata/namespace/wdq/sparql?query='
+  # - shared data directory
+  dataDir <- "data/"
   
   ### --- Data
   # - get current Qurator Curious Facts:
@@ -27,44 +31,46 @@ app_server <- function( input, output, session ) {
                detail = "Please be patient.", value = 0, {
                  
                  dataM1 <- data.table::fread(
-                   system.file("_data", "dataM1.csv", 
-                               package = "CuriousFacts"),
-                   header = T, quote =)
+                   paste0(dataDir, "dataM1.csv"),
+                   header = TRUE
+                   )
                  dataM1$explanation <- 
                    gsub('\"\"\"', '', dataM1$explanation)
                  infoM1 <- data.table::fread(
-                   system.file("_data", "infoM1.csv", 
-                               package = "CuriousFacts"), 
-                   header = T)
+                   paste0(dataDir, "infoM1.csv"),
+                   header = TRUE
+                   )
                  infoM1$V1 <- NULL
 
                  incProgress(amount = .25, message = "M1 loaded.")
+                 
                  dataM2 <- data.table::fread(
-                   system.file("_data", "dataM2.csv", 
-                               package = "CuriousFacts"),
-                   header = T)
+                   paste0(dataDir, "dataM2.csv"),
+                   header = T
+                   )
                  dataM2$explanation <- 
                    gsub('\"\"\"', '', dataM2$explanation)
                  infoM2 <- data.table::fread(
-                   system.file("_data", "infoM2.csv", 
-                               package = "CuriousFacts"), 
-                   header = T)
+                   paste0(dataDir, "infoM2.csv"),
+                   header = T
+                   )
                  infoM2$V1 <- NULL
                  # - de-duplicate dataM2
                  dataM2 <- 
                    dataM2[!duplicated(dataM2[, c('item', 'property')]), ]
                   
                  incProgress(amount = .25, message = "M2 loaded.")
+                 
                  dataM3 <- data.table::fread(
-                   system.file("_data", "dataM3.csv", 
-                               package = "CuriousFacts"),
-                   header = T)
+                   paste0(dataDir, "dataM3.csv"),
+                   header = T
+                   )
                  dataM3$explanation <- 
                    gsub('\"\"', '\"', dataM3$explanation)
                  infoM3 <- data.table::fread(
-                   system.file("_data", "infoM3.csv", 
-                               package = "CuriousFacts"), 
-                   header = T)
+                   paste0(dataDir, "infoM3.csv"), 
+                   header = T
+                   )
                  infoM3$V1 <- NULL
                  
                  # - lists
