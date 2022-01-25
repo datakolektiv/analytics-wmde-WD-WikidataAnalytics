@@ -43,7 +43,41 @@ app_server <- function( input, output, session ) {
   # - see: https://phabricator.wikimedia.org/T297225#7554084
   filterOut <- c("Q16943273",
                  "Q4115189",
-                 "Q17339402")
+                 "Q17339402",
+                 "Q4115189",
+                 "Q13406268",
+                 "Q15397819",
+                 "Q16943273",
+                 "Q17339402",
+                 "Q17437798",
+                 "Q17437796",
+                 "Q17506997",
+                 "Q17507019",
+                 "Q17559452",
+                 "Q17566023",
+                 "Q17578745",
+                 "Q17580674",
+                 "Q17580678",
+                 "Q17580679",
+                 "Q17580680",
+                 "Q17580682",
+                 "Q17442550",
+                 "Q18574815",
+                 "Q18644427",
+                 "Q20748091",
+                 "Q20748092",
+                 "Q20748093",
+                 "Q20748094",
+                 "Q26961029",
+                 "Q26932615",
+                 "Q28064618",
+                 "Q51759403",
+                 "Q85408509",
+                 "Q85408938",
+                 "Q85409163",
+                 "Q85409310",
+                 "Q85409446",
+                 "Q85409596")
 
   ### --- functions
   api_fetch_labels <- 
@@ -149,7 +183,7 @@ app_server <- function( input, output, session ) {
   })
   
   # - output$hours6_update
-  output$hours6_update <- DT::renderDataTable({
+  output$hours6_update <- DT::renderDataTable(server=FALSE, {
     
     tryCatch({
       
@@ -222,14 +256,18 @@ app_server <- function( input, output, session ) {
       } else {
         return(
         DT::datatable(dataSet,
+                      extensions = 'Buttons',
                       options = list(
                         bFilter = 0,
                         pageLength = 25,
                         width = '100%',
                         escape = F,
                         columnDefs = list(list(className = 'dt-right', 
-                                               targets = 1:2))
+                                               targets = 1:2)), 
+                        dom = 'tpB',
+                        buttons = c('csv')
                       ),
+                      class = "display",
                       rownames = FALSE, 
                       escape = F
                       )
@@ -257,7 +295,7 @@ app_server <- function( input, output, session ) {
   })
   
   # - output$hours24_update
-  output$hours24_update <- DT::renderDataTable({
+  output$hours24_update <- DT::renderDataTable(server=FALSE, {
     
     tryCatch({
       
@@ -330,14 +368,18 @@ app_server <- function( input, output, session ) {
       } else {
         return(
           DT::datatable(dataSet,
+                        extensions = 'Buttons',
                         options = list(
                           bFilter = 0,
                           pageLength = 25,
                           width = '100%',
                           escape = F,
                           columnDefs = list(list(className = 'dt-right', 
-                                                 targets = 1:2))
+                                                 targets = 1:2)), 
+                          dom = 'tpB',
+                          buttons = c('csv')
                         ),
+                        class = "display",
                         rownames = FALSE, 
                         escape = F
           )
@@ -365,7 +407,7 @@ app_server <- function( input, output, session ) {
   })
   
   # - output$hours48_update
-  output$hours48_update <- DT::renderDataTable({
+  output$hours48_update <- DT::renderDataTable(server=FALSE, {
     
     tryCatch({
       
@@ -438,14 +480,18 @@ app_server <- function( input, output, session ) {
       } else {
         return(
           DT::datatable(dataSet,
+                        extensions = 'Buttons',
                         options = list(
                           bFilter = 0,
                           pageLength = 25,
                           width = '100%',
                           escape = F,
                           columnDefs = list(list(className = 'dt-right', 
-                                                 targets = 1:2))
+                                                 targets = 1:2)), 
+                          dom = 'tpB',
+                          buttons = c('csv')
                         ),
+                        class = "display",
                         rownames = FALSE, 
                         escape = F
           )
@@ -474,7 +520,7 @@ app_server <- function( input, output, session ) {
   })
   
   # - output$hours72_update
-  output$hours72_update <- DT::renderDataTable({
+  output$hours72_update <- DT::renderDataTable(server=FALSE, {
     
     tryCatch({
       
@@ -547,14 +593,18 @@ app_server <- function( input, output, session ) {
       } else {
         return(
           DT::datatable(dataSet,
+                        extensions = 'Buttons',
                         options = list(
                           bFilter = 0,
                           pageLength = 25,
                           width = '100%',
                           escape = F,
                           columnDefs = list(list(className = 'dt-right', 
-                                                 targets = 1:2))
+                                                 targets = 1:2)), 
+                          dom = 'tpB',
+                          buttons = c('csv')
                         ),
+                        class = "display",
                         rownames = FALSE, 
                         escape = F
           )
