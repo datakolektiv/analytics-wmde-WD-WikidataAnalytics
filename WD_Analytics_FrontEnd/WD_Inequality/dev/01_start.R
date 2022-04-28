@@ -1,0 +1,62 @@
+### ---------------------------------------------------------------------------
+### --- WD Inequality
+### --- Version 1.0.0
+### --- 2021.
+### --- Author: Goran S. Milovanovic, Data Scientist, WMDE
+### --- Developed under the contract between Goran Milovanovic PR Data Kolektiv
+### --- and Wikimedia Deutschland (WMDE).
+### --- Contact: goran.milovanovic_ext@wikimedia.de
+### --- Contact: goran.milovanovic@datakolektiv.com
+### ---------------------------------------------------------------------------
+### --- LICENSE:
+### ---------------------------------------------------------------------------
+### --- GPL v2
+### --- This file is part of Wikidata Analytics (WA)
+### --- https://wikidata-analytics.wmcloud.org/
+### ---
+### --- WA is free software: you can redistribute it and/or modify
+### --- it under the terms of the GNU General Public License as published by
+### --- the Free Software Foundation, either version 2 of the License, or
+### --- (at your option) any later version.
+### ---
+### --- WA is distributed in the hope that it will be useful,
+### --- but WITHOUT ANY WARRANTY; without even the implied warranty of
+### --- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+### --- GNU General Public License for more details.
+### ---
+### --- You should have received a copy of the GNU General Public License
+### --- along with WA If not, see <http://www.gnu.org/licenses/>.
+### ---------------------------------------------------------------------------
+
+## 
+golem::fill_desc(
+  pkg_name = "WDInequality",  
+  pkg_title = "Hoover Index for Wikidata Edits", 
+  pkg_description = "PKG_DESC.", 
+  author_first_name = "Goran",
+  author_last_name = "Milovanovic",
+  author_email = "goran.milovanovic_ext@wikimedia.de",
+  repo_url = NULL  
+)     
+
+## Set {golem} options ----
+golem::set_golem_options()
+
+## Create Common Files ----
+## See ?usethis for more information
+usethis::use_gpl_license(version = 2, 
+                         include_future = TRUE)
+usethis::use_readme_rmd(open = FALSE)
+usethis::use_code_of_conduct()
+
+
+## Use git ----
+usethis::use_git()
+
+## Init Testing Infrastructure ----
+## Create a template for tests
+golem::use_recommended_tests()
+
+## Use Recommended Packages ----
+golem::use_recommended_deps()
+

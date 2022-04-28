@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>Datasets</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #ffffff;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html"><img id="logo" style="width: 30px;" src="800px-Wikidata-logo-black-en_fav.png" /></a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    WDCM
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_OverviewDashboard">WDCM Overview Dashboard</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_UsageDashboard">WDCM Usage Dashboard</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_SemanticsDashboard">WDCM Semantics Dashboard</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_BiasesDashboard">WDCM Biases Dashboard</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_GeoDashboard">WDCM Geo Dashboard</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_SitelinksDashboard">WDCM (S)itelinks Dashboard</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WDCM_TitlesDashboard">WDCM (T)itles Dashboard</a>
+    </li>
+  </ul>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Analytics
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_pageviewsPerNamespace">WD Pageviews per Namespace</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_percentUsageDashboard">WD Usage and Coverage</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_HumanEdits">WD Human vs Bot Edits per Class</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_GameReferenceHunt">WD Game: Reference Treasure Hunt</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_Inequality">WD Inequality: Hoover Index</a>
+    </li>
+  </ul>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Structural Systems
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_LanguagesLandscape">Wikidata Languages Landscape</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/WD_ExternalIdentifiersDashboard">Wikidata External Identifiers Landscape</a>
+    </li>
+  </ul>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Qurator
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/QURATOR_CuriousFacts">Curious Facts</a>
+    </li>
+    <li>
+      <a href="https://wikidata-analytics.wmcloud.org/app/QURATOR_CurrentEvents">Current Events</a>
+    </li>
+  </ul>
+</li>
+<li>
+  <a href="reports.html">Reports</a>
+</li>
+<li>
+  <a href="datasets.html">Datasets</a>
+</li>
+<li>
+  <a href="resources.html">Resources</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">Datasets</h1>
+
+</div>
+
+
+<p><img src="datasets.jpg" /></p>
+<p>The Wikidata Analytics dashboards rely on many publicly available datasets that are produced and updated by our back-end ETL and ML systems. Here we present a selection of them. All of the following and many more datasets, are available from <a href="https://analytics.wikimedia.org/published/datasets/wmde-analytics-engineering/">our public data repository</a>.</p>
+<hr />
+<p><strong>Human vs Bot Wikidata Edits</strong></p>
+<p><a href="https://analytics.wikimedia.org/published/datasets/wmde-analytics-engineering/Wikidata/WD_HumanEdits/WD_HumanEdits.csv">Download</a></p>
+<p><font size="2">Lists the Wikidata classes in <code>wd_class</code> and reports on (1) their <code>label</code>, (2) <code>num_items</code> - the number of items (by direct P31 links), (3) <code>human_edited_items</code> - the number of items ever edited by human editors, (4) <code>percent_items_touched</code> - the number of items ever edited by a human editor, (5) <code>median_unique_editors</code> - the median number of unique editors per item in the respective class, (6) <code>human_edits</code> - the number of edits made by human editors in the respective class, (7) <code>bot_edits</code> - the number of edits made by bots in the respective class, (8) <code>total_edits</code> - the total edits count in the respective class, (8) <code>human_to_bot_ratio</code> - the ratio of human to bot edits, (9) <code>human_percent</code> - the % of edits made on behalf of human editors in the respective class, (10) <code>bot_percent</code> - the % of edits made on behalf of bots in the respective class.</font></p>
+<hr />
+<p><strong>Usage and Coverage Statistics</strong></p>
+<p><a href="https://analytics.wikimedia.org/published/datasets/wmde-analytics-engineering/Wikidata/WD_percentUsage/wdUsage_ProjectStatistics.csv">Download</a></p>
+<p><font size="2">Statistics on Wikidata reuse across the WMF websites. Fields: (1) <code>project</code> - a particular WMF website, (2) <code>numPages</code> - the total number of pages in this project (definition: namespace = 0, no redirects), (3) <code>wdUsePages</code> - the number of pages making any use of Wikidata, (4) <code>wdSitelinksPages</code> - the number of pages with Sitelinks, (5) <code>percentWDuse</code> - the % of pages using Wikidata, (6) <code>percentWDsitelinks</code> - the % of pages with Sitelinks, (7) <code>projectType</code> - the type of WMF project (e.g. Wikipedia, Wiktionary, Wikivoyage, etc).</font></p>
+<hr />
+<p><strong>Label Statistics</strong></p>
+<p><a href="https://analytics.wikimedia.org/published/datasets/wmde-analytics-engineering/Wikidata/wd_datamodel_terms/DM_Terms_Labels.csv">Download Labels</a> | <a href="https://analytics.wikimedia.org/published/datasets/wmde-analytics-engineering/Wikidata/wd_datamodel_terms/DM_Terms_Aliases.csv">Download Aliases</a> | <a href="https://analytics.wikimedia.org/published/datasets/wmde-analytics-engineering/Wikidata/wd_datamodel_terms/DM_Terms_Descriptions.csv">Download Descriptions</a></p>
+<p><font size="2">How many item labels, aliases, and descriptions, per language?</font></p>
+<hr />
+<p><strong>Languages Ontology Overview</strong></p>
+<p><a href="https://analytics.wikimedia.org/published/datasets/wmde-analytics-engineering/Wikidata/WD_Languages_Landscape/WD_Languages_OntologyStructure.csv">Download</a></p>
+<p><font size="2">A tabular, relational representation of the important class relationships among the languages represented in Wikidata. Fields: (1) <code>item</code> - a <code>Q</code> identifier of a particular language, (2) <code>itemLabel</code> - English label for the respective language, (3) <code>superClass</code> - a <code>Q</code> identifier for the class encompassing the respective language, (4) <code>superClassLabel</code> - the respective’s class English label, (5) <code>relation</code> - the relation connecting the language and the class.</font></p>
+<hr />
+<p><strong>Language Reuse and Status</strong></p>
+<p><a href="https://analytics.wikimedia.org/published/datasets/wmde-analytics-engineering/Wikidata/WD_Languages_Landscape/WD_Languages_UsedLanguages.csv">Download</a></p>
+<p><font size="2">Important statistics on the language reuse and status. Reuse statistics are <a href="https://wikitech.wikimedia.org/wiki/Wikidata_Concepts_Monitor#%5BAN_IMPORTANT%5D_NOTE_on_the_Wikidata_usage_definition">WDCM usage statistics</a>. Fields: (1) <code>language</code> - the ISO 639-1 language code, (2) <code>reuse</code> - the total reuse (across all WMF websites) of items that have a label in this language, (3) <code>item_count</code> - the number of items with a label in this language, (4) <code>num_items_reused</code> - the number of items with a label in this language that are also reused across the WMF projects, (5) <code>languageURI</code> - the <code>Q</code> identifier for this language, (6) <code>description</code> - the English label for this language, (7) <code>EthnologueLanguageCode</code> - the Ethnologue database code for this language, (8) <code>EthnologueLanguageStatus</code> - the status of this language per Ethnologue, (9) <code>UNESCOLanguageStatus</code> - the status of this language per UNESCO, (10) <code>numSitelinks</code> - number of Sitelinks for this language, i.e. how many Wikipedia pages there exist for it.</font></p>
+<hr />
+<p><strong>External Identifiers Reuse</strong></p>
+<p><a href="https://analytics.wikimedia.org/published/datasets/wmde-analytics-engineering/Wikidata/WD_External_Identifiers/WD_ExternalIdentifiers_Usage.csv">Download</a></p>
+<p><font size="2">An overview of the <a href="https://www.wikidata.org/wiki/Wikidata:External_identifiers">Wikidata External Identifiers</a>. Fields: (1) <code>property</code> - a <code>Q</code> identifier for a particular external identifier, (2) <code>usage</code> - how many Wikidata items are described by this external identifier, (3) <code>label</code> - English label for this identifier, (4) <code>class</code> - a class of identifiers to which it belongs, (5) <code>classLabel</code> - English label for this class.</font></p>
+<hr />
+<p><strong>External Identifiers Overlap (Co-Occurence) Matrix</strong></p>
+<p><a href="https://analytics.wikimedia.org/published/datasets/wmde-analytics-engineering/Wikidata/WD_External_Identifiers/WD_ExternalIdentifiers_Co-Occurence.csv">Download</a></p>
+<p><font size="2">An identifier × identifier symmetric matrix. Each entry represents the number of items that are described by both the identifier found in the respective row and the identifier found in the respective column. Useful for similarity computations across identifiers.</font></p>
+<hr />
+<p><strong>External Identifiers Jaccard Distance Matrix</strong></p>
+<p><a href="https://analytics.wikimedia.org/published/datasets/wmde-analytics-engineering/Wikidata/WD_External_Identifiers/WD_ExternalIdentifiers_JaccardDistance.csv">Download</a></p>
+<p><font size="2">An identifier × identifier <a href="https://en.wikipedia.org/wiki/Jaccard_index">Jaccard distance</a> matrix, computed from <a href="https://analytics.wikimedia.org/published/datasets/wmde-analytics-engineering/Wikidata/WD_External_Identifiers/WD_ExternalIdentifiers_Co-Occurence.csv">External Identifiers Overlap (Co-Occurence) Matrix</a> dataset.</font></p>
+<hr />
+<p><strong>The top 100,000 most popular Wikidata items</strong></p>
+<p><a href="https://analytics.wikimedia.org/published/datasets/wmde-analytics-engineering/wdcm/etl/wdcm_topItems.csv">Download</a></p>
+<p><font size="2">A list of <code>Q</code> identifiers for the top 100,000 most widely reused Wikidata items in the WMF universe. The reuse statistic is, of course, the <a href="https://wikitech.wikimedia.org/wiki/Wikidata_Concepts_Monitor#%5BAN_IMPORTANT%5D_NOTE_on_the_Wikidata_usage_definition">WDCM usage statistic</a>.</font></p>
+<hr />
+<p><strong>The top 10,000 most popular Wikidata items per WDCM taxonomy classes</strong></p>
+<p><a href="https://analytics.wikimedia.org/published/datasets/wmde-analytics-engineering/wdcm/etl/wdcm_category_item.csv">Download</a></p>
+<p><font size="2">The <a href="https://wikitech.wikimedia.org/wiki/Wikidata_Concepts_Monitor">Wikidata Concepts Monitor (WDCM)</a>, our system that tracks and analyzes the Wikidata items reuse across the WMF universe, does not track the whole of Wikidata, but rather a selection of categories that fall close the some intuitive human semantics: Human (Q5), Wikimedia_Internal (Q4167836, Q4167410, Q11266439), Work Of Art (Q838948), Book (Q571), Geographical Object (Q618123), Organization (Q783794, Q988108, Q43229), Architectural Structure (Q4989906, Q41176), Gene (Q7187), Chemical Entities (Q11344, Q11173, Q79529), Astronomical Object (Q6999), Taxon (Q16521), Event (Q1656682), Thoroughfare (Q83620). This dataset lists <code>Q</code> identifiers, English labels, reuse statistics (the <code>eu_count</code> field), and WDCM category for the top 10,000 reused items from each of these categories.</font></p>
+<hr />
+<p><strong>Wikidata reuse in WMF projects</strong></p>
+<p><a href="https://analytics.wikimedia.org/published/datasets/wmde-analytics-engineering/wdcm/etl/wdcm_project.csv">Download</a></p>
+<p><font size="2">This dataset lists all WMF projects that reuse Wikidata and the respective total reuse statistics. <strong>NOTE.</strong> The <a href="https://wikitech.wikimedia.org/wiki/Wikidata_Concepts_Monitor">Wikidata Concepts Monitor (WDCM)</a>, our system that tracks and analyzes the Wikidata items reuse across the WMF universe, does not track the whole of Wikidata, but rather a selection of categories that fall close the some intuitive human semantics: Human (Q5), Wikimedia_Internal (Q4167836, Q4167410, Q11266439), Work Of Art (Q838948), Book (Q571), Geographical Object (Q618123), Organization (Q783794, Q988108, Q43229), Architectural Structure (Q4989906, Q41176), Gene (Q7187), Chemical Entities (Q11344, Q11173, Q79529), Astronomical Object (Q6999), Taxon (Q16521), Event (Q1656682), Thoroughfare (Q83620).</font></p>
+<hr />
+<p><strong>Wikidata Gender reuse in WMF projects</strong></p>
+<p><a href="https://analytics.wikimedia.org/published/datasets/wmde-analytics-engineering/wdcm/biases/genderProjectDataSet.csv">Download</a></p>
+<p><font size="2">The dataset considers the Wikidata items described as being <a href="https://www.wikidata.org/wiki/Q6581097">male (Q6581097)</a> or <a href="https://www.wikidata.org/wiki/Q6581072">female (Q6581072)</a> by <a href="https://www.wikidata.org/wiki/Property:P21">sex or gender (P21)</a> and looks into their <a href="https://wikitech.wikimedia.org/wiki/Wikidata_Concepts_Monitor#%5BAN_IMPORTANT%5D_NOTE_on_the_Wikidata_usage_definition">WDCM reuse statistics</a> across the WMF websites. Fields: (1) <code>project</code> - a WMF projects, (2) <code>usageM</code> - the total reuse of male items, (2) <code>usageF</code> - the total reuse of female items, (3) <code>propM</code> - the reuse proportion of male items relative to female items, (4) <code>propF</code> - the reuse proportion of female items relative to male items, (5) <code>percentM</code> - male reuse % derived from proportion, (6) <code>percentF</code> - female reuse % derived from proportion, (7) <code>projectType</code> - e.g. Wikipedia, Wikivoyage, Wiktionary, etc, (8) <code>pMF</code> - the posterior probability that male items are reused more than female items from a Bayesian proportions test, (9) <code>CI5</code> - the lower 5% bound of the credible interval, (10) <code>CI95</code> the upper 95% bound of the credible interval.</font></p>
+<hr />
+<p><strong>Wikidata Gender vs Occupation reuse in WMF projects</strong></p>
+<p><a href="https://analytics.wikimedia.org/published/datasets/wmde-analytics-engineering/wdcm/biases/occUsage.csv">Download</a></p>
+<p><font size="2">The dataset considers the Wikidata items described as being <a href="https://www.wikidata.org/wiki/Q6581097">male (Q6581097)</a> or <a href="https://www.wikidata.org/wiki/Q6581072">female (Q6581072)</a> by <a href="https://www.wikidata.org/wiki/Property:P21">sex or gender (P21)</a> and looks into their <a href="https://wikitech.wikimedia.org/wiki/Wikidata_Concepts_Monitor#%5BAN_IMPORTANT%5D_NOTE_on_the_Wikidata_usage_definition">WDCM reuse statistics</a> across the WMF websites <a href="https://www.wikidata.org/wiki/Property:P106">occupation (P106)</a>. Fields: (1) <code>occupation</code> - an occupation, <code>Q</code> identifier, (2) English <code>label</code> of the respective occupation, (3) <code>usageM</code> - the total reuse of male items with the respective occupation, (4) <code>usageF</code> - the total reuse of female items with the respective occupation, (5) <code>totalUsage</code> - the total reuse of items with the respective occupation, (6) <code>pMF</code> - the posterior probability that male items are reused more than female items from a Bayesian proportions test, (7) <code>CI5</code> - the lower 5% bound of the credible interval, (8) <code>CI95</code> the upper 95% bound of the credible interval.</font></p>
+<hr />
+<p><strong>Wikidata GLAM+ classes - their geo-location and reuse statistics</strong></p>
+<p><a href="https://analytics.wikimedia.org/published/datasets/wmde-analytics-engineering/wdcm/geo/">Download</a></p>
+<p><font size="2">A list of <code>.csv</code> files for the following GLAM+ categories: Archive, Art Gallery, Botanical Garden, City, Country, Library, Museum, University, Zoological Garden; fiels: (1) <code>eu_entity_id</code> - the <code>Q</code> identifier of the item, (2) <code>label</code> - the English label of the item, (3) <code>lon</code> - longitude, (4) <code>lat</code> - latitude, (5) <code>eu_count</code> - the <a href="https://wikitech.wikimedia.org/wiki/Wikidata_Concepts_Monitor#%5BAN_IMPORTANT%5D_NOTE_on_the_Wikidata_usage_definition">WDCM reuse statistic</a>.</font></p>
+
+<script type="text/javascript" src="links.js"></script>
+
+<hr>
+<p>
+  <img src="33h_px-Wikidata-logo-black-en.svg.png">
+</p>
+<p style="font-size:13px;">
+  <a href="https://github.com/GoranMilovanovic" target="_blank">Goran S. Milovanović</a>, Data Scientist for Wikidata, <a href="https://www.wikimedia.de/" target="_blank">Wikimedia Deutschland</a>: <a href = "mailto: goran.milovanovic_ext@wikimedia.de">goran.milovanovic_ext@wikimedia.de</a>
+  <br>
+  This is free software: all content and code is <a href="https://www.gnu.org/licenses/old-licenses/gpl-2.0.md" target="_blank">GPL v2.0</a> licensed.
+</p>
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
+</script>
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
