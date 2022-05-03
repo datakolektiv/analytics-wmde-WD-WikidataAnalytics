@@ -25,7 +25,7 @@ services:
       # going to localhost:80 in one's web browser will show a "Welcome to
       # Shiny Server!" diagnostics page.
       # - './mountpoints/apps:/srv/shiny-server'
-      - '/srv/_data:/build_zone/data'
+      - '/srv/_data/currentevents_data:/build_zone/data'
 
 volumes:
   shiny_logs:
