@@ -111,7 +111,7 @@ proxy:
     description: What is being edited now in Wikidata?
     container-image: quratorcurrentevents-img
     container-network: wd-analytics-net
-    container-volumes: "/srv/_data/currentevents_datas:/build_zone/data"
+    container-volumes: "/srv/_data/currentevents_data:/build_zone/data"
   
 logging:
   file:
