@@ -55,7 +55,7 @@ navbar:
       text: "Wiktionary"
       menu: 
         - text: "Wiktionary Cognate Dashboard"
-          href: https://wiktionary-analytics.wmcloud.org/Wiktionary_CognateDashboard
+          href: https://wiktionary-analytics.wmcloud.org/app/Wiktionary_CognateDashboards
 
 output:
   html_document:
