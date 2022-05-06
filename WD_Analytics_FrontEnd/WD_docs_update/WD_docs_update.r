@@ -27,7 +27,7 @@ library(rmarkdown)
 # - render
 print("Render R markdown: 1. Wikidata ORES Quality Report.")
 # - productionDir: report
-prodDir <- '/srv/_Img/WD_Analytics_FrontEnd/WD_docs/docs/'
+prodDir <- '/srv/WD_Analytics_FrontEnd/WD_docs/docs/'
 rmarkdown::render(input =
                     paste0(fPath, "WikidataORESQualityReport.Rmd"), 
                   output_format = 
@@ -38,7 +38,7 @@ rmarkdown::render(input =
 
 # - docker-compose
 # - productionComposeDir: docker-compose dir
-productionComposeDir <- "/srv/_Img/WD_Analytics_FrontEnd/WD_docs"
+productionComposeDir <- "/srv/WD_Analytics_FrontEnd/WD_docs"
 print("docker-compose build now.")
 system(command = paste0("cd ", 
                         productionComposeDir, 
